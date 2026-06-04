@@ -6,17 +6,8 @@
     <title>Pharma Risk Analyzer</title>
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
-        body {
-            font-family: Arial, sans-serif;
-            background: #0f172a; color: #e2e8f0;
-            min-height: 100vh; display: flex; flex-direction: column;
-        }
-        .nav {
-            background: #1e293b; border-bottom: 1px solid #334155;
-            padding: 14px 24px;
-            display: flex; align-items: center; justify-content: space-between;
-            flex-wrap: wrap; gap: 10px;
-        }
+        body { font-family: Arial, sans-serif; background: #0f172a; color: #e2e8f0; min-height: 100vh; display: flex; flex-direction: column; }
+        .nav { background: #1e293b; border-bottom: 1px solid #334155; padding: 14px 24px; display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 10px; }
         .nav-logo { color: #38bdf8; font-size: 1.1rem; font-weight: bold; text-decoration: none; }
         .nav-right { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
         .nav-btn { padding: 8px 18px; border-radius: 8px; font-size: 0.88rem; font-weight: bold; text-decoration: none; border: none; cursor: pointer; white-space: nowrap; }
@@ -27,6 +18,8 @@
         .nav-btn-logout { background: #334155; color: #e2e8f0; }
         .nav-user { color: #94a3b8; font-size: 0.88rem; }
         .nav-user span { color: #38bdf8; font-weight: bold; }
+        .lang-btn { background: #1e293b; border: 1px solid #334155; color: #e2e8f0; padding: 6px 12px; border-radius: 8px; cursor: pointer; font-size: 0.82rem; font-weight: bold; }
+        .lang-btn:hover { border-color: #38bdf8; color: #38bdf8; }
         .main { flex: 1; display: flex; align-items: center; justify-content: center; padding: 40px 20px; }
         .container { max-width: 720px; width: 100%; text-align: center; }
         .badge { display: inline-block; background: #1e293b; border: 1px solid #334155; color: #94a3b8; font-size: 0.75rem; padding: 4px 12px; border-radius: 20px; margin-bottom: 20px; letter-spacing: 0.05em; }
@@ -52,7 +45,10 @@
 
     <nav class="nav">
         <a href="/" class="nav-logo">💊 Pharma Risk Analyzer</a>
-        <div class="nav-right" id="nav-auth"></div>
+        <div class="nav-right">
+            <button id="lang-btn" class="lang-btn" onclick="toggleLang()">🇺🇸 EN</button>
+            <div id="nav-auth" style="display:flex; gap:8px; align-items:center;"></div>
+        </div>
     </nav>
 
     <div class="main">
@@ -60,75 +56,80 @@
             <div class="badge">FDA FAERS 2024 Q3 · YOLOv8 · ML · AE Manager · PRR</div>
             <h1>💊 Pharma Risk<br>Analyzer</h1>
             <p class="subtitle">
-                약물 부작용 AI 위험도 분석 시스템<br>
-                실제 FDA 데이터 기반 · 머신러닝 예측 · 알약 이미지 탐지 · AE 관리 · PRR 신호 탐지
+                <span data-ko="약물 부작용 AI 위험도 분석 시스템" data-en="AI-powered Drug Adverse Event Risk Analysis System">약물 부작용 AI 위험도 분석 시스템</span><br>
+                <span data-ko="실제 FDA 데이터 기반 · 머신러닝 예측 · 알약 이미지 탐지 · AE 관리 · PRR 신호 탐지" data-en="Real FDA Data · ML Prediction · Pill Detection · AE Management · PRR Signal Detection">실제 FDA 데이터 기반 · 머신러닝 예측 · 알약 이미지 탐지 · AE 관리 · PRR 신호 탐지</span>
             </p>
-            <a href="/dashboard" class="btn-main">대시보드 보기 →</a>
+            <a href="/dashboard" class="btn-main" data-ko="대시보드 보기 →" data-en="Go to Dashboard →">대시보드 보기 →</a>
 
             <div class="features">
                 <a href="/dashboard" class="feature-card">
                     <span class="icon">📊</span>
-                    <strong>대시보드</strong>
-                    FAERS 통계 시각화
+                    <strong data-ko="대시보드" data-en="Dashboard">대시보드</strong>
+                    <span data-ko="FAERS 통계 시각화" data-en="FAERS Statistics Visualization">FAERS 통계 시각화</span>
                 </a>
                 <a href="/dashboard" class="feature-card">
                     <span class="icon">🤖</span>
-                    <strong>AI 예측</strong>
-                    위험도 자동 분류
+                    <strong data-ko="AI 예측" data-en="AI Prediction">AI 예측</strong>
+                    <span data-ko="위험도 자동 분류" data-en="Automated Risk Classification">위험도 자동 분류</span>
                 </a>
                 <a href="/webcam" class="feature-card">
                     <span class="icon">📸</span>
-                    <strong>알약 탐지</strong>
-                    YOLOv8 이미지 인식
+                    <strong data-ko="알약 탐지" data-en="Pill Detection">알약 탐지</strong>
+                    <span data-ko="YOLOv8 이미지 인식" data-en="YOLOv8 Image Recognition">YOLOv8 이미지 인식</span>
                 </a>
                 <a href="/compare" class="feature-card">
                     <span class="icon">⚖️</span>
-                    <strong>약물 비교</strong>
-                    나란히 비교 분석
+                    <strong data-ko="약물 비교" data-en="Drug Comparison">약물 비교</strong>
+                    <span data-ko="나란히 비교 분석" data-en="Side-by-Side Analysis">나란히 비교 분석</span>
                 </a>
                 <a href="/filter" class="feature-card">
                     <span class="icon">🔎</span>
-                    <strong>데이터 필터</strong>
-                    조건별 데이터 조회
+                    <strong data-ko="데이터 필터" data-en="Data Filter">데이터 필터</strong>
+                    <span data-ko="조건별 데이터 조회" data-en="Conditional Data Query">조건별 데이터 조회</span>
                 </a>
                 <a href="/korea" class="feature-card">
                     <span class="icon">🇰🇷</span>
-                    <strong>한국 데이터</strong>
-                    식약처 이상사례
+                    <strong data-ko="한국 데이터" data-en="Korea Data">한국 데이터</strong>
+                    <span data-ko="식약처 이상사례" data-en="MFDS Adverse Events">식약처 이상사례</span>
                 </a>
                 <a href="/prr" class="feature-card highlight-blue">
                     <span class="icon">📡</span>
-                    <strong>PRR 신호 탐지 <span class="new-badge">NEW</span></strong>
-                    FDA/EMA 기준 부작용 신호 탐지
+                    <strong><span data-ko="PRR 신호 탐지" data-en="PRR Signal Detection">PRR 신호 탐지</span> <span class="new-badge">NEW</span></strong>
+                    <span data-ko="FDA/EMA 기준 부작용 신호 탐지" data-en="FDA/EMA Evans Criteria Signal Detection">FDA/EMA 기준 부작용 신호 탐지</span>
                 </a>
                 <a href="/ae_manager" class="feature-card highlight">
                     <span class="icon">🧪</span>
                     <strong>AE Manager <span class="new-badge">NEW</span></strong>
-                    CTCAE · SAE · 보고 타임라인
+                    <span data-ko="CTCAE · SAE · 보고 타임라인" data-en="CTCAE · SAE · Reporting Timeline">CTCAE · SAE · 보고 타임라인</span>
                 </a>
             </div>
         </div>
     </div>
 
+<script src="/static/lang.js"></script>
 <script>
     fetch('/api/me')
     .then(res => res.json())
     .then(data => {
         const nav = document.getElementById('nav-auth');
+        const lang = getLang();
         if (data.logged_in) {
             nav.innerHTML = `
-                <span class="nav-user">👤 <span>${data.username}</span>님</span>
-                <button class="nav-btn nav-btn-logout" onclick="logout()">로그아웃</button>`;
+                <span class="nav-user">👤 <span>${data.username}</span>${lang === 'ko' ? '님' : ''}</span>
+                <button class="nav-btn nav-btn-logout" onclick="logout()" data-ko="로그아웃" data-en="Logout">로그아웃</button>`;
         } else {
             nav.innerHTML = `
-                <a href="/login" class="nav-btn nav-btn-outline">로그인</a>
-                <a href="/register" class="nav-btn nav-btn-fill">회원가입</a>`;
+                <a href="/login" class="nav-btn nav-btn-outline" data-ko="로그인" data-en="Login">로그인</a>
+                <a href="/register" class="nav-btn nav-btn-fill" data-ko="회원가입" data-en="Sign Up">회원가입</a>`;
         }
+        applyLang(lang);
     })
     .catch(() => {
+        const lang = getLang();
         document.getElementById('nav-auth').innerHTML = `
-            <a href="/login" class="nav-btn nav-btn-outline">로그인</a>
-            <a href="/register" class="nav-btn nav-btn-fill">회원가입</a>`;
+            <a href="/login" class="nav-btn nav-btn-outline" data-ko="로그인" data-en="Login">로그인</a>
+            <a href="/register" class="nav-btn nav-btn-fill" data-ko="회원가입" data-en="Sign Up">회원가입</a>`;
+        applyLang(lang);
     });
 
     function logout() {

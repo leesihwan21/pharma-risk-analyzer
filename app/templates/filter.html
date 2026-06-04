@@ -3,186 +3,131 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>데이터 필터링 - Pharma Risk Analyzer</title>
+    <title>Data Filter - Pharma Risk Analyzer</title>
     <script src="https://cdn.plot.ly/plotly-latest.min.js"></script>
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body { background: #0f172a; color: #e2e8f0; font-family: Arial, sans-serif; }
-
-        .header {
-            background: #1e293b; padding: 16px 24px;
-            display: flex; align-items: center; justify-content: space-between;
-            border-bottom: 1px solid #334155; flex-wrap: wrap; gap: 10px;
-        }
+        .header { background: #1e293b; padding: 16px 24px; display: flex; align-items: center; justify-content: space-between; border-bottom: 1px solid #334155; flex-wrap: wrap; gap: 10px; }
         .header h1 { color: #38bdf8; font-size: 1.4rem; }
+        .header-right { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
         .header a { color: #94a3b8; text-decoration: none; font-size: 0.9rem; }
-
-        .filter-bar {
-            background: #1e293b; padding: 16px 24px;
-            border-bottom: 1px solid #334155;
-            display: flex; flex-wrap: wrap; gap: 12px; align-items: flex-end;
-        }
+        .lang-btn { background: #1e293b; border: 1px solid #334155; color: #e2e8f0; padding: 6px 12px; border-radius: 8px; cursor: pointer; font-size: 0.82rem; font-weight: bold; }
+        .lang-btn:hover { border-color: #38bdf8; color: #38bdf8; }
+        .filter-bar { background: #1e293b; padding: 16px 24px; border-bottom: 1px solid #334155; display: flex; flex-wrap: wrap; gap: 12px; align-items: flex-end; }
         .filter-group { display: flex; flex-direction: column; gap: 4px; flex: 1 1 120px; min-width: 0; }
         .filter-group label { color: #94a3b8; font-size: 0.8rem; }
-        .filter-group input,
-        .filter-group select {
-            background: #0f172a; border: 1px solid #334155;
-            color: #e2e8f0; padding: 9px 12px;
-            border-radius: 8px; font-size: 0.9rem; width: 100%;
-        }
+        .filter-group input, .filter-group select { background: #0f172a; border: 1px solid #334155; color: #e2e8f0; padding: 9px 12px; border-radius: 8px; font-size: 0.9rem; width: 100%; }
         .btn { border: none; padding: 10px 20px; border-radius: 8px; cursor: pointer; font-weight: bold; white-space: nowrap; }
-        .btn-blue   { background: #38bdf8; color: #0f172a; }
-        .btn-gray   { background: #334155; color: #e2e8f0; }
-
-        /* 통계 카드 */
-        .stats-grid {
-            display: grid;
-            grid-template-columns: repeat(3, 1fr);
-            gap: 12px; padding: 20px 24px 0;
-        }
-        .stat-card {
-            background: #1e293b; border-radius: 12px;
-            padding: 16px; border: 1px solid #334155; text-align: center;
-        }
+        .btn-blue { background: #38bdf8; color: #0f172a; }
+        .btn-gray { background: #334155; color: #e2e8f0; }
+        .stats-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; padding: 20px 24px 0; }
+        .stat-card { background: #1e293b; border-radius: 12px; padding: 16px; border: 1px solid #334155; text-align: center; }
         .stat-value { font-size: 1.7rem; font-weight: bold; color: #38bdf8; }
         .stat-label { color: #94a3b8; font-size: 0.82rem; margin-top: 4px; }
-
         .chart-section { padding: 16px 24px 24px; }
-        .chart-card {
-            background: #1e293b; border-radius: 12px;
-            padding: 16px; border: 1px solid #334155; overflow: hidden;
-        }
-
+        .chart-card { background: #1e293b; border-radius: 12px; padding: 16px; border: 1px solid #334155; }
         .spinner { display: inline-block; width: 14px; height: 14px; border: 2px solid #334155; border-top: 2px solid #38bdf8; border-radius: 50%; animation: spin 0.8s linear infinite; margin-right: 6px; vertical-align: middle; }
         @keyframes spin { to { transform: rotate(360deg); } }
-
-        /* 태블릿 */
-        @media (max-width: 768px) {
-            .stats-grid { grid-template-columns: repeat(2, 1fr); padding: 14px 16px 0; }
-            .chart-section { padding: 14px 16px 16px; }
-        }
-        /* 모바일 */
-        @media (max-width: 480px) {
-            .header { padding: 12px 14px; }
-            .header h1 { font-size: 1.1rem; }
-            .filter-bar { padding: 14px; flex-direction: column; }
-            .filter-group { flex: none; width: 100%; }
-            .btn { width: 100%; }
-            .stats-grid { grid-template-columns: repeat(2, 1fr); padding: 12px; gap: 10px; }
-            .stat-value { font-size: 1.4rem; }
-        }
+        @media (max-width: 768px) { .stats-grid { grid-template-columns: repeat(2, 1fr); padding: 14px 16px 0; } .chart-section { padding: 14px 16px 16px; } }
+        @media (max-width: 480px) { .header { padding: 12px 14px; } .filter-bar { padding: 14px; flex-direction: column; } .filter-group { flex: none; width: 100%; } .btn { width: 100%; } }
     </style>
 </head>
 <body>
-
 <div class="header">
-    <h1>🔎 데이터 필터링</h1>
-    <a href="/dashboard">← 대시보드로</a>
+    <h1 data-ko="🔎 데이터 필터링" data-en="🔎 Data Filter">🔎 데이터 필터링</h1>
+    <div class="header-right">
+        <button id="lang-btn" class="lang-btn" onclick="toggleLang()">🇺🇸 EN</button>
+        <a href="/dashboard" data-ko="← 대시보드로" data-en="← Dashboard">← 대시보드로</a>
+    </div>
 </div>
-
 <div class="filter-bar">
     <div class="filter-group">
-        <label>약물명</label>
-        <input type="text" id="f-drug" placeholder="예: METHOTREXATE"/>
+        <label data-ko="약물명" data-en="Drug Name">약물명</label>
+        <input type="text" id="f-drug" data-ko="예: METHOTREXATE" data-en="e.g. METHOTREXATE" placeholder="예: METHOTREXATE"/>
     </div>
     <div class="filter-group">
-        <label>성별</label>
+        <label data-ko="성별" data-en="Sex">성별</label>
         <select id="f-sex">
-            <option value="">전체</option>
-            <option value="F">여성</option>
-            <option value="M">남성</option>
+            <option value="" data-ko="전체" data-en="All">전체</option>
+            <option value="F" data-ko="여성" data-en="Female">여성</option>
+            <option value="M" data-ko="남성" data-en="Male">남성</option>
         </select>
     </div>
     <div class="filter-group">
-        <label>최소 나이</label>
+        <label data-ko="최소 나이" data-en="Min Age">최소 나이</label>
         <input type="number" id="f-age-min" placeholder="0" value="0"/>
     </div>
     <div class="filter-group">
-        <label>최대 나이</label>
+        <label data-ko="최대 나이" data-en="Max Age">최대 나이</label>
         <input type="number" id="f-age-max" placeholder="120" value="120"/>
     </div>
     <div class="filter-group">
-        <label>결과 코드</label>
+        <label data-ko="결과 코드" data-en="Outcome">결과 코드</label>
         <select id="f-outcome">
-            <option value="">전체</option>
-            <option value="DE">사망 (DE)</option>
-            <option value="HO">입원 (HO)</option>
-            <option value="LT">생명위협 (LT)</option>
-            <option value="DS">장애 (DS)</option>
-            <option value="CA">선천성이상 (CA)</option>
-            <option value="OT">기타 (OT)</option>
+            <option value="" data-ko="전체" data-en="All">전체</option>
+            <option value="DE" data-ko="사망 (DE)" data-en="Death (DE)">사망 (DE)</option>
+            <option value="HO" data-ko="입원 (HO)" data-en="Hospitalization (HO)">입원 (HO)</option>
+            <option value="LT" data-ko="생명위협 (LT)" data-en="Life-threatening (LT)">생명위협 (LT)</option>
+            <option value="DS" data-ko="장애 (DS)" data-en="Disability (DS)">장애 (DS)</option>
+            <option value="CA" data-ko="선천성이상 (CA)" data-en="Congenital Anomaly (CA)">선천성이상 (CA)</option>
+            <option value="OT" data-ko="기타 (OT)" data-en="Other (OT)">기타 (OT)</option>
         </select>
     </div>
     <div class="filter-group">
-        <label>국가 코드</label>
-        <input type="text" id="f-country" placeholder="예: US"/>
+        <label data-ko="국가 코드" data-en="Country Code">국가 코드</label>
+        <input type="text" id="f-country" data-ko="예: US" data-en="e.g. US" placeholder="예: US"/>
     </div>
-    <button class="btn btn-blue" onclick="applyFilter()">🔎 필터 적용</button>
-    <button class="btn btn-gray" onclick="resetFilter()">초기화</button>
+    <button class="btn btn-blue" onclick="applyFilter()" data-ko="🔎 필터 적용" data-en="🔎 Apply Filter">🔎 필터 적용</button>
+    <button class="btn btn-gray" onclick="resetFilter()" data-ko="초기화" data-en="Reset">초기화</button>
     <span id="filter-status" style="color:#94a3b8; font-size:0.9rem; width:100%;"></span>
 </div>
-
 <div id="filter-result" style="display:none;">
     <div class="stats-grid">
-        <div class="stat-card"><div class="stat-value" id="f-total">-</div><div class="stat-label">총 보고 건수</div></div>
-        <div class="stat-card"><div class="stat-value" id="f-age">-</div><div class="stat-label">평균 나이</div></div>
-        <div class="stat-card"><div class="stat-value" id="f-death">-</div><div class="stat-label">사망 건수</div></div>
-        <div class="stat-card"><div class="stat-value" id="f-hosp">-</div><div class="stat-label">입원 건수</div></div>
-        <div class="stat-card"><div class="stat-value" id="f-female">-</div><div class="stat-label">여성 비율</div></div>
-        <div class="stat-card"><div class="stat-value" id="f-male">-</div><div class="stat-label">남성 비율</div></div>
+        <div class="stat-card"><div class="stat-value" id="f-total">-</div><div class="stat-label" data-ko="총 보고 건수" data-en="Total Reports">총 보고 건수</div></div>
+        <div class="stat-card"><div class="stat-value" id="f-age">-</div><div class="stat-label" data-ko="평균 나이" data-en="Avg Age">평균 나이</div></div>
+        <div class="stat-card"><div class="stat-value" id="f-death">-</div><div class="stat-label" data-ko="사망 건수" data-en="Deaths">사망 건수</div></div>
+        <div class="stat-card"><div class="stat-value" id="f-hosp">-</div><div class="stat-label" data-ko="입원 건수" data-en="Hospitalizations">입원 건수</div></div>
+        <div class="stat-card"><div class="stat-value" id="f-female">-</div><div class="stat-label" data-ko="여성 비율" data-en="Female %">여성 비율</div></div>
+        <div class="stat-card"><div class="stat-value" id="f-male">-</div><div class="stat-label" data-ko="남성 비율" data-en="Male %">남성 비율</div></div>
     </div>
-    <div class="chart-section">
-        <div class="chart-card"><div id="filter-chart"></div></div>
-    </div>
+    <div class="chart-section"><div class="chart-card"><div id="filter-chart"></div></div></div>
 </div>
-
+<script src="/static/lang.js"></script>
 <script>
 function applyFilter() {
+    const lang = getLang();
+    const params = new URLSearchParams();
     const drug = document.getElementById('f-drug').value;
     const sex = document.getElementById('f-sex').value;
     const ageMin = document.getElementById('f-age-min').value;
     const ageMax = document.getElementById('f-age-max').value;
     const outcome = document.getElementById('f-outcome').value;
     const country = document.getElementById('f-country').value;
-
-    document.getElementById('filter-status').innerHTML = '<div class="spinner"></div>필터링 중...';
-
-    const params = new URLSearchParams();
     if (drug) params.append('drug', drug);
     if (sex) params.append('sex', sex);
     if (ageMin) params.append('age_min', ageMin);
     if (ageMax && ageMax < 120) params.append('age_max', ageMax);
     if (outcome) params.append('outcome', outcome);
     if (country) params.append('country', country);
-
+    document.getElementById('filter-status').innerHTML = `<div class="spinner"></div>${lang === 'ko' ? '필터링 중...' : 'Filtering...'}`;
     fetch(`/api/filter?${params.toString()}`)
     .then(res => res.json())
     .then(data => {
         if (data.error) { document.getElementById('filter-status').innerHTML = `<span style="color:#f87171">❌ ${data.error}</span>`; return; }
-
-        document.getElementById('filter-status').innerHTML = `✅ <strong style="color:#34d399">${data.total.toLocaleString()}건</strong> 조회됨`;
+        document.getElementById('filter-status').innerHTML = `✅ <strong style="color:#34d399">${data.total.toLocaleString()}${lang === 'ko' ? '건' : ' records'}</strong> ${lang === 'ko' ? '조회됨' : 'found'}`;
         document.getElementById('filter-result').style.display = 'block';
         document.getElementById('f-total').textContent = data.total.toLocaleString();
-        document.getElementById('f-age').textContent = data.age_avg + '세';
+        document.getElementById('f-age').textContent = data.age_avg + (lang === 'ko' ? '세' : 'y');
         document.getElementById('f-death').textContent = data.death_cnt.toLocaleString();
         document.getElementById('f-hosp').textContent = data.hosp_cnt.toLocaleString();
         document.getElementById('f-female').textContent = data.female_pct + '%';
         document.getElementById('f-male').textContent = data.male_pct + '%';
-
-        Plotly.newPlot('filter-chart', [{
-            type: 'bar',
-            x: data.top_reactions.map(r => r.reaction),
-            y: data.top_reactions.map(r => r.count),
-            marker: { color: '#38bdf8' }
-        }], {
-            title: '필터링된 데이터 - Top 10 부작용',
-            paper_bgcolor: '#1e293b', plot_bgcolor: '#1e293b',
-            font: { color: '#e2e8f0' }, height: 380,
-            margin: { t: 50, b: 120 }, xaxis: { tickangle: -45 }
-        });
+        const chartTitle = lang === 'ko' ? '필터링된 데이터 - Top 10 부작용' : 'Filtered Data - Top 10 Adverse Reactions';
+        Plotly.newPlot('filter-chart', [{ type: 'bar', x: data.top_reactions.map(r => r.reaction), y: data.top_reactions.map(r => r.count), marker: { color: '#38bdf8' } }],
+            { title: chartTitle, paper_bgcolor: '#1e293b', plot_bgcolor: '#1e293b', font: { color: '#e2e8f0' }, height: 380, margin: { t: 50, b: 120 }, xaxis: { tickangle: -45 } });
     });
 }
-
 function resetFilter() {
     document.getElementById('f-drug').value = '';
     document.getElementById('f-sex').value = '';

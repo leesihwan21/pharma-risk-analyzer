@@ -10,6 +10,8 @@
         .header { background: #1e293b; padding: 16px 24px; display: flex; align-items: center; justify-content: space-between; border-bottom: 1px solid #334155; flex-wrap: wrap; gap: 10px; }
         .header h1 { color: #38bdf8; font-size: 1.4rem; }
         .header a { color: #94a3b8; text-decoration: none; font-size: 0.9rem; }
+        .lang-btn { background: #1e293b; border: 1px solid #334155; color: #e2e8f0; padding: 6px 12px; border-radius: 8px; cursor: pointer; font-size: 0.82rem; font-weight: bold; }
+        .lang-btn:hover { border-color: #38bdf8; color: #38bdf8; }
         .summary-grid { display: grid; grid-template-columns: repeat(5, 1fr); gap: 12px; padding: 20px 24px; }
         .summary-card { background: #1e293b; border-radius: 10px; padding: 16px; border: 1px solid #334155; text-align: center; }
         .summary-card .val { font-size: 2rem; font-weight: bold; }
@@ -25,8 +27,7 @@
         .btn-blue{background:#38bdf8;color:#0f172a;} .btn-green{background:#059669;color:white;}
         .btn-red{background:#dc2626;color:white;} .btn-gray{background:#334155;color:#e2e8f0;}
         .btn-orange{background:#d97706;color:white;} .btn-purple{background:#7c3aed;color:white;}
-        .btn-teal{background:#0d9488;color:white;}
-        .btn-sm { padding: 5px 12px; font-size: 0.8rem; }
+        .btn-teal{background:#0d9488;color:white;} .btn-sm { padding: 5px 12px; font-size: 0.8rem; }
         .table-wrap { padding: 16px 24px; overflow-x: auto; }
         table { width: 100%; border-collapse: collapse; font-size: 0.88rem; min-width: 900px; }
         th { background: #1e293b; color: #94a3b8; padding: 10px 12px; text-align: left; border-bottom: 1px solid #334155; white-space: nowrap; }
@@ -67,49 +68,57 @@
 <div class="header">
     <h1>🧪 AE Manager</h1>
     <div style="display:flex; gap:12px; align-items:center; flex-wrap:wrap;">
-        <button class="btn btn-green" onclick="openCreateModal()">+ AE 등록</button>
-        <a href="/dashboard">← 대시보드로</a>
+        <button class="btn btn-green" onclick="openCreateModal()" data-ko="+ AE 등록" data-en="+ Register AE">+ AE 등록</button>
+        <button id="lang-btn" class="lang-btn" onclick="toggleLang()">🇺🇸 EN</button>
+        <a href="/dashboard" data-ko="← 대시보드로" data-en="← Dashboard">← 대시보드로</a>
     </div>
 </div>
 
 <div class="summary-grid">
-    <div class="summary-card"><div class="val val-blue" id="s-total">-</div><div class="lbl">전체 AE</div></div>
+    <div class="summary-card"><div class="val val-blue" id="s-total">-</div><div class="lbl" data-ko="전체 AE" data-en="Total AE">전체 AE</div></div>
     <div class="summary-card"><div class="val val-red" id="s-sae">-</div><div class="lbl">SAE</div></div>
-    <div class="summary-card"><div class="val val-orange" id="s-overdue">-</div><div class="lbl">⚠️ 기한 초과</div></div>
-    <div class="summary-card"><div class="val val-orange" id="s-urgent">-</div><div class="lbl">🔴 3일 이내</div></div>
-    <div class="summary-card"><div class="val val-green" id="s-submitted">-</div><div class="lbl">✅ 제출 완료</div></div>
+    <div class="summary-card"><div class="val val-orange" id="s-overdue">-</div><div class="lbl" data-ko="⚠️ 기한 초과" data-en="⚠️ Overdue">⚠️ 기한 초과</div></div>
+    <div class="summary-card"><div class="val val-orange" id="s-urgent">-</div><div class="lbl" data-ko="🔴 3일 이내" data-en="🔴 Within 3 Days">🔴 3일 이내</div></div>
+    <div class="summary-card"><div class="val val-green" id="s-submitted">-</div><div class="lbl" data-ko="✅ 제출 완료" data-en="✅ Submitted">✅ 제출 완료</div></div>
 </div>
 
 <div class="tabs">
-    <div class="tab active" onclick="filterByStatus('')" id="tab-all">전체</div>
-    <div class="tab" onclick="filterByStatus('overdue')" id="tab-overdue">⚠️ 기한초과</div>
-    <div class="tab" onclick="filterByStatus('urgent')" id="tab-urgent">🔴 긴급</div>
-    <div class="tab" onclick="filterByStatus('warning')" id="tab-warning">🟡 주의</div>
-    <div class="tab" onclick="filterByStatus('normal')" id="tab-normal">✅ 정상</div>
-    <div class="tab" onclick="filterByStatus('submitted')" id="tab-submitted">📋 제출완료</div>
+    <div class="tab active" onclick="filterByStatus('')" id="tab-all" data-ko="전체" data-en="All">전체</div>
+    <div class="tab" onclick="filterByStatus('overdue')" id="tab-overdue">⚠️ <span data-ko="기한초과" data-en="Overdue">기한초과</span></div>
+    <div class="tab" onclick="filterByStatus('urgent')" id="tab-urgent">🔴 <span data-ko="긴급" data-en="Urgent">긴급</span></div>
+    <div class="tab" onclick="filterByStatus('warning')" id="tab-warning">🟡 <span data-ko="주의" data-en="Warning">주의</span></div>
+    <div class="tab" onclick="filterByStatus('normal')" id="tab-normal">✅ <span data-ko="정상" data-en="Normal">정상</span></div>
+    <div class="tab" onclick="filterByStatus('submitted')" id="tab-submitted">📋 <span data-ko="제출완료" data-en="Submitted">제출완료</span></div>
 </div>
 
 <div class="filter-bar">
     <select id="filter-sae" onchange="loadList()">
-        <option value="">전체 (AE+SAE)</option>
-        <option value="true">SAE만</option>
+        <option value="" data-ko="전체 (AE+SAE)" data-en="All (AE+SAE)">전체 (AE+SAE)</option>
+        <option value="true" data-ko="SAE만" data-en="SAE Only">SAE만</option>
     </select>
-    <input type="text" id="filter-search" placeholder="약물명/환자코드 검색..." style="flex:1; min-width:160px;" oninput="filterTable()"/>
-    <button class="btn btn-gray" onclick="loadList()">새로고침</button>
+    <input type="text" id="filter-search" data-ko="약물명/환자코드 검색..." data-en="Search drug/patient code..." placeholder="약물명/환자코드 검색..." style="flex:1; min-width:160px;" oninput="filterTable()"/>
+    <button class="btn btn-gray" onclick="loadList()" data-ko="새로고침" data-en="Refresh">새로고침</button>
 </div>
 
 <div class="table-wrap">
     <table>
         <thead>
             <tr>
-                <th>#</th><th>환자코드</th><th>약물명</th><th>AE 용어</th>
-                <th>Grade</th><th>SAE</th><th>인과관계</th><th>결과</th>
-                <th>마감 상태</th><th>마감일</th><th>액션</th>
+                <th>#</th>
+                <th data-ko="환자코드" data-en="Patient Code">환자코드</th>
+                <th data-ko="약물명" data-en="Drug">약물명</th>
+                <th data-ko="AE 용어" data-en="AE Term">AE 용어</th>
+                <th>Grade</th><th>SAE</th>
+                <th data-ko="인과관계" data-en="Causality">인과관계</th>
+                <th data-ko="결과" data-en="Outcome">결과</th>
+                <th data-ko="마감 상태" data-en="Status">마감 상태</th>
+                <th data-ko="마감일" data-en="Deadline">마감일</th>
+                <th data-ko="액션" data-en="Action">액션</th>
             </tr>
         </thead>
         <tbody id="ae-tbody">
             <tr><td colspan="11" style="text-align:center; padding:40px; color:#475569;">
-                <div class="spinner"></div>불러오는 중...
+                <div class="spinner"></div><span data-ko="불러오는 중..." data-en="Loading...">불러오는 중...</span>
             </td></tr>
         </tbody>
     </table>
@@ -118,48 +127,92 @@
 <!-- AE 등록 모달 -->
 <div class="modal-overlay" id="create-modal">
     <div class="modal">
-        <h2>📋 AE 등록</h2>
+        <h2 data-ko="📋 AE 등록" data-en="📋 Register AE">📋 AE 등록</h2>
         <div class="form-grid">
-            <div class="form-group"><label>환자 코드 *</label><input type="text" id="c-patient" placeholder="예: PT-001"/></div>
-            <div class="form-group"><label>성별</label>
-                <select id="c-sex"><option value="">선택</option><option value="F">여성 (F)</option><option value="M">남성 (M)</option></select>
+            <div class="form-group"><label data-ko="환자 코드 *" data-en="Patient Code *">환자 코드 *</label><input type="text" id="c-patient" data-ko="예: PT-001" data-en="e.g. PT-001" placeholder="예: PT-001"/></div>
+            <div class="form-group"><label data-ko="성별" data-en="Sex">성별</label>
+                <select id="c-sex"><option value="" data-ko="선택" data-en="Select">선택</option><option value="F" data-ko="여성 (F)" data-en="Female (F)">여성 (F)</option><option value="M" data-ko="남성 (M)" data-en="Male (M)">남성 (M)</option></select>
             </div>
-            <div class="form-group"><label>나이</label><input type="number" id="c-age" placeholder="예: 45"/></div>
-            <div class="form-group"><label>약물명 *</label><input type="text" id="c-drug" placeholder="예: METHOTREXATE"/></div>
-            <div class="form-group"><label>용량</label><input type="text" id="c-dose" placeholder="예: 10mg"/></div>
-            <div class="form-group"><label>투여경로</label>
-                <select id="c-route"><option value="">선택</option><option value="경구">경구</option><option value="정맥주사">정맥주사</option><option value="근육주사">근육주사</option><option value="피하주사">피하주사</option><option value="외용">외용</option><option value="흡입">흡입</option></select>
+            <div class="form-group"><label data-ko="나이" data-en="Age">나이</label><input type="number" id="c-age" data-ko="예: 45" data-en="e.g. 45" placeholder="예: 45"/></div>
+            <div class="form-group"><label data-ko="약물명 *" data-en="Drug Name *">약물명 *</label><input type="text" id="c-drug" placeholder="예: METHOTREXATE"/></div>
+            <div class="form-group"><label data-ko="용량" data-en="Dose">용량</label><input type="text" id="c-dose" data-ko="예: 10mg" data-en="e.g. 10mg" placeholder="예: 10mg"/></div>
+            <div class="form-group"><label data-ko="투여경로" data-en="Route">투여경로</label>
+                <select id="c-route">
+                    <option value="" data-ko="선택" data-en="Select">선택</option>
+                    <option value="경구" data-ko="경구" data-en="Oral">경구</option>
+                    <option value="정맥주사" data-ko="정맥주사" data-en="IV">정맥주사</option>
+                    <option value="근육주사" data-ko="근육주사" data-en="IM">근육주사</option>
+                    <option value="피하주사" data-ko="피하주사" data-en="SC">피하주사</option>
+                    <option value="외용" data-ko="외용" data-en="Topical">외용</option>
+                    <option value="흡입" data-ko="흡입" data-en="Inhalation">흡입</option>
+                </select>
             </div>
             <div class="form-group form-full">
-                <label>AE 용어 (MedDRA PT) *</label>
-                <input type="text" id="c-ae-term" placeholder="예: NAUSEA, FATIGUE, HOSPITALIZATION" oninput="previewAutoClassify()"/>
+                <label data-ko="AE 용어 (MedDRA PT) *" data-en="AE Term (MedDRA PT) *">AE 용어 (MedDRA PT) *</label>
+                <input type="text" id="c-ae-term" data-ko="예: NAUSEA, FATIGUE, HOSPITALIZATION" data-en="e.g. NAUSEA, FATIGUE, HOSPITALIZATION" placeholder="예: NAUSEA, FATIGUE, HOSPITALIZATION" oninput="previewAutoClassify()"/>
             </div>
             <div class="auto-result" id="auto-result"></div>
-            <div class="form-group"><label>CTCAE Grade (자동 판정됨)</label>
-                <select id="c-grade"><option value="">자동</option><option value="1">Grade 1 — 경미</option><option value="2">Grade 2 — 중등도</option><option value="3">Grade 3 — 중증</option><option value="4">Grade 4 — 생명위협</option><option value="5">Grade 5 — 사망</option></select>
+            <div class="form-group"><label data-ko="CTCAE Grade (자동 판정됨)" data-en="CTCAE Grade (auto)">CTCAE Grade</label>
+                <select id="c-grade">
+                    <option value="" data-ko="자동" data-en="Auto">자동</option>
+                    <option value="1">Grade 1 — <span data-ko="경미" data-en="Mild">경미</span></option>
+                    <option value="2">Grade 2 — <span data-ko="중등도" data-en="Moderate">중등도</span></option>
+                    <option value="3">Grade 3 — <span data-ko="중증" data-en="Severe">중증</span></option>
+                    <option value="4">Grade 4 — <span data-ko="생명위협" data-en="Life-threatening">생명위협</span></option>
+                    <option value="5">Grade 5 — <span data-ko="사망" data-en="Death">사망</span></option>
+                </select>
             </div>
-            <div class="form-group"><label>SAE 여부 (자동 판정됨)</label>
-                <select id="c-is-sae"><option value="">자동</option><option value="true">SAE 해당</option><option value="false">비해당</option></select>
+            <div class="form-group"><label data-ko="SAE 여부 (자동 판정됨)" data-en="SAE (auto)">SAE 여부</label>
+                <select id="c-is-sae"><option value="" data-ko="자동" data-en="Auto">자동</option><option value="true" data-ko="SAE 해당" data-en="SAE">SAE 해당</option><option value="false" data-ko="비해당" data-en="Non-SAE">비해당</option></select>
             </div>
-            <div class="form-group"><label>SAE 분류</label>
-                <select id="c-sae-cat"><option value="">선택</option><option value="사망">사망</option><option value="입원">입원 또는 입원 연장</option><option value="생명위협">생명을 위협하는 상태</option><option value="영구장애">영구적 장애/기능저하</option><option value="선천성이상">선천성 이상</option><option value="기타 중요 의학적 사건">기타 중요 의학적 사건</option></select>
+            <div class="form-group"><label data-ko="SAE 분류" data-en="SAE Category">SAE 분류</label>
+                <select id="c-sae-cat">
+                    <option value="" data-ko="선택" data-en="Select">선택</option>
+                    <option value="사망" data-ko="사망" data-en="Death">사망</option>
+                    <option value="입원" data-ko="입원 또는 입원 연장" data-en="Hospitalization">입원 또는 입원 연장</option>
+                    <option value="생명위협" data-ko="생명을 위협하는 상태" data-en="Life-threatening">생명을 위협하는 상태</option>
+                    <option value="영구장애" data-ko="영구적 장애/기능저하" data-en="Permanent Disability">영구적 장애/기능저하</option>
+                    <option value="선천성이상" data-ko="선천성 이상" data-en="Congenital Anomaly">선천성 이상</option>
+                    <option value="기타 중요 의학적 사건" data-ko="기타 중요 의학적 사건" data-en="Other Medical Events">기타 중요 의학적 사건</option>
+                </select>
             </div>
-            <div class="form-group"><label>인과관계</label>
-                <select id="c-causality"><option value="">선택</option><option value="Certain">Certain (확실)</option><option value="Probable">Probable (가능성 높음)</option><option value="Possible">Possible (가능)</option><option value="Unlikely">Unlikely (낮음)</option><option value="Unclassifiable">Unclassifiable (평가불가)</option></select>
+            <div class="form-group"><label data-ko="인과관계" data-en="Causality">인과관계</label>
+                <select id="c-causality">
+                    <option value="" data-ko="선택" data-en="Select">선택</option>
+                    <option value="Certain">Certain (<span data-ko="확실" data-en="Definite">확실</span>)</option>
+                    <option value="Probable">Probable (<span data-ko="가능성 높음" data-en="Probable">가능성 높음</span>)</option>
+                    <option value="Possible">Possible (<span data-ko="가능" data-en="Possible">가능</span>)</option>
+                    <option value="Unlikely">Unlikely (<span data-ko="낮음" data-en="Unlikely">낮음</span>)</option>
+                    <option value="Unclassifiable">Unclassifiable (<span data-ko="평가불가" data-en="N/A">평가불가</span>)</option>
+                </select>
             </div>
-            <div class="form-group"><label>AE 발생일</label><input type="date" id="c-start-date"/></div>
-            <div class="form-group"><label>AE 종료일</label><input type="date" id="c-end-date"/></div>
-            <div class="form-group"><label>처치</label>
-                <select id="c-action"><option value="">선택</option><option value="투여중단">투여중단</option><option value="용량감량">용량감량</option><option value="투여유지">투여유지</option><option value="해당없음">해당없음</option></select>
+            <div class="form-group"><label data-ko="AE 발생일" data-en="Onset Date">AE 발생일</label><input type="date" id="c-start-date"/></div>
+            <div class="form-group"><label data-ko="AE 종료일" data-en="End Date">AE 종료일</label><input type="date" id="c-end-date"/></div>
+            <div class="form-group"><label data-ko="처치" data-en="Action Taken">처치</label>
+                <select id="c-action">
+                    <option value="" data-ko="선택" data-en="Select">선택</option>
+                    <option value="투여중단" data-ko="투여중단" data-en="Discontinued">투여중단</option>
+                    <option value="용량감량" data-ko="용량감량" data-en="Dose Reduced">용량감량</option>
+                    <option value="투여유지" data-ko="투여유지" data-en="Dose Not Changed">투여유지</option>
+                    <option value="해당없음" data-ko="해당없음" data-en="Not Applicable">해당없음</option>
+                </select>
             </div>
-            <div class="form-group"><label>결과</label>
-                <select id="c-outcome"><option value="">선택</option><option value="회복">회복</option><option value="회복중">회복 중</option><option value="후유증 동반 회복">후유증 동반 회복</option><option value="미회복">미회복</option><option value="사망">사망</option><option value="불명">불명</option></select>
+            <div class="form-group"><label data-ko="결과" data-en="Outcome">결과</label>
+                <select id="c-outcome">
+                    <option value="" data-ko="선택" data-en="Select">선택</option>
+                    <option value="회복" data-ko="회복" data-en="Recovered">회복</option>
+                    <option value="회복중" data-ko="회복 중" data-en="Recovering">회복 중</option>
+                    <option value="후유증 동반 회복" data-ko="후유증 동반 회복" data-en="Recovered with Sequelae">후유증 동반 회복</option>
+                    <option value="미회복" data-ko="미회복" data-en="Not Recovered">미회복</option>
+                    <option value="사망" data-ko="사망" data-en="Fatal">사망</option>
+                    <option value="불명" data-ko="불명" data-en="Unknown">불명</option>
+                </select>
             </div>
-            <div class="form-group form-full"><label>비고</label><textarea id="c-notes" placeholder="추가 메모..."></textarea></div>
+            <div class="form-group form-full"><label data-ko="비고" data-en="Notes">비고</label><textarea id="c-notes" data-ko="추가 메모..." data-en="Additional notes..." placeholder="추가 메모..."></textarea></div>
         </div>
         <div class="modal-footer">
-            <button class="btn btn-gray" onclick="closeModal('create-modal')">취소</button>
-            <button class="btn btn-green" onclick="submitCreate()">등록</button>
+            <button class="btn btn-gray" onclick="closeModal('create-modal')" data-ko="취소" data-en="Cancel">취소</button>
+            <button class="btn btn-green" onclick="submitCreate()" data-ko="등록" data-en="Register">등록</button>
         </div>
         <div id="create-msg" style="margin-top:10px; font-size:0.88rem; text-align:center;"></div>
     </div>
@@ -168,15 +221,15 @@
 <!-- AE 상세 모달 -->
 <div class="modal-overlay" id="detail-modal">
     <div class="modal">
-        <h2>📄 AE 상세</h2>
+        <h2 data-ko="📄 AE 상세" data-en="📄 AE Details">📄 AE 상세</h2>
         <div id="detail-content"></div>
         <div class="modal-footer">
-            <button class="btn btn-gray" onclick="closeModal('detail-modal')">닫기</button>
-            <button class="btn btn-purple" id="detail-edit-btn">✏️ 수정</button>
+            <button class="btn btn-gray" onclick="closeModal('detail-modal')" data-ko="닫기" data-en="Close">닫기</button>
+            <button class="btn btn-purple" id="detail-edit-btn" data-ko="✏️ 수정" data-en="✏️ Edit">✏️ 수정</button>
             <button class="btn btn-blue" id="detail-pdf-btn">📄 PDF</button>
             <button class="btn btn-teal" id="detail-e2b-btn">🗂 E2B XML</button>
-            <button class="btn btn-orange" id="detail-submit-btn">✅ 제출완료</button>
-            <button class="btn btn-red" id="detail-delete-btn">🗑 삭제</button>
+            <button class="btn btn-orange" id="detail-submit-btn" data-ko="✅ 제출완료" data-en="✅ Submit">✅ 제출완료</button>
+            <button class="btn btn-red" id="detail-delete-btn" data-ko="🗑 삭제" data-en="🗑 Delete">🗑 삭제</button>
         </div>
     </div>
 </div>
@@ -184,50 +237,46 @@
 <!-- AE 수정 모달 -->
 <div class="modal-overlay" id="edit-modal">
     <div class="modal">
-        <h2>✏️ AE 수정</h2>
+        <h2 data-ko="✏️ AE 수정" data-en="✏️ Edit AE">✏️ AE 수정</h2>
         <div class="form-grid">
-            <div class="form-group"><label>AE 용어</label><input type="text" id="e-ae-term"/></div>
+            <div class="form-group"><label data-ko="AE 용어" data-en="AE Term">AE 용어</label><input type="text" id="e-ae-term"/></div>
             <div class="form-group"><label>CTCAE Grade</label>
-                <select id="e-grade"><option value="1">Grade 1 — 경미</option><option value="2">Grade 2 — 중등도</option><option value="3">Grade 3 — 중증</option><option value="4">Grade 4 — 생명위협</option><option value="5">Grade 5 — 사망</option></select>
+                <select id="e-grade"><option value="1">Grade 1</option><option value="2">Grade 2</option><option value="3">Grade 3</option><option value="4">Grade 4</option><option value="5">Grade 5</option></select>
             </div>
-            <div class="form-group"><label>SAE 여부</label>
-                <select id="e-is-sae"><option value="false">일반 AE</option><option value="true">SAE 해당</option></select>
+            <div class="form-group"><label data-ko="SAE 여부" data-en="SAE">SAE 여부</label>
+                <select id="e-is-sae"><option value="false" data-ko="일반 AE" data-en="Non-SAE">일반 AE</option><option value="true" data-ko="SAE 해당" data-en="SAE">SAE 해당</option></select>
             </div>
-            <div class="form-group"><label>SAE 분류</label>
-                <select id="e-sae-cat"><option value="">선택</option><option value="사망">사망</option><option value="입원">입원 또는 입원 연장</option><option value="생명위협">생명을 위협하는 상태</option><option value="영구장애">영구적 장애/기능저하</option><option value="선천성이상">선천성 이상</option><option value="기타 중요 의학적 사건">기타 중요 의학적 사건</option></select>
+            <div class="form-group"><label data-ko="SAE 분류" data-en="SAE Category">SAE 분류</label>
+                <select id="e-sae-cat"><option value="" data-ko="선택" data-en="Select">선택</option><option value="사망" data-ko="사망" data-en="Death">사망</option><option value="입원" data-ko="입원" data-en="Hospitalization">입원</option><option value="생명위협" data-ko="생명위협" data-en="Life-threatening">생명위협</option><option value="영구장애" data-ko="영구장애" data-en="Disability">영구장애</option><option value="선천성이상" data-ko="선천성이상" data-en="Congenital">선천성이상</option><option value="기타 중요 의학적 사건" data-ko="기타 중요 의학적 사건" data-en="Other">기타</option></select>
             </div>
-            <div class="form-group"><label>인과관계</label>
-                <select id="e-causality"><option value="">선택</option><option value="Certain">Certain (확실)</option><option value="Probable">Probable (가능성 높음)</option><option value="Possible">Possible (가능)</option><option value="Unlikely">Unlikely (낮음)</option><option value="Unclassifiable">Unclassifiable (평가불가)</option></select>
+            <div class="form-group"><label data-ko="인과관계" data-en="Causality">인과관계</label>
+                <select id="e-causality"><option value="" data-ko="선택" data-en="Select">선택</option><option value="Certain">Certain</option><option value="Probable">Probable</option><option value="Possible">Possible</option><option value="Unlikely">Unlikely</option><option value="Unclassifiable">Unclassifiable</option></select>
             </div>
-            <div class="form-group"><label>처치</label>
-                <select id="e-action"><option value="">선택</option><option value="투여중단">투여중단</option><option value="용량감량">용량감량</option><option value="투여유지">투여유지</option><option value="해당없음">해당없음</option></select>
+            <div class="form-group"><label data-ko="처치" data-en="Action">처치</label>
+                <select id="e-action"><option value="" data-ko="선택" data-en="Select">선택</option><option value="투여중단" data-ko="투여중단" data-en="Discontinued">투여중단</option><option value="용량감량" data-ko="용량감량" data-en="Dose Reduced">용량감량</option><option value="투여유지" data-ko="투여유지" data-en="Maintained">투여유지</option><option value="해당없음" data-ko="해당없음" data-en="N/A">해당없음</option></select>
             </div>
-            <div class="form-group"><label>결과</label>
-                <select id="e-outcome"><option value="">선택</option><option value="회복">회복</option><option value="회복중">회복 중</option><option value="후유증 동반 회복">후유증 동반 회복</option><option value="미회복">미회복</option><option value="사망">사망</option><option value="불명">불명</option></select>
+            <div class="form-group"><label data-ko="결과" data-en="Outcome">결과</label>
+                <select id="e-outcome"><option value="" data-ko="선택" data-en="Select">선택</option><option value="회복" data-ko="회복" data-en="Recovered">회복</option><option value="회복중" data-ko="회복 중" data-en="Recovering">회복중</option><option value="후유증 동반 회복" data-ko="후유증 동반 회복" data-en="With Sequelae">후유증</option><option value="미회복" data-ko="미회복" data-en="Not Recovered">미회복</option><option value="사망" data-ko="사망" data-en="Fatal">사망</option><option value="불명" data-ko="불명" data-en="Unknown">불명</option></select>
             </div>
-            <div class="form-group"><label>나이</label><input type="number" id="e-age"/></div>
-            <div class="form-group form-full"><label>비고</label><textarea id="e-notes"></textarea></div>
+            <div class="form-group"><label data-ko="나이" data-en="Age">나이</label><input type="number" id="e-age"/></div>
+            <div class="form-group form-full"><label data-ko="비고" data-en="Notes">비고</label><textarea id="e-notes"></textarea></div>
         </div>
         <div class="modal-footer">
-            <button class="btn btn-gray" onclick="closeModal('edit-modal')">취소</button>
-            <button class="btn btn-purple" onclick="submitEdit()">저장</button>
+            <button class="btn btn-gray" onclick="closeModal('edit-modal')" data-ko="취소" data-en="Cancel">취소</button>
+            <button class="btn btn-purple" onclick="submitEdit()" data-ko="저장" data-en="Save">저장</button>
         </div>
         <div id="edit-msg" style="margin-top:10px; font-size:0.88rem; text-align:center;"></div>
     </div>
 </div>
 
+<script src="/static/lang.js"></script>
 <script>
-    let currentStatus = '';
-    let allReports = [];
-    let currentEditId = null;
-
+    let currentStatus = '', allReports = [], currentEditId = null;
     document.addEventListener('DOMContentLoaded', loadList);
 
     function loadList() {
         const saeOnly = document.getElementById('filter-sae').value === 'true';
-        fetch(`/api/ae/list?sae_only=${saeOnly}`)
-        .then(res => res.json())
-        .then(data => {
+        fetch(`/api/ae/list?sae_only=${saeOnly}`).then(res => res.json()).then(data => {
             const s = data.summary;
             document.getElementById('s-total').textContent = s.total;
             document.getElementById('s-sae').textContent = s.sae_count;
@@ -244,34 +293,33 @@
         document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
         const tabMap = {'':'tab-all','overdue':'tab-overdue','urgent':'tab-urgent','warning':'tab-warning','normal':'tab-normal','submitted':'tab-submitted'};
         document.getElementById(tabMap[status])?.classList.add('active');
-        const filtered = status ? allReports.filter(r => r.deadline_status === status) : allReports;
-        renderTable(filtered);
+        renderTable(status ? allReports.filter(r => r.deadline_status === status) : allReports);
     }
 
     function filterTable() {
         const q = document.getElementById('filter-search').value.toLowerCase();
-        const filtered = allReports.filter(r =>
-            r.drugname.toLowerCase().includes(q) || r.patient_code.toLowerCase().includes(q) || r.ae_term.toLowerCase().includes(q)
-        );
-        renderTable(filtered);
+        renderTable(allReports.filter(r => r.drugname.toLowerCase().includes(q) || r.patient_code.toLowerCase().includes(q) || r.ae_term.toLowerCase().includes(q)));
     }
 
     function renderTable(reports) {
+        const lang = getLang();
         const tbody = document.getElementById('ae-tbody');
         if (reports.length === 0) {
-            tbody.innerHTML = `<tr><td colspan="11"><div class="empty-state"><div class="icon">📭</div>등록된 AE가 없어요</div></td></tr>`;
+            tbody.innerHTML = `<tr><td colspan="11"><div class="empty-state"><div class="icon">📭</div>${lang === 'ko' ? '등록된 AE가 없어요' : 'No AE records found'}</div></td></tr>`;
             return;
         }
         const gradeColors = {1:'badge-g1',2:'badge-g2',3:'badge-g3',4:'badge-g4',5:'badge-g5'};
-        const statusLabels = {
-            overdue:['badge-overdue','⚠️ 기한초과'], urgent:['badge-urgent','🔴 긴급'],
-            warning:['badge-warning','🟡 주의'], normal:['badge-normal','✅ 정상'],
-            submitted:['badge-submitted','📋 제출완료'], no_deadline:['badge-no_deadline','—'],
-        };
+        const statusLabels = lang === 'ko'
+            ? { overdue:['badge-overdue','⚠️ 기한초과'], urgent:['badge-urgent','🔴 긴급'], warning:['badge-warning','🟡 주의'], normal:['badge-normal','✅ 정상'], submitted:['badge-submitted','📋 제출완료'], no_deadline:['badge-no_deadline','—'] }
+            : { overdue:['badge-overdue','⚠️ Overdue'], urgent:['badge-urgent','🔴 Urgent'], warning:['badge-warning','🟡 Warning'], normal:['badge-normal','✅ Normal'], submitted:['badge-submitted','📋 Submitted'], no_deadline:['badge-no_deadline','—'] };
+        const detailBtn = lang === 'ko' ? '상세' : 'Detail';
+        const editBtn = lang === 'ko' ? '수정' : 'Edit';
+        const submitBtn = lang === 'ko' ? '제출' : 'Submit';
         tbody.innerHTML = reports.map(r => {
             const [sCls, sLbl] = statusLabels[r.deadline_status] || ['badge-no_deadline','—'];
             const gCls = gradeColors[r.ctcae_grade] || 'badge-g1';
-            const deadline = r.report_deadline ? `${r.report_deadline}${r.days_until_deadline !== null ? ` (${r.days_until_deadline}일)` : ''}` : '—';
+            const daysLabel = lang === 'ko' ? '일' : 'd';
+            const deadline = r.report_deadline ? `${r.report_deadline}${r.days_until_deadline !== null ? ` (${r.days_until_deadline}${daysLabel})` : ''}` : '—';
             return `<tr>
                 <td style="color:#64748b;">#${r.id}</td>
                 <td><strong>${r.patient_code}</strong></td>
@@ -279,14 +327,14 @@
                 <td>${r.ae_term}</td>
                 <td><span class="badge ${gCls}">G${r.ctcae_grade || '?'}</span></td>
                 <td><span class="badge ${r.is_sae ? 'badge-sae':'badge-ae'}">${r.is_sae ? 'SAE':'AE'}</span></td>
-                <td style="color:#94a3b8; font-size:0.82rem;">${r.causality || '—'}</td>
-                <td style="color:#94a3b8; font-size:0.82rem;">${r.outcome || '—'}</td>
+                <td style="color:#94a3b8;font-size:0.82rem;">${r.causality || '—'}</td>
+                <td style="color:#94a3b8;font-size:0.82rem;">${r.outcome || '—'}</td>
                 <td><span class="badge ${sCls}">${sLbl}</span></td>
-                <td style="font-size:0.82rem; color:#94a3b8;">${deadline}</td>
+                <td style="font-size:0.82rem;color:#94a3b8;">${deadline}</td>
                 <td>
-                    <button class="btn btn-gray btn-sm" onclick="openDetail(${r.id})">상세</button>
-                    <button class="btn btn-purple btn-sm" style="margin-left:4px;" onclick="openEdit(${r.id})">수정</button>
-                    ${!r.is_submitted ? `<button class="btn btn-green btn-sm" style="margin-left:4px;" onclick="submitAE(${r.id})">제출</button>` : ''}
+                    <button class="btn btn-gray btn-sm" onclick="openDetail(${r.id})">${detailBtn}</button>
+                    <button class="btn btn-purple btn-sm" style="margin-left:4px;" onclick="openEdit(${r.id})">${editBtn}</button>
+                    ${!r.is_submitted ? `<button class="btn btn-green btn-sm" style="margin-left:4px;" onclick="submitAE(${r.id})">${submitBtn}</button>` : ''}
                 </td>
             </tr>`;
         }).join('');
@@ -295,6 +343,7 @@
     function previewAutoClassify() {
         const term = document.getElementById('c-ae-term').value;
         const box = document.getElementById('auto-result');
+        const lang = getLang();
         if (term.length < 2) { box.classList.remove('show'); return; }
         const termLower = term.toLowerCase();
         const gradeKw = {5:['death','fatal','사망'],4:['life-threatening','생명위협','icu'],3:['hospitali','severe','입원','중증'],2:['moderate','중등도'],1:['mild','경미']};
@@ -302,13 +351,16 @@
         for (const g of [5,4,3,2,1]) { if (gradeKw[g].some(kw => termLower.includes(kw))) { grade = g; break; } }
         const saeKw = ['사망','입원','생명위협','영구장애','선천성','death','hospitali','life-threatening','disability'];
         const isSae = grade >= 3 || saeKw.some(kw => termLower.includes(kw));
-        const gradeLabels = {1:'경미',2:'중등도',3:'중증',4:'생명위협',5:'사망'};
+        const gradeLabels = lang === 'ko' ? {1:'경미',2:'중등도',3:'중증',4:'생명위협',5:'사망'} : {1:'Mild',2:'Moderate',3:'Severe',4:'Life-threatening',5:'Death'};
         const gradeColors2 = {1:'#67e8f9',2:'#fde68a',3:'#fdba74',4:'#fca5a5',5:'#f87171'};
-        box.innerHTML = `🤖 자동 분류 결과 &nbsp;→&nbsp;
+        const autoLabel = lang === 'ko' ? '자동 분류 결과' : 'Auto Classification';
+        const saeLabel = isSae ? (lang === 'ko' ? '⚠️ SAE 해당' : '⚠️ SAE') : (lang === 'ko' ? '✅ 일반 AE' : '✅ Non-SAE');
+        const deadlineNote = lang === 'ko' ? '📅 등록 시 15일 보고 마감일이 자동 설정돼요' : '📅 15-day reporting deadline will be set automatically';
+        box.innerHTML = `🤖 ${autoLabel} &nbsp;→&nbsp;
             <strong style="color:${gradeColors2[grade]}">CTCAE Grade ${grade} (${gradeLabels[grade]})</strong>
             &nbsp;|&nbsp;
-            <strong style="color:${isSae ? '#fca5a5':'#86efac'}">${isSae ? '⚠️ SAE 해당':'✅ 일반 AE'}</strong>
-            ${isSae ? '<br><span style="color:#94a3b8; font-size:0.82rem;">📅 등록 시 15일 보고 마감일이 자동 설정돼요</span>' : ''}`;
+            <strong style="color:${isSae ? '#fca5a5':'#86efac'}">${saeLabel}</strong>
+            ${isSae ? `<br><span style="color:#94a3b8;font-size:0.82rem;">${deadlineNote}</span>` : ''}`;
         box.classList.add('show');
     }
 
@@ -319,6 +371,7 @@
     }
 
     function submitCreate() {
+        const lang = getLang();
         const data = {
             patient_code: document.getElementById('c-patient').value,
             sex: document.getElementById('c-sex').value,
@@ -338,15 +391,16 @@
             notes: document.getElementById('c-notes').value,
         };
         if (!data.patient_code || !data.drugname || !data.ae_term) {
-            document.getElementById('create-msg').innerHTML = '<span style="color:#f87171">환자코드, 약물명, AE 용어는 필수예요</span>'; return;
+            document.getElementById('create-msg').innerHTML = `<span style="color:#f87171">${lang === 'ko' ? '환자코드, 약물명, AE 용어는 필수예요' : 'Patient code, drug name, and AE term are required'}</span>`; return;
         }
-        document.getElementById('create-msg').innerHTML = '<div class="spinner"></div>등록 중...';
+        document.getElementById('create-msg').innerHTML = `<div class="spinner"></div>${lang === 'ko' ? '등록 중...' : 'Registering...'}`;
         fetch('/api/ae/create', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify(data) })
-        .then(res => res.json())
-        .then(result => {
+        .then(res => res.json()).then(result => {
             if (result.error) { document.getElementById('create-msg').innerHTML = `<span style="color:#f87171">❌ ${result.error}</span>`; return; }
-            let msg = `✅ AE #${result.id} 등록 완료 | Grade ${result.ctcae_grade} | ${result.is_sae ? '⚠️ SAE':'일반 AE'}`;
-            if (result.report_deadline) msg += ` | 마감: ${result.report_deadline}`;
+            const saeLabel = result.is_sae ? '⚠️ SAE' : (lang === 'ko' ? '일반 AE' : 'Non-SAE');
+            const deadlineLabel = lang === 'ko' ? '마감' : 'Deadline';
+            let msg = `✅ AE #${result.id} ${lang === 'ko' ? '등록 완료' : 'registered'} | Grade ${result.ctcae_grade} | ${saeLabel}`;
+            if (result.report_deadline) msg += ` | ${deadlineLabel}: ${result.report_deadline}`;
             document.getElementById('create-msg').innerHTML = `<span style="color:#34d399">${msg}</span>`;
             loadList();
             setTimeout(() => closeModal('create-modal'), 2000);
@@ -354,28 +408,24 @@
     }
 
     function openDetail(id) {
-        fetch(`/api/ae/${id}`)
-        .then(res => res.json())
-        .then(r => {
-            const gradeLabels = {1:'경미',2:'중등도',3:'중증',4:'생명위협',5:'사망'};
+        const lang = getLang();
+        fetch(`/api/ae/${id}`).then(res => res.json()).then(r => {
+            const gradeLabels = lang === 'ko' ? {1:'경미',2:'중등도',3:'중증',4:'생명위협',5:'사망'} : {1:'Mild',2:'Moderate',3:'Severe',4:'Life-threatening',5:'Death'};
+            const labels = lang === 'ko'
+                ? { pc:'환자코드', drug:'약물명', ageSex:'나이/성별', route:'투여경로', ae:'AE 용어', grade:'CTCAE Grade', sae:'SAE 여부', saeCat:'SAE 분류', causality:'인과관계', action:'처치', outcome:'결과', onset:'발생일', end:'종료일', deadline:'마감일', submitted:'제출 여부', notes:'비고' }
+                : { pc:'Patient Code', drug:'Drug', ageSex:'Age/Sex', route:'Route', ae:'AE Term', grade:'CTCAE Grade', sae:'SAE', saeCat:'SAE Category', causality:'Causality', action:'Action', outcome:'Outcome', onset:'Onset', end:'End Date', deadline:'Deadline', submitted:'Submitted', notes:'Notes' };
+            const daysLabel = lang === 'ko' ? '일 남음' : 'days left';
             document.getElementById('detail-content').innerHTML = `
-                <div style="display:grid; grid-template-columns:1fr 1fr; gap:12px; font-size:0.9rem;">
-                    ${row('환자코드', r.patient_code)}
-                    ${row('약물명', `<span style="color:#38bdf8">${r.drugname}</span>`)}
-                    ${row('나이/성별', `${r.age || '—'}세 / ${r.sex || '—'}`)}
-                    ${row('투여경로', r.route || '—')}
-                    ${row('AE 용어', `<strong>${r.ae_term}</strong>`)}
-                    ${row('CTCAE Grade', `Grade ${r.ctcae_grade} (${gradeLabels[r.ctcae_grade] || '—'})`)}
-                    ${row('SAE 여부', r.is_sae ? '<span style="color:#fca5a5">⚠️ SAE</span>' : '일반 AE')}
-                    ${row('SAE 분류', r.sae_category || '—')}
-                    ${row('인과관계', r.causality || '—')}
-                    ${row('처치', r.action_taken || '—')}
-                    ${row('결과', r.outcome || '—')}
-                    ${row('발생일', r.ae_start_date || '—')}
-                    ${row('종료일', r.ae_end_date || '—')}
-                    ${row('마감일', r.report_deadline ? `${r.report_deadline} (${r.days_until_deadline}일 남음)` : '—')}
-                    ${row('제출 여부', r.is_submitted ? '<span style="color:#34d399">✅ 제출완료</span>' : '미제출')}
-                    ${r.notes ? `<div style="grid-column:1/-1;">${row('비고', r.notes)}</div>` : ''}
+                <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;font-size:0.9rem;">
+                    ${row(labels.pc, r.patient_code)} ${row(labels.drug, `<span style="color:#38bdf8">${r.drugname}</span>`)}
+                    ${row(labels.ageSex, `${r.age || '—'}${lang === 'ko' ? '세' : 'y'} / ${r.sex || '—'}`)} ${row(labels.route, r.route || '—')}
+                    ${row(labels.ae, `<strong>${r.ae_term}</strong>`)} ${row(labels.grade, `Grade ${r.ctcae_grade} (${gradeLabels[r.ctcae_grade] || '—'})`)}
+                    ${row(labels.sae, r.is_sae ? '<span style="color:#fca5a5">⚠️ SAE</span>' : (lang === 'ko' ? '일반 AE' : 'Non-SAE'))} ${row(labels.saeCat, r.sae_category || '—')}
+                    ${row(labels.causality, r.causality || '—')} ${row(labels.action, r.action_taken || '—')}
+                    ${row(labels.outcome, r.outcome || '—')} ${row(labels.onset, r.ae_start_date || '—')}
+                    ${row(labels.end, r.ae_end_date || '—')} ${row(labels.deadline, r.report_deadline ? `${r.report_deadline} (${r.days_until_deadline} ${daysLabel})` : '—')}
+                    ${row(labels.submitted, r.is_submitted ? '<span style="color:#34d399">✅</span>' : (lang === 'ko' ? '미제출' : 'Pending'))}
+                    ${r.notes ? `<div style="grid-column:1/-1;">${row(labels.notes, r.notes)}</div>` : ''}
                 </div>`;
             document.getElementById('detail-edit-btn').onclick = () => { closeModal('detail-modal'); openEdit(id); };
             document.getElementById('detail-pdf-btn').onclick = () => window.open(`/api/ae/${id}/pdf`, '_blank');
@@ -383,14 +433,13 @@
             document.getElementById('detail-submit-btn').onclick = () => submitAE(id);
             document.getElementById('detail-delete-btn').onclick = () => deleteAE(id);
             document.getElementById('detail-modal').classList.add('open');
+            applyLang(lang);
         });
     }
 
     function openEdit(id) {
         currentEditId = id;
-        fetch(`/api/ae/${id}`)
-        .then(res => res.json())
-        .then(r => {
+        fetch(`/api/ae/${id}`).then(res => res.json()).then(r => {
             document.getElementById('e-ae-term').value = r.ae_term || '';
             document.getElementById('e-grade').value = r.ctcae_grade || 1;
             document.getElementById('e-is-sae').value = r.is_sae ? 'true' : 'false';
@@ -406,6 +455,7 @@
     }
 
     function submitEdit() {
+        const lang = getLang();
         const data = {
             ae_term: document.getElementById('e-ae-term').value,
             ctcae_grade: parseInt(document.getElementById('e-grade').value),
@@ -417,41 +467,34 @@
             age: document.getElementById('e-age').value || null,
             notes: document.getElementById('e-notes').value,
         };
-        document.getElementById('edit-msg').innerHTML = '<div class="spinner"></div>저장 중...';
-        fetch(`/api/ae/${currentEditId}/update`, {
-            method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify(data)
-        })
-        .then(res => res.json())
-        .then(result => {
+        document.getElementById('edit-msg').innerHTML = `<div class="spinner"></div>${lang === 'ko' ? '저장 중...' : 'Saving...'}`;
+        fetch(`/api/ae/${currentEditId}/update`, { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify(data) })
+        .then(res => res.json()).then(result => {
             if (result.error) { document.getElementById('edit-msg').innerHTML = `<span style="color:#f87171">❌ ${result.error}</span>`; return; }
-            document.getElementById('edit-msg').innerHTML = '<span style="color:#34d399">✅ 수정됐어요!</span>';
+            document.getElementById('edit-msg').innerHTML = `<span style="color:#34d399">✅ ${lang === 'ko' ? '수정됐어요!' : 'Saved!'}</span>`;
             loadList();
             setTimeout(() => closeModal('edit-modal'), 1200);
         });
     }
 
     function row(label, value) {
-        return `<div style="background:#0f172a; padding:10px 14px; border-radius:8px;">
-            <div style="color:#64748b; font-size:0.78rem; margin-bottom:3px;">${label}</div>
-            <div>${value}</div>
-        </div>`;
+        return `<div style="background:#0f172a;padding:10px 14px;border-radius:8px;"><div style="color:#64748b;font-size:0.78rem;margin-bottom:3px;">${label}</div><div>${value}</div></div>`;
     }
 
     function submitAE(id) {
-        if (!confirm(`AE #${id}를 제출 완료 처리할까요?`)) return;
+        const lang = getLang();
+        if (!confirm(`AE #${id}${lang === 'ko' ? '를 제출 완료 처리할까요?' : ' - Mark as submitted?'}`)) return;
         fetch(`/api/ae/${id}/submit`, { method: 'POST' }).then(res => res.json()).then(data => { alert(data.message); closeModal('detail-modal'); loadList(); });
     }
 
     function deleteAE(id) {
-        if (!confirm(`AE #${id}를 삭제할까요? 되돌릴 수 없어요.`)) return;
+        const lang = getLang();
+        if (!confirm(`AE #${id}${lang === 'ko' ? '를 삭제할까요? 되돌릴 수 없어요.' : ' - Delete? This cannot be undone.'}`)) return;
         fetch(`/api/ae/${id}/delete`, { method: 'POST' }).then(res => res.json()).then(data => { alert(data.message); closeModal('detail-modal'); loadList(); });
     }
 
     function closeModal(id) { document.getElementById(id).classList.remove('open'); }
-
-    document.querySelectorAll('.modal-overlay').forEach(el => {
-        el.addEventListener('click', e => { if (e.target === el) el.classList.remove('open'); });
-    });
+    document.querySelectorAll('.modal-overlay').forEach(el => { el.addEventListener('click', e => { if (e.target === el) el.classList.remove('open'); }); });
 </script>
 </body>
 </html>

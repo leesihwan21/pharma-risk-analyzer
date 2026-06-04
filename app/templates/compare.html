@@ -3,215 +3,109 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>약물 비교 - Pharma Risk Analyzer</title>
+    <title>Drug Comparison - Pharma Risk Analyzer</title>
     <script src="https://cdn.plot.ly/plotly-latest.min.js"></script>
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body { background: #0f172a; color: #e2e8f0; font-family: Arial, sans-serif; }
-
-        .header {
-            background: #1e293b;
-            padding: 16px 24px;
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            border-bottom: 1px solid #334155;
-            flex-wrap: wrap;
-            gap: 10px;
-        }
+        .header { background: #1e293b; padding: 16px 24px; display: flex; align-items: center; justify-content: space-between; border-bottom: 1px solid #334155; flex-wrap: wrap; gap: 10px; }
         .header h1 { color: #38bdf8; font-size: 1.4rem; }
+        .header-right { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
         .header a { color: #94a3b8; text-decoration: none; font-size: 0.9rem; }
-
-        .search-bar {
-            background: #1e293b;
-            padding: 16px 24px;
-            border-bottom: 1px solid #334155;
-            display: flex;
-            flex-wrap: wrap;
-            align-items: center;
-            gap: 10px;
-        }
-        .search-bar input {
-            background: #0f172a;
-            border: 1px solid #334155;
-            color: #e2e8f0;
-            padding: 10px 14px;
-            border-radius: 8px;
-            font-size: 0.95rem;
-            flex: 1 1 180px;
-            min-width: 0;
-        }
+        .lang-btn { background: #1e293b; border: 1px solid #334155; color: #e2e8f0; padding: 6px 12px; border-radius: 8px; cursor: pointer; font-size: 0.82rem; font-weight: bold; }
+        .lang-btn:hover { border-color: #38bdf8; color: #38bdf8; }
+        .search-bar { background: #1e293b; padding: 16px 24px; border-bottom: 1px solid #334155; display: flex; flex-wrap: wrap; align-items: center; gap: 10px; }
+        .search-bar input { background: #0f172a; border: 1px solid #334155; color: #e2e8f0; padding: 10px 14px; border-radius: 8px; font-size: 0.95rem; flex: 1 1 180px; min-width: 0; }
         .vs-label { color: #94a3b8; white-space: nowrap; }
-
-        .btn-compare {
-            background: #38bdf8; color: #0f172a;
-            border: none; padding: 10px 24px;
-            border-radius: 8px; cursor: pointer;
-            font-weight: bold; white-space: nowrap;
-        }
-
-        /* 비교 카드 그리드 */
-        .compare-grid {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 16px;
-            padding: 20px 24px;
-        }
-        .drug-card {
-            background: #1e293b;
-            border-radius: 12px;
-            padding: 20px;
-            border: 1px solid #334155;
-        }
+        .btn-compare { background: #38bdf8; color: #0f172a; border: none; padding: 10px 24px; border-radius: 8px; cursor: pointer; font-weight: bold; white-space: nowrap; }
+        .compare-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; padding: 20px 24px; }
+        .drug-card { background: #1e293b; border-radius: 12px; padding: 20px; border: 1px solid #334155; }
         .drug-card h2 { font-size: 1.2rem; margin-bottom: 14px; }
-        .stat-row {
-            display: flex;
-            justify-content: space-between;
-            padding: 8px 0;
-            border-bottom: 1px solid #334155;
-            font-size: 0.9rem;
-            gap: 8px;
-        }
+        .stat-row { display: flex; justify-content: space-between; padding: 8px 0; border-bottom: 1px solid #334155; font-size: 0.9rem; gap: 8px; }
         .stat-row:last-child { border-bottom: none; }
         .stat-val { font-weight: bold; color: #38bdf8; text-align: right; }
-        .better { color: #34d399 !important; }
-        .worse  { color: #f87171 !important; }
-
-        /* 차트 섹션 */
+        .better { color: #34d399 !important; } .worse { color: #f87171 !important; }
         .chart-section { padding: 0 24px 24px; }
-        .chart-card {
-            background: #1e293b;
-            border-radius: 12px;
-            padding: 16px;
-            border: 1px solid #334155;
-            margin-bottom: 16px;
-            overflow: hidden;
-        }
-
-        .spinner {
-            display: inline-block; width: 14px; height: 14px;
-            border: 2px solid #334155; border-top: 2px solid #38bdf8;
-            border-radius: 50%; animation: spin 0.8s linear infinite;
-            margin-right: 6px; vertical-align: middle;
-        }
+        .chart-card { background: #1e293b; border-radius: 12px; padding: 16px; border: 1px solid #334155; margin-bottom: 16px; overflow: hidden; }
+        .spinner { display: inline-block; width: 14px; height: 14px; border: 2px solid #334155; border-top: 2px solid #38bdf8; border-radius: 50%; animation: spin 0.8s linear infinite; margin-right: 6px; vertical-align: middle; }
         @keyframes spin { to { transform: rotate(360deg); } }
-
-        /* 태블릿 */
-        @media (max-width: 768px) {
-            .compare-grid { grid-template-columns: 1fr; padding: 14px 16px; }
-            .chart-section { padding: 0 16px 16px; }
-        }
-
-        /* 모바일 */
-        @media (max-width: 480px) {
-            .header { padding: 12px 14px; }
-            .header h1 { font-size: 1.1rem; }
-            .search-bar { padding: 14px; flex-direction: column; }
-            .search-bar input { width: 100%; flex: none; }
-            .btn-compare { width: 100%; }
-            .stat-row { font-size: 0.82rem; }
-        }
+        @media (max-width: 768px) { .compare-grid { grid-template-columns: 1fr; padding: 14px 16px; } .chart-section { padding: 0 16px 16px; } }
+        @media (max-width: 480px) { .header { padding: 12px 14px; } .search-bar { padding: 14px; flex-direction: column; } .search-bar input { width: 100%; flex: none; } .btn-compare { width: 100%; } }
     </style>
 </head>
 <body>
-
 <div class="header">
-    <h1>⚖️ 약물 비교 분석</h1>
-    <a href="/dashboard">← 대시보드로</a>
+    <h1 data-ko="⚖️ 약물 비교 분석" data-en="⚖️ Drug Comparison">⚖️ 약물 비교 분석</h1>
+    <div class="header-right">
+        <button id="lang-btn" class="lang-btn" onclick="toggleLang()">🇺🇸 EN</button>
+        <a href="/dashboard" data-ko="← 대시보드로" data-en="← Dashboard">← 대시보드로</a>
+    </div>
 </div>
-
 <div class="search-bar">
-    <input type="text" id="drug1-input" placeholder="약물 1 (예: METHOTREXATE)"/>
+    <input type="text" id="drug1-input" data-ko="약물 1 (예: METHOTREXATE)" data-en="Drug 1 (e.g. METHOTREXATE)" placeholder="약물 1 (예: METHOTREXATE)"/>
     <span class="vs-label">vs</span>
-    <input type="text" id="drug2-input" placeholder="약물 2 (예: PREDNISONE)"/>
-    <button class="btn-compare" onclick="compareDrugs()">비교 시작</button>
+    <input type="text" id="drug2-input" data-ko="약물 2 (예: PREDNISONE)" data-en="Drug 2 (e.g. PREDNISONE)" placeholder="약물 2 (예: PREDNISONE)"/>
+    <button class="btn-compare" onclick="compareDrugs()" data-ko="비교 시작" data-en="Compare">비교 시작</button>
     <span id="compare-status" style="color:#94a3b8; font-size:0.9rem;"></span>
 </div>
-
 <div id="compare-result" style="display:none;">
     <div class="compare-grid">
-        <div class="drug-card">
-            <h2 id="drug1-name" style="color:#38bdf8;"></h2>
-            <div id="stats1"></div>
-        </div>
-        <div class="drug-card">
-            <h2 id="drug2-name" style="color:#a78bfa;"></h2>
-            <div id="stats2"></div>
-        </div>
+        <div class="drug-card"><h2 id="drug1-name" style="color:#38bdf8;"></h2><div id="stats1"></div></div>
+        <div class="drug-card"><h2 id="drug2-name" style="color:#a78bfa;"></h2><div id="stats2"></div></div>
     </div>
-
     <div class="chart-section">
         <div class="chart-card"><div id="compare-bar-chart"></div></div>
         <div class="chart-card"><div id="compare-reac-chart"></div></div>
     </div>
 </div>
-
+<script src="/static/lang.js"></script>
 <script>
 function compareDrugs() {
     const drug1 = document.getElementById('drug1-input').value;
     const drug2 = document.getElementById('drug2-input').value;
-    if (!drug1 || !drug2) { alert('약물 2개를 입력해주세요!'); return; }
-
-    document.getElementById('compare-status').innerHTML = '<div class="spinner"></div>비교 중...';
-
+    const lang = getLang();
+    if (!drug1 || !drug2) { alert(lang === 'ko' ? '약물 2개를 입력해주세요!' : 'Please enter 2 drugs!'); return; }
+    document.getElementById('compare-status').innerHTML = `<div class="spinner"></div>${lang === 'ko' ? '비교 중...' : 'Comparing...'}`;
     fetch(`/api/compare?drug1=${drug1}&drug2=${drug2}`)
     .then(res => res.json())
     .then(data => {
-        if (data.error) {
-            document.getElementById('compare-status').innerHTML = `<span style="color:#f87171">❌ ${data.error}</span>`;
-            return;
-        }
-
+        if (data.error) { document.getElementById('compare-status').innerHTML = `<span style="color:#f87171">❌ ${data.error}</span>`; return; }
         document.getElementById('compare-status').innerHTML = '';
         document.getElementById('compare-result').style.display = 'block';
-
         const d1 = data.drug1, d2 = data.drug2;
-
         document.getElementById('drug1-name').textContent = `💊 ${d1.drug}`;
         document.getElementById('drug2-name').textContent = `💊 ${d2.drug}`;
-
+        const labels = lang === 'ko'
+            ? { total: '총 보고 건수', age: '평균 나이', female: '여성 비율', male: '남성 비율', death: '사망 건수', hosp: '입원 건수' }
+            : { total: 'Total Reports', age: 'Avg Age', female: 'Female %', male: 'Male %', death: 'Deaths', hosp: 'Hospitalizations' };
         document.getElementById('stats1').innerHTML = `
-            <div class="stat-row"><span style="color:#94a3b8;">총 보고 건수</span><span class="stat-val">${d1.total_reports.toLocaleString()}</span></div>
-            <div class="stat-row"><span style="color:#94a3b8;">평균 나이</span><span class="stat-val">${d1.age_avg}세</span></div>
-            <div class="stat-row"><span style="color:#94a3b8;">여성 비율</span><span class="stat-val">${d1.female_pct}%</span></div>
-            <div class="stat-row"><span style="color:#94a3b8;">남성 비율</span><span class="stat-val">${d1.male_pct}%</span></div>
-            <div class="stat-row"><span style="color:#94a3b8;">사망 건수</span><span class="stat-val ${d1.death_cnt > d2.death_cnt ? 'worse' : 'better'}">${d1.death_cnt.toLocaleString()}</span></div>
-            <div class="stat-row"><span style="color:#94a3b8;">입원 건수</span><span class="stat-val ${d1.hosp_cnt > d2.hosp_cnt ? 'worse' : 'better'}">${d1.hosp_cnt.toLocaleString()}</span></div>`;
-
+            <div class="stat-row"><span style="color:#94a3b8;">${labels.total}</span><span class="stat-val">${d1.total_reports.toLocaleString()}</span></div>
+            <div class="stat-row"><span style="color:#94a3b8;">${labels.age}</span><span class="stat-val">${d1.age_avg}${lang === 'ko' ? '세' : 'y'}</span></div>
+            <div class="stat-row"><span style="color:#94a3b8;">${labels.female}</span><span class="stat-val">${d1.female_pct}%</span></div>
+            <div class="stat-row"><span style="color:#94a3b8;">${labels.male}</span><span class="stat-val">${d1.male_pct}%</span></div>
+            <div class="stat-row"><span style="color:#94a3b8;">${labels.death}</span><span class="stat-val ${d1.death_cnt > d2.death_cnt ? 'worse':'better'}">${d1.death_cnt.toLocaleString()}</span></div>
+            <div class="stat-row"><span style="color:#94a3b8;">${labels.hosp}</span><span class="stat-val ${d1.hosp_cnt > d2.hosp_cnt ? 'worse':'better'}">${d1.hosp_cnt.toLocaleString()}</span></div>`;
         document.getElementById('stats2').innerHTML = `
-            <div class="stat-row"><span style="color:#94a3b8;">총 보고 건수</span><span class="stat-val">${d2.total_reports.toLocaleString()}</span></div>
-            <div class="stat-row"><span style="color:#94a3b8;">평균 나이</span><span class="stat-val">${d2.age_avg}세</span></div>
-            <div class="stat-row"><span style="color:#94a3b8;">여성 비율</span><span class="stat-val">${d2.female_pct}%</span></div>
-            <div class="stat-row"><span style="color:#94a3b8;">남성 비율</span><span class="stat-val">${d2.male_pct}%</span></div>
-            <div class="stat-row"><span style="color:#94a3b8;">사망 건수</span><span class="stat-val ${d2.death_cnt > d1.death_cnt ? 'worse' : 'better'}">${d2.death_cnt.toLocaleString()}</span></div>
-            <div class="stat-row"><span style="color:#94a3b8;">입원 건수</span><span class="stat-val ${d2.hosp_cnt > d1.hosp_cnt ? 'worse' : 'better'}">${d2.hosp_cnt.toLocaleString()}</span></div>`;
-
+            <div class="stat-row"><span style="color:#94a3b8;">${labels.total}</span><span class="stat-val">${d2.total_reports.toLocaleString()}</span></div>
+            <div class="stat-row"><span style="color:#94a3b8;">${labels.age}</span><span class="stat-val">${d2.age_avg}${lang === 'ko' ? '세' : 'y'}</span></div>
+            <div class="stat-row"><span style="color:#94a3b8;">${labels.female}</span><span class="stat-val">${d2.female_pct}%</span></div>
+            <div class="stat-row"><span style="color:#94a3b8;">${labels.male}</span><span class="stat-val">${d2.male_pct}%</span></div>
+            <div class="stat-row"><span style="color:#94a3b8;">${labels.death}</span><span class="stat-val ${d2.death_cnt > d1.death_cnt ? 'worse':'better'}">${d2.death_cnt.toLocaleString()}</span></div>
+            <div class="stat-row"><span style="color:#94a3b8;">${labels.hosp}</span><span class="stat-val ${d2.hosp_cnt > d1.hosp_cnt ? 'worse':'better'}">${d2.hosp_cnt.toLocaleString()}</span></div>`;
+        const chartTitle1 = lang === 'ko' ? '주요 지표 비교' : 'Key Metrics Comparison';
+        const chartLabels = lang === 'ko' ? ['총 보고', '사망', '입원'] : ['Total', 'Deaths', 'Hosp.'];
         Plotly.newPlot('compare-bar-chart', [
-            { name: d1.drug, type: 'bar', x: ['총 보고', '사망', '입원'], y: [d1.total_reports, d1.death_cnt, d1.hosp_cnt], marker: { color: '#38bdf8' } },
-            { name: d2.drug, type: 'bar', x: ['총 보고', '사망', '입원'], y: [d2.total_reports, d2.death_cnt, d2.hosp_cnt], marker: { color: '#a78bfa' } }
-        ], {
-            title: '주요 지표 비교', barmode: 'group',
-            paper_bgcolor: '#1e293b', plot_bgcolor: '#1e293b',
-            font: { color: '#e2e8f0' }, height: 360,
-            margin: { t: 50, b: 50 }
-        });
-
-        const allReacs = [...new Set([
-            ...d1.top_reactions.map(r => r.reaction),
-            ...d2.top_reactions.map(r => r.reaction)
-        ])].slice(0, 10);
+            { name: d1.drug, type: 'bar', x: chartLabels, y: [d1.total_reports, d1.death_cnt, d1.hosp_cnt], marker: { color: '#38bdf8' } },
+            { name: d2.drug, type: 'bar', x: chartLabels, y: [d2.total_reports, d2.death_cnt, d2.hosp_cnt], marker: { color: '#a78bfa' } }
+        ], { title: chartTitle1, barmode: 'group', paper_bgcolor: '#1e293b', plot_bgcolor: '#1e293b', font: { color: '#e2e8f0' }, height: 360, margin: { t: 50, b: 50 } });
+        const allReacs = [...new Set([...d1.top_reactions.map(r => r.reaction), ...d2.top_reactions.map(r => r.reaction)])].slice(0, 10);
         const d1Map = Object.fromEntries(d1.top_reactions.map(r => [r.reaction, r.count]));
         const d2Map = Object.fromEntries(d2.top_reactions.map(r => [r.reaction, r.count]));
-
+        const chartTitle2 = lang === 'ko' ? 'Top 부작용 비교' : 'Top Adverse Reactions Comparison';
         Plotly.newPlot('compare-reac-chart', [
             { name: d1.drug, type: 'bar', x: allReacs, y: allReacs.map(r => d1Map[r] || 0), marker: { color: '#38bdf8' } },
             { name: d2.drug, type: 'bar', x: allReacs, y: allReacs.map(r => d2Map[r] || 0), marker: { color: '#a78bfa' } }
-        ], {
-            title: 'Top 부작용 비교', barmode: 'group',
-            paper_bgcolor: '#1e293b', plot_bgcolor: '#1e293b',
-            font: { color: '#e2e8f0' }, height: 380,
-            margin: { t: 50, b: 120 }, xaxis: { tickangle: -45 }
-        });
+        ], { title: chartTitle2, barmode: 'group', paper_bgcolor: '#1e293b', plot_bgcolor: '#1e293b', font: { color: '#e2e8f0' }, height: 380, margin: { t: 50, b: 120 }, xaxis: { tickangle: -45 } });
     });
 }
 </script>
