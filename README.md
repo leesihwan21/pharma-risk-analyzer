@@ -33,7 +33,7 @@ A web application that analyzes drug adverse event patterns and predicts risk le
 
 | 기능 | 설명 | Feature |
 |------|------|---------|
-| 📊 대시보드 | FAERS 데이터 기반 부작용 통계 시각화 | Adverse event statistics dashboard |
+| 📊 대시보드 | FAERS 데이터 기반 부작용 통계 시각화 (6개 차트) | Adverse event statistics dashboard |
 | 🔍 약물 검색 | 약물명 자동완성 + 상세 부작용 분석 | Drug search with autocomplete |
 | 🤖 AI 위험도 예측 | 약물·부작용·나이·성별 입력 → 위험도 분류 | ML-based risk prediction |
 | 📸 알약 이미지 탐지 | YOLOv8으로 알약 종류 자동 인식 후 위험도 분석 | YOLOv8 pill detection + risk analysis |
@@ -43,19 +43,26 @@ A web application that analyzes drug adverse event patterns and predicts risk le
 | 📄 PDF 리포트 | 약물 분석 결과 PDF 자동 생성 | Automated PDF report generation |
 | 🇰🇷 한국 데이터 | 식약처 이상사례 연도별 트렌드 분석 | Korean MFDS adverse event trends |
 | 🔐 회원 기능 | 로그인·즐겨찾기·검색기록 관리 | User auth, favorites, history |
+| 🧪 AE Manager | CTCAE 자동분류·SAE 판정·15일 보고 타임라인·PDF/E2B 출력·수정/삭제 | AE management with CTCAE auto-grading, SAE detection, reporting timeline |
+| 📡 PRR 신호 탐지 | FDA/EMA Evans 기준 Proportional Reporting Ratio 계산 및 시각화 | PRR-based signal detection (FDA/EMA Evans criteria) |
+| 🗂 ICH E2B XML | 규제기관 제출용 ICH E2B(R3) 형식 XML 자동 생성 | ICH E2B(R3) XML export for regulatory submission |
+| 🌐 한/영 다국어 | 전체 11개 페이지 한국어·영어 실시간 전환 (localStorage 유지) | Korean/English i18n across all pages |
 
 ---
 
 ## 🛠️ 기술 스택 | Tech Stack
 
 ```
-Backend   : Flask 3.1, SQLAlchemy, Flask-Login, Flask-Limiter
+Backend   : Flask 3.1, SQLAlchemy, Flask-Login, Flask-Limiter, Flask-Caching
 ML/AI     : scikit-learn (Random Forest), YOLOv8 (Ultralytics)
 Data      : FDA FAERS 2024 Q3, 한국 식약처 이상사례 데이터
-Viz       : Plotly, NetworkX
-DB        : SQLite (개발), PyMySQL 지원
-Report    : ReportLab (PDF 자동 생성)
-Frontend  : Jinja2 Templates, Vanilla JS
+Viz       : Plotly, NetworkX (Canvas)
+DB        : SQLite (개발/배포), PyMySQL 지원
+Report    : ReportLab (PDF), ICH E2B(R3) XML
+Frontend  : Jinja2 Templates, Vanilla JS, 반응형 CSS
+Deploy    : Render.com (경량 버전 배포)
+i18n      : 한/영 다국어 (lang.js, localStorage)
+Test      : pytest (28개 테스트)
 ```
 
 ---
@@ -65,17 +72,24 @@ Frontend  : Jinja2 Templates, Vanilla JS
 ```
 pharma-risk-analyzer/
 ├── app/
-│   ├── __init__.py        # Flask 앱 팩토리, 확장 초기화
-│   ├── models.py          # DB 모델 (User, DrugSearch, FavoriteDrug, PredictionLog)
-│   ├── routes.py          # API 라우트 및 뷰
-│   └── templates/         # HTML 템플릿
+│   ├── __init__.py           # Flask 앱 팩토리, 확장 초기화
+│   ├── models.py             # DB 모델 (User, DrugSearch, FavoriteDrug, PredictionLog, AEReport)
+│   ├── routes.py             # 전체 기능 라우트 (ML/YOLO 포함)
+│   ├── routes_lite.py        # 배포용 경량 라우트 (ML/YOLO 제외)
+│   ├── static/
+│   │   └── lang.js           # 한/영 다국어 전환 모듈
+│   └── templates/            # HTML 템플릿 (11개 페이지)
+│       ├── index.html
 │       ├── dashboard.html
 │       ├── drug_detail.html
 │       ├── compare.html
 │       ├── filter.html
 │       ├── korea.html
 │       ├── webcam.html
-│       └── login/register.html
+│       ├── ae_manager.html
+│       ├── prr.html
+│       ├── login.html
+│       └── register.html
 ├── data/
 │   ├── raw/
 │   │   ├── faers_ascii_2024q3/   # FDA FAERS 원본 데이터
@@ -91,8 +105,15 @@ pharma-risk-analyzer/
 │   ├── le_drug.pkl / le_reac.pkl # 라벨 인코더
 │   ├── risk_rates.pkl            # 사전 계산된 위험률
 │   └── best.pt                   # YOLOv8 가중치
+├── tests/
+│   ├── conftest.py               # 테스트 픽스처
+│   ├── test_api.py               # API 테스트
+│   └── test_ae.py                # AE Manager 테스트 (28개)
 ├── config.py                     # 앱 설정
-└── run.py                        # 실행 진입점
+├── run.py                        # 실행 진입점
+├── requirements.txt              # 전체 패키지
+├── requirements_lite.txt         # 배포용 경량 패키지
+└── render.yaml                   # Render 배포 설정
 ```
 
 ---
@@ -131,6 +152,37 @@ python run.py
 
 ---
 
+## 🧪 AE Manager 기능 상세 | AE Manager Details
+
+임상시험 이상사례(Adverse Event) 관리를 위한 종합 모듈입니다.
+
+| 기능 | 설명 |
+|------|------|
+| CTCAE 자동 분류 | AE 용어 입력 시 Grade 1~5 자동 판정 |
+| SAE 자동 판정 | 입원·사망·생명위협 등 기준으로 SAE 자동 분류 |
+| 15일 보고 타임라인 | SAE 등록 시 자동으로 규제기관 보고 마감일 설정 |
+| PDF 출력 | ICH 형식의 AE 보고서 PDF 자동 생성 |
+| ICH E2B XML | 규제기관 제출용 E2B(R3) XML 파일 자동 생성 |
+| 마감 상태 관리 | 기한초과·긴급·주의·정상 상태 실시간 표시 |
+| 수정/삭제 | 등록된 AE 수정 및 삭제 기능 |
+
+---
+
+## 📡 PRR 신호 탐지 | PRR Signal Detection
+
+FDA, EMA에서 실제로 사용하는 약물 부작용 신호 탐지 지표입니다.
+
+```
+PRR = (약물A에서 부작용X 비율) / (다른 약물들에서 부작용X 비율)
+
+신호 기준 (Evans 기준):
+- 🔴 강한 신호: PRR ≥ 5, 보고건수 ≥ 3
+- 🟡 신호: PRR ≥ 2, 보고건수 ≥ 3
+- ⚪ 비신호: PRR < 2
+```
+
+---
+
 ## 🧠 ML 모델 설명 | ML Model
 
 **한국어**  
@@ -151,7 +203,7 @@ Data      : FDA FAERS 2024 Q3 (real-world pharmacovigilance data)
 
 ## 📊 데이터 출처 | Data Sources
 
-- **FDA FAERS 2024 Q3** : [FDA 공식 사이트]https://www.fda.gov/drugs/surveillance/fdas-adverse-event-reporting-system-faers — 실제 이상사례 자발적 보고 데이터
+- **FDA FAERS 2024 Q3** : [FDA 공식 사이트](https://www.fda.gov/drugs/surveillance/fdas-adverse-event-reporting-system-faers) — 실제 이상사례 자발적 보고 데이터
 - **한국 식약처 이상사례** : 연도별(2019~2024) 증상 보고 통계
 
 ---
@@ -170,7 +222,7 @@ Data      : FDA FAERS 2024 Q3 (real-world pharmacovigilance data)
 **약물 비교 | Drug Comparison**  
 ![compare](screenshots/compare.png)
 
-**AE Manager | 이상사례 관리**
+**AE Manager | 이상사례 관리**  
 ![ae_manager](screenshots/ae_manager.png)
 
 ---
