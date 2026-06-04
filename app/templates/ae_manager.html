@@ -14,7 +14,7 @@
         .summary-card { background: #1e293b; border-radius: 10px; padding: 16px; border: 1px solid #334155; text-align: center; }
         .summary-card .val { font-size: 2rem; font-weight: bold; }
         .summary-card .lbl { color: #94a3b8; font-size: 0.8rem; margin-top: 4px; }
-        .val-blue { color: #38bdf8; } .val-red { color: #f87171; } .val-orange { color: #fb923c; } .val-green { color: #34d399; }
+        .val-blue{color:#38bdf8;} .val-red{color:#f87171;} .val-orange{color:#fb923c;} .val-green{color:#34d399;}
         .tabs { display: flex; gap: 4px; padding: 0 24px; border-bottom: 1px solid #334155; flex-wrap: wrap; }
         .tab { padding: 10px 18px; cursor: pointer; color: #94a3b8; font-size: 0.9rem; border-bottom: 2px solid transparent; transition: color 0.2s; }
         .tab.active { color: #38bdf8; border-bottom-color: #38bdf8; }
@@ -22,22 +22,23 @@
         .filter-bar { background: #1e293b; padding: 14px 24px; display: flex; flex-wrap: wrap; gap: 10px; align-items: center; border-bottom: 1px solid #334155; }
         .filter-bar select, .filter-bar input { background: #0f172a; border: 1px solid #334155; color: #e2e8f0; padding: 8px 12px; border-radius: 8px; font-size: 0.88rem; }
         .btn { border: none; padding: 9px 18px; border-radius: 8px; cursor: pointer; font-weight: bold; font-size: 0.88rem; white-space: nowrap; }
-        .btn-blue { background: #38bdf8; color: #0f172a; } .btn-green { background: #059669; color: white; }
-        .btn-red { background: #dc2626; color: white; } .btn-gray { background: #334155; color: #e2e8f0; }
-        .btn-orange { background: #d97706; color: white; } .btn-sm { padding: 5px 12px; font-size: 0.8rem; }
+        .btn-blue{background:#38bdf8;color:#0f172a;} .btn-green{background:#059669;color:white;}
+        .btn-red{background:#dc2626;color:white;} .btn-gray{background:#334155;color:#e2e8f0;}
+        .btn-orange{background:#d97706;color:white;} .btn-purple{background:#7c3aed;color:white;}
+        .btn-sm { padding: 5px 12px; font-size: 0.8rem; }
         .table-wrap { padding: 16px 24px; overflow-x: auto; }
         table { width: 100%; border-collapse: collapse; font-size: 0.88rem; min-width: 900px; }
         th { background: #1e293b; color: #94a3b8; padding: 10px 12px; text-align: left; border-bottom: 1px solid #334155; white-space: nowrap; }
         td { padding: 10px 12px; border-bottom: 1px solid #1e293b; vertical-align: middle; }
         tr:hover td { background: #1e293b; }
         .badge { display: inline-block; padding: 3px 10px; border-radius: 20px; font-size: 0.78rem; font-weight: bold; white-space: nowrap; }
-        .badge-sae { background: #7f1d1d; color: #fca5a5; } .badge-ae { background: #1e3a5f; color: #93c5fd; }
-        .badge-g1 { background: #164e63; color: #67e8f9; } .badge-g2 { background: #713f12; color: #fde68a; }
-        .badge-g3 { background: #7c2d12; color: #fdba74; } .badge-g4 { background: #7f1d1d; color: #fca5a5; }
-        .badge-g5 { background: #450a0a; color: #f87171; } .badge-overdue { background: #7f1d1d; color: #fca5a5; }
-        .badge-urgent { background: #7c2d12; color: #fdba74; } .badge-warning { background: #713f12; color: #fde68a; }
-        .badge-normal { background: #14532d; color: #86efac; } .badge-submitted { background: #1e3a5f; color: #93c5fd; }
-        .badge-no_deadline { background: #1e293b; color: #94a3b8; }
+        .badge-sae{background:#7f1d1d;color:#fca5a5;} .badge-ae{background:#1e3a5f;color:#93c5fd;}
+        .badge-g1{background:#164e63;color:#67e8f9;} .badge-g2{background:#713f12;color:#fde68a;}
+        .badge-g3{background:#7c2d12;color:#fdba74;} .badge-g4{background:#7f1d1d;color:#fca5a5;}
+        .badge-g5{background:#450a0a;color:#f87171;} .badge-overdue{background:#7f1d1d;color:#fca5a5;}
+        .badge-urgent{background:#7c2d12;color:#fdba74;} .badge-warning{background:#713f12;color:#fde68a;}
+        .badge-normal{background:#14532d;color:#86efac;} .badge-submitted{background:#1e3a5f;color:#93c5fd;}
+        .badge-no_deadline{background:#1e293b;color:#94a3b8;}
         .modal-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.7); z-index: 1000; align-items: center; justify-content: center; padding: 20px; }
         .modal-overlay.open { display: flex; }
         .modal { background: #1e293b; border-radius: 16px; border: 1px solid #334155; width: 100%; max-width: 640px; max-height: 90vh; overflow-y: auto; padding: 28px; }
@@ -170,16 +171,53 @@
         <div id="detail-content"></div>
         <div class="modal-footer">
             <button class="btn btn-gray" onclick="closeModal('detail-modal')">닫기</button>
-            <button class="btn btn-blue" id="detail-pdf-btn">📄 PDF 다운로드</button>
-            <button class="btn btn-orange" id="detail-submit-btn">✅ 제출 완료 처리</button>
+            <button class="btn btn-purple" id="detail-edit-btn">✏️ 수정</button>
+            <button class="btn btn-blue" id="detail-pdf-btn">📄 PDF</button>
+            <button class="btn btn-orange" id="detail-submit-btn">✅ 제출완료</button>
             <button class="btn btn-red" id="detail-delete-btn">🗑 삭제</button>
         </div>
+    </div>
+</div>
+
+<!-- AE 수정 모달 -->
+<div class="modal-overlay" id="edit-modal">
+    <div class="modal">
+        <h2>✏️ AE 수정</h2>
+        <div class="form-grid">
+            <div class="form-group"><label>AE 용어</label><input type="text" id="e-ae-term"/></div>
+            <div class="form-group"><label>CTCAE Grade</label>
+                <select id="e-grade"><option value="1">Grade 1 — 경미</option><option value="2">Grade 2 — 중등도</option><option value="3">Grade 3 — 중증</option><option value="4">Grade 4 — 생명위협</option><option value="5">Grade 5 — 사망</option></select>
+            </div>
+            <div class="form-group"><label>SAE 여부</label>
+                <select id="e-is-sae"><option value="false">일반 AE</option><option value="true">SAE 해당</option></select>
+            </div>
+            <div class="form-group"><label>SAE 분류</label>
+                <select id="e-sae-cat"><option value="">선택</option><option value="사망">사망</option><option value="입원">입원 또는 입원 연장</option><option value="생명위협">생명을 위협하는 상태</option><option value="영구장애">영구적 장애/기능저하</option><option value="선천성이상">선천성 이상</option><option value="기타 중요 의학적 사건">기타 중요 의학적 사건</option></select>
+            </div>
+            <div class="form-group"><label>인과관계</label>
+                <select id="e-causality"><option value="">선택</option><option value="Certain">Certain (확실)</option><option value="Probable">Probable (가능성 높음)</option><option value="Possible">Possible (가능)</option><option value="Unlikely">Unlikely (낮음)</option><option value="Unclassifiable">Unclassifiable (평가불가)</option></select>
+            </div>
+            <div class="form-group"><label>처치</label>
+                <select id="e-action"><option value="">선택</option><option value="투여중단">투여중단</option><option value="용량감량">용량감량</option><option value="투여유지">투여유지</option><option value="해당없음">해당없음</option></select>
+            </div>
+            <div class="form-group"><label>결과</label>
+                <select id="e-outcome"><option value="">선택</option><option value="회복">회복</option><option value="회복중">회복 중</option><option value="후유증 동반 회복">후유증 동반 회복</option><option value="미회복">미회복</option><option value="사망">사망</option><option value="불명">불명</option></select>
+            </div>
+            <div class="form-group"><label>나이</label><input type="number" id="e-age"/></div>
+            <div class="form-group form-full"><label>비고</label><textarea id="e-notes"></textarea></div>
+        </div>
+        <div class="modal-footer">
+            <button class="btn btn-gray" onclick="closeModal('edit-modal')">취소</button>
+            <button class="btn btn-purple" onclick="submitEdit()">저장</button>
+        </div>
+        <div id="edit-msg" style="margin-top:10px; font-size:0.88rem; text-align:center;"></div>
     </div>
 </div>
 
 <script>
     let currentStatus = '';
     let allReports = [];
+    let currentEditId = null;
 
     document.addEventListener('DOMContentLoaded', loadList);
 
@@ -245,6 +283,7 @@
                 <td style="font-size:0.82rem; color:#94a3b8;">${deadline}</td>
                 <td>
                     <button class="btn btn-gray btn-sm" onclick="openDetail(${r.id})">상세</button>
+                    <button class="btn btn-purple btn-sm" style="margin-left:4px;" onclick="openEdit(${r.id})">수정</button>
                     ${!r.is_submitted ? `<button class="btn btn-green btn-sm" style="margin-left:4px;" onclick="submitAE(${r.id})">제출</button>` : ''}
                 </td>
             </tr>`;
@@ -336,10 +375,56 @@
                     ${row('제출 여부', r.is_submitted ? '<span style="color:#34d399">✅ 제출완료</span>' : '미제출')}
                     ${r.notes ? `<div style="grid-column:1/-1;">${row('비고', r.notes)}</div>` : ''}
                 </div>`;
+            document.getElementById('detail-edit-btn').onclick = () => { closeModal('detail-modal'); openEdit(id); };
             document.getElementById('detail-pdf-btn').onclick = () => window.open(`/api/ae/${id}/pdf`, '_blank');
             document.getElementById('detail-submit-btn').onclick = () => submitAE(id);
             document.getElementById('detail-delete-btn').onclick = () => deleteAE(id);
             document.getElementById('detail-modal').classList.add('open');
+        });
+    }
+
+    // ── 수정 모달
+    function openEdit(id) {
+        currentEditId = id;
+        fetch(`/api/ae/${id}`)
+        .then(res => res.json())
+        .then(r => {
+            document.getElementById('e-ae-term').value = r.ae_term || '';
+            document.getElementById('e-grade').value = r.ctcae_grade || 1;
+            document.getElementById('e-is-sae').value = r.is_sae ? 'true' : 'false';
+            document.getElementById('e-sae-cat').value = r.sae_category || '';
+            document.getElementById('e-causality').value = r.causality || '';
+            document.getElementById('e-action').value = r.action_taken || '';
+            document.getElementById('e-outcome').value = r.outcome || '';
+            document.getElementById('e-age').value = r.age || '';
+            document.getElementById('e-notes').value = r.notes || '';
+            document.getElementById('edit-msg').innerHTML = '';
+            document.getElementById('edit-modal').classList.add('open');
+        });
+    }
+
+    function submitEdit() {
+        const data = {
+            ae_term: document.getElementById('e-ae-term').value,
+            ctcae_grade: parseInt(document.getElementById('e-grade').value),
+            is_sae: document.getElementById('e-is-sae').value === 'true',
+            sae_category: document.getElementById('e-sae-cat').value,
+            causality: document.getElementById('e-causality').value,
+            action_taken: document.getElementById('e-action').value,
+            outcome: document.getElementById('e-outcome').value,
+            age: document.getElementById('e-age').value || null,
+            notes: document.getElementById('e-notes').value,
+        };
+        document.getElementById('edit-msg').innerHTML = '<div class="spinner"></div>저장 중...';
+        fetch(`/api/ae/${currentEditId}/update`, {
+            method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify(data)
+        })
+        .then(res => res.json())
+        .then(result => {
+            if (result.error) { document.getElementById('edit-msg').innerHTML = `<span style="color:#f87171">❌ ${result.error}</span>`; return; }
+            document.getElementById('edit-msg').innerHTML = '<span style="color:#34d399">✅ 수정됐어요!</span>';
+            loadList();
+            setTimeout(() => closeModal('edit-modal'), 1200);
         });
     }
 
