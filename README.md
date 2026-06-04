@@ -150,7 +150,17 @@ Data      : FDA FAERS 2024 Q3 (real-world pharmacovigilance data)
 
 ## 🖥️ 주요 화면 | Screenshots
 
-> (스크린샷 추가 예정 | Screenshots coming soon)
+**대시보드 | Dashboard**  
+![dashboard](screenshots/dashboard.png)
+
+**약물 검색 결과 | Drug Search**  
+![search](screenshots/search.png)
+
+**약물 상세 분석 | Drug Detail**  
+![drug_detail](screenshots/drug_detail.png)
+
+**약물 비교 | Drug Comparison**  
+![compare](screenshots/compare.png)
 
 ---
 
