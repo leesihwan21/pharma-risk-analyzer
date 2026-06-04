@@ -6,7 +6,7 @@
     <script src="https://cdn.plot.ly/plotly-latest.min.js"></script>
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
-        body { background: #0f172a; color: #e2e8f0; font-family: Arial, sans-serif; transition: background 0.3s, color 0.3s; }
+        body { background: #0f172a; color: #e2e8f0; font-family: Arial, sans-serif; }
         .header {
             background: #1e293b;
             padding: 20px 40px;
@@ -60,51 +60,16 @@
             margin-right: 8px;
             vertical-align: middle;
         }
-        @keyframes spin { to { transform: rotate(360deg); } }
-
-        /* 반응형 */
-        @media (max-width: 768px) {
-            .header { padding: 15px 20px; }
-            .header h1 { font-size: 1.1rem; }
-            .section { padding: 15px 20px; }
-            .section input[type="text"],
-            .section input[type="number"] { width: 100% !important; margin: 4px 0 !important; }
-            .section select { width: 100%; margin: 4px 0 !important; }
-            .btn-blue, .btn-cyan, .btn-purple { width: 100%; margin: 4px 0 !important; display: block; }
-            .grid { grid-template-columns: 1fr !important; padding: 15px 20px; }
-            .chart-card { min-height: 300px; }
+        @keyframes spin {
+            to { transform: rotate(360deg); }
         }
-        @media (max-width: 480px) {
-            .header h1 { font-size: 1rem; }
-        }
-
-        /* 라이트 모드 */
-        body.light-mode { background: #f8fafc; color: #1e293b; }
-        body.light-mode .header { background: #ffffff; border-bottom: 1px solid #e2e8f0; }
-        body.light-mode .header h1 { color: #1d4ed8; }
-        body.light-mode .header a { color: #64748b; }
-        body.light-mode .section { background: #ffffff; border-bottom: 1px solid #e2e8f0; }
-        body.light-mode .section h3 { color: #1d4ed8; }
-        body.light-mode .section input[type="text"],
-        body.light-mode .section input[type="number"] { background: #f1f5f9; border-color: #cbd5e1; color: #1e293b; }
-        body.light-mode .section select { background: #f1f5f9; border-color: #cbd5e1; color: #1e293b; }
-        body.light-mode .chart-card { background: #ffffff; border-color: #e2e8f0; }
-        body.light-mode .result { color: #374151; }
-        body.light-mode .spinner { border-color: #e2e8f0; border-top-color: #1d4ed8; }
     </style>
 </head>
 <body>
 
 <div class="header">
     <h1>💊 Pharma Risk Analyzer</h1>
-    <div style="display:flex; align-items:center; gap:12px;">
-        <button onclick="toggleTheme()" id="theme-btn"
-                style="background:#334155; color:#e2e8f0; border:none; padding:8px 16px;
-                       border-radius:8px; cursor:pointer; font-size:0.85rem;">
-            ☀️ 라이트 모드
-        </button>
-        <a href="/">← 홈으로</a>
-    </div>
+    <a href="/">← 홈으로</a>
 </div>
 
 <!-- 📸 알약 이미지 탐지 -->
@@ -194,25 +159,6 @@
 </div>
 
 <script>
-    // 🌙 다크/라이트 모드
-    function toggleTheme() {
-        document.body.classList.toggle('light-mode');
-        const btn = document.getElementById('theme-btn');
-        if (document.body.classList.contains('light-mode')) {
-            btn.textContent = '🌙 다크 모드';
-            localStorage.setItem('theme', 'light');
-        } else {
-            btn.textContent = '☀️ 라이트 모드';
-            localStorage.setItem('theme', 'dark');
-        }
-    }
-    if (localStorage.getItem('theme') === 'light') {
-        document.body.classList.add('light-mode');
-        document.addEventListener('DOMContentLoaded', () => {
-            document.getElementById('theme-btn').textContent = '🌙 다크 모드';
-        });
-    }
-
     // 차트 렌더링
     Plotly.newPlot('chart1', JSON.parse('{{ charts.chart1 | safe }}'));
     Plotly.newPlot('chart2', JSON.parse('{{ charts.chart2 | safe }}'));
@@ -226,17 +172,21 @@
         const fileInput = document.getElementById('pill-image');
         const drugHint = document.getElementById('pill-drug-hint').value;
         if (!fileInput.files[0]) { alert('이미지를 선택해주세요!'); return; }
+
         document.getElementById('detect-result').innerHTML =
             '<span><div class="spinner"></div>탐지 중...</span>';
+
         const formData = new FormData();
         formData.append('image', fileInput.files[0]);
         formData.append('drugname', drugHint);
+
         fetch('/api/detect', { method: 'POST', body: formData })
         .then(res => res.json())
         .then(data => {
             if (data.error) {
                 document.getElementById('detect-result').innerHTML =
-                    `<span style="color:#f87171">❌ ${data.error}</span>`; return;
+                    `<span style="color:#f87171">❌ ${data.error}</span>`;
+                return;
             }
             let html = '';
             if (data.detections.length === 0) {
@@ -270,7 +220,8 @@
         .then(data => {
             if (data.error) {
                 document.getElementById('search-result').innerHTML =
-                    `<span style="color:#f87171">❌ ${data.error}</span>`; return;
+                    `<span style="color:#f87171">❌ ${data.error}</span>`;
+                return;
             }
             document.getElementById('search-result').innerHTML = `
                 <strong style="color:#38bdf8">${data.drug}</strong> —
@@ -307,8 +258,10 @@
         const age = document.getElementById('pred-age').value;
         const sex = document.getElementById('pred-sex').value;
         if (!drug || !reac) { alert('약물명과 부작용을 입력하세요!'); return; }
+
         document.getElementById('predict-result').innerHTML =
             '<span><div class="spinner"></div>예측 중...</span>';
+
         fetch('/api/predict', {
             method: 'POST',
             headers: {'Content-Type': 'application/json'},
@@ -318,7 +271,8 @@
         .then(data => {
             if (data.error) {
                 document.getElementById('predict-result').innerHTML =
-                    `<span style="color:#f87171">❌ ${data.error}</span>`; return;
+                    `<span style="color:#f87171">❌ ${data.error}</span>`;
+                return;
             }
             document.getElementById('predict-result').innerHTML = `
                 <strong style="color:#38bdf8">${data.drug}</strong> +
@@ -338,16 +292,24 @@
     function explainRisk(drug, reaction, riskLabel, safeProb, riskProb) {
         document.getElementById('llm-result').innerHTML =
             '<span><div class="spinner"></div>AI 분석 중... (10~30초 소요)</span>';
+
         fetch('/api/llm_explain', {
             method: 'POST',
             headers: {'Content-Type': 'application/json'},
-            body: JSON.stringify({ drug, reaction, risk_label: riskLabel, safe_prob: safeProb, risk_prob: riskProb })
+            body: JSON.stringify({
+                drug: drug,
+                reaction: reaction,
+                risk_label: riskLabel,
+                safe_prob: safeProb,
+                risk_prob: riskProb
+            })
         })
         .then(res => res.json())
         .then(data => {
             if (data.error) {
                 document.getElementById('llm-result').innerHTML =
-                    `<span style="color:#f87171">❌ ${data.error}</span>`; return;
+                    `<span style="color:#f87171">❌ ${data.error}</span>`;
+                return;
             }
             document.getElementById('llm-result').innerHTML =
                 `<div style="background:#0f172a; padding:16px; border-radius:8px;
@@ -365,8 +327,10 @@
         const age = document.getElementById('combo-age').value;
         const sex = document.getElementById('combo-sex').value;
         if (!drug1 || !drug2) { alert('약물 2개를 입력하세요!'); return; }
+
         document.getElementById('combo-result').innerHTML =
             '<span><div class="spinner"></div>분석 중...</span>';
+
         fetch('/api/combo', {
             method: 'POST',
             headers: {'Content-Type': 'application/json'},
@@ -376,7 +340,8 @@
         .then(data => {
             if (data.error) {
                 document.getElementById('combo-result').innerHTML =
-                    `<span style="color:#f87171">❌ ${data.error}</span>`; return;
+                    `<span style="color:#f87171">❌ ${data.error}</span>`;
+                return;
             }
             let html = '<div style="display:grid; grid-template-columns:1fr 1fr; gap:20px; margin-top:12px;">';
             data.results.forEach(r => {
@@ -384,7 +349,11 @@
                     <h4 style="color:#38bdf8; margin-bottom:8px;">💊 ${r.drug}</h4>
                     <p style="color:#94a3b8; margin-bottom:8px;">전체 위험률: <strong style="color:#f87171">${r.drug_risk_rate}%</strong></p>
                     <table style="width:100%; font-size:0.85rem;">
-                        <tr style="color:#64748b;"><th style="text-align:left;">부작용</th><th>위험도</th><th>확률</th></tr>`;
+                        <tr style="color:#64748b;">
+                            <th style="text-align:left;">부작용</th>
+                            <th>위험도</th>
+                            <th>확률</th>
+                        </tr>`;
                 r.reactions.forEach(rx => {
                     const color = rx.risk === 1 ? '#f87171' : '#34d399';
                     html += `<tr>
@@ -400,63 +369,79 @@
         });
     }
 
-    // ⭐ 즐겨찾기
+    // ⭐ 즐겨찾기 추가
     function addFavorite(drug) {
         fetch(`/api/favorite/${drug}`, { method: 'POST' })
         .then(res => res.json())
         .then(data => alert(data.message));
     }
 
+    // ⭐ 즐겨찾기 목록
     function loadFavorites() {
         fetch('/api/favorites')
         .then(res => res.json())
         .then(data => {
             if (data.favorites.length === 0) {
                 document.getElementById('favorites-content').innerHTML =
-                    '<span style="color:#94a3b8">즐겨찾기가 없어요</span>'; return;
+                    '<span style="color:#94a3b8">즐겨찾기가 없어요</span>';
+                return;
             }
             let html = '<div style="display:flex; flex-wrap:wrap; gap:8px;">';
             data.favorites.forEach(f => {
                 html += `<a href="/drug/${f.drugname}"
                             style="background:#0f172a; color:#38bdf8; padding:8px 16px;
-                                   border-radius:8px; text-decoration:none; border:1px solid #334155; font-size:0.9rem;">
-                            ⭐ ${f.drugname}</a>`;
+                                   border-radius:8px; text-decoration:none; border:1px solid #334155;
+                                   font-size:0.9rem;">
+                            ⭐ ${f.drugname}
+                        </a>`;
             });
             html += '</div>';
             document.getElementById('favorites-content').innerHTML = html;
         });
     }
 
-    // 📋 기록
+    // 📋 검색 & 예측 기록
     function loadHistory() {
         fetch('/api/history')
         .then(res => res.json())
         .then(data => {
             let html = '<div style="display:grid; grid-template-columns:1fr 1fr; gap:20px;">';
-            html += `<div><h4 style="color:#38bdf8; margin-bottom:8px;">🔍 최근 검색 기록</h4>`;
+
+            // 검색 기록
+            html += `<div>
+                <h4 style="color:#38bdf8; margin-bottom:8px;">🔍 최근 검색 기록</h4>`;
             if (data.searches.length === 0) {
                 html += '<span style="color:#94a3b8; font-size:0.85rem;">기록이 없어요</span>';
             } else {
                 data.searches.forEach(s => {
-                    html += `<div style="background:#0f172a; padding:8px 12px; border-radius:6px; margin-bottom:6px; font-size:0.85rem;">
-                        <strong style="color:#38bdf8">${s.drugname}</strong> — ${s.total_reports?.toLocaleString()}건
-                        <span style="color:#64748b; float:right;">${s.searched_at}</span></div>`;
+                    html += `<div style="background:#0f172a; padding:8px 12px; border-radius:6px;
+                                         margin-bottom:6px; font-size:0.85rem;">
+                        <strong style="color:#38bdf8">${s.drugname}</strong>
+                        — ${s.total_reports?.toLocaleString()}건
+                        <span style="color:#64748b; float:right;">${s.searched_at}</span>
+                    </div>`;
                 });
             }
             html += '</div>';
-            html += `<div><h4 style="color:#38bdf8; margin-bottom:8px;">🤖 최근 예측 기록</h4>`;
+
+            // 예측 기록
+            html += `<div>
+                <h4 style="color:#38bdf8; margin-bottom:8px;">🤖 최근 예측 기록</h4>`;
             if (data.predictions.length === 0) {
                 html += '<span style="color:#94a3b8; font-size:0.85rem;">기록이 없어요</span>';
             } else {
                 data.predictions.forEach(p => {
                     const color = p.risk === 1 ? '#f87171' : '#34d399';
-                    html += `<div style="background:#0f172a; padding:8px 12px; border-radius:6px; margin-bottom:6px; font-size:0.85rem;">
+                    html += `<div style="background:#0f172a; padding:8px 12px; border-radius:6px;
+                                         margin-bottom:6px; font-size:0.85rem;">
                         <strong style="color:#38bdf8">${p.drugname}</strong> + ${p.reaction}
                         → <strong style="color:${color}">${p.risk === 1 ? '⚠️ 위험' : '✅ 비위험'}</strong>
-                        <span style="color:#64748b; float:right;">${p.predicted_at}</span></div>`;
+                        <span style="color:#64748b; float:right;">${p.predicted_at}</span>
+                    </div>`;
                 });
             }
             html += '</div></div>';
+
             document.getElementById('history-content').innerHTML = html;
         });
     }
@@ -468,10 +453,14 @@
         fetch(`/api/autocomplete/${value}`)
         .then(res => res.json())
         .then(data => {
-            if (data.suggestions.length === 0) { list.style.display = 'none'; return; }
+            if (data.suggestions.length === 0) {
+                list.style.display = 'none';
+                return;
+            }
             list.innerHTML = data.suggestions.map(s =>
                 `<div onclick="selectSuggestion('${s}', '${inputId}', '${listId}')"
-                      style="padding:10px 16px; cursor:pointer; border-bottom:1px solid #334155; color:#e2e8f0; font-size:0.9rem;"
+                      style="padding:10px 16px; cursor:pointer; border-bottom:1px solid #334155;
+                             color:#e2e8f0; font-size:0.9rem;"
                       onmouseover="this.style.background='#334155'"
                       onmouseout="this.style.background=''">${s}</div>`
             ).join('');

@@ -2,22 +2,85 @@
 <html lang="ko">
 <head>
     <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>{{ drugname }} - Pharma Risk Analyzer</title>
     <script src="https://cdn.plot.ly/plotly-latest.min.js"></script>
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body { background: #0f172a; color: #e2e8f0; font-family: Arial, sans-serif; }
-        .header { background: #1e293b; padding: 20px 40px; display: flex; align-items: center; justify-content: space-between; border-bottom: 1px solid #334155; }
-        .header h1 { color: #38bdf8; font-size: 1.5rem; }
-        .header a { color: #94a3b8; text-decoration: none; }
-        .stats-bar { background: #1e293b; padding: 20px 40px; display: flex; gap: 40px; border-bottom: 1px solid #334155; align-items: center; }
-        .stat-item { text-align: center; }
-        .stat-value { font-size: 1.8rem; font-weight: bold; color: #38bdf8; }
-        .stat-label { font-size: 0.85rem; color: #94a3b8; margin-top: 4px; }
-        .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; padding: 30px 40px; }
-        .chart-card { background: #1e293b; border-radius: 12px; padding: 10px; border: 1px solid #334155; min-height: 450px; }
+
+        .header {
+            background: #1e293b; padding: 16px 24px;
+            display: flex; align-items: center; justify-content: space-between;
+            border-bottom: 1px solid #334155; flex-wrap: wrap; gap: 10px;
+        }
+        .header h1 { color: #38bdf8; font-size: 1.4rem; }
+        .header a { color: #94a3b8; text-decoration: none; font-size: 0.9rem; }
+
+        /* 통계 바 */
+        .stats-bar {
+            background: #1e293b; padding: 16px 24px;
+            display: flex; flex-wrap: wrap; gap: 20px;
+            border-bottom: 1px solid #334155; align-items: center;
+        }
+        .stat-item { text-align: center; flex: 1 1 80px; }
+        .stat-value { font-size: 1.6rem; font-weight: bold; color: #38bdf8; }
+        .stat-label { font-size: 0.82rem; color: #94a3b8; margin-top: 4px; }
+
+        .action-btns { display: flex; gap: 8px; flex-wrap: wrap; margin-left: auto; }
+        .btn { border: none; padding: 10px 18px; border-radius: 8px; cursor: pointer; font-weight: bold; font-size: 0.9rem; text-decoration: none; display: inline-block; white-space: nowrap; }
+        .btn-blue  { background: #1a56db; color: white; }
+        .btn-cyan  { background: #0891b2; color: white; }
+
+        /* 이메일 폼 */
+        .email-form {
+            display: none; background: #1e293b;
+            padding: 14px 24px; border-bottom: 1px solid #334155;
+        }
+        .email-row { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+        .email-row input {
+            background: #0f172a; border: 1px solid #334155; color: #e2e8f0;
+            padding: 10px 14px; border-radius: 8px; flex: 1 1 200px; min-width: 0;
+        }
+
+        /* 차트 그리드 */
+        .grid {
+            display: grid; grid-template-columns: 1fr 1fr;
+            gap: 16px; padding: 20px 24px;
+        }
+        .chart-card {
+            background: #1e293b; border-radius: 12px;
+            padding: 10px; border: 1px solid #334155;
+            min-height: 430px; overflow: hidden;
+        }
+
+        /* 네트워크 */
+        .network-section {
+            background: #1e293b; margin: 0 24px 24px;
+            border-radius: 12px; padding: 16px; border: 1px solid #334155;
+        }
+        .network-section h3 { color: #38bdf8; margin-bottom: 14px; font-size: 1rem; }
+
         .spinner { display: inline-block; width: 14px; height: 14px; border: 2px solid #334155; border-top: 2px solid #38bdf8; border-radius: 50%; animation: spin 0.8s linear infinite; margin-right: 6px; vertical-align: middle; }
         @keyframes spin { to { transform: rotate(360deg); } }
+
+        /* 태블릿 */
+        @media (max-width: 768px) {
+            .grid { grid-template-columns: 1fr; padding: 14px 16px; gap: 12px; }
+            .network-section { margin: 0 16px 16px; }
+            .chart-card { min-height: 320px; }
+        }
+        /* 모바일 */
+        @media (max-width: 480px) {
+            .header { padding: 12px 14px; }
+            .header h1 { font-size: 1.1rem; }
+            .stats-bar { padding: 14px; gap: 12px; }
+            .stat-value { font-size: 1.3rem; }
+            .action-btns { margin-left: 0; width: 100%; }
+            .btn { flex: 1; text-align: center; }
+            .email-form { padding: 12px 14px; }
+            .grid { padding: 12px; }
+        }
     </style>
 </head>
 <body>
@@ -37,38 +100,21 @@
         <div class="stat-label">평균 나이</div>
     </div>
     <div class="stat-item">
-        <div class="stat-value">{{ stats.age_min }} ~ {{ stats.age_max }}</div>
+        <div class="stat-value">{{ stats.age_min }}~{{ stats.age_max }}</div>
         <div class="stat-label">나이 범위</div>
     </div>
-    <div class="stat-item" style="margin-left:auto; display:flex; align-items:center; gap:8px;">
-        <a href="/api/report/{{ drugname }}"
-           style="background:#1a56db; color:white; padding:12px 24px; border-radius:8px;
-                  text-decoration:none; font-weight:bold; display:inline-block;">
-            📄 PDF 다운로드
-        </a>
-        <button onclick="sendEmail()"
-                style="background:#0891b2; color:white; padding:12px 24px; border-radius:8px;
-                       border:none; font-weight:bold; cursor:pointer;">
-            📧 이메일 발송
-        </button>
+    <div class="action-btns">
+        <a href="/api/report/{{ drugname }}" class="btn btn-blue">📄 PDF</a>
+        <button onclick="document.getElementById('email-form').style.display='block'" class="btn btn-cyan">📧 이메일</button>
     </div>
 </div>
 
-<!-- 이메일 입력 폼 -->
-<div id="email-form" style="display:none; background:#1e293b; padding:16px 40px; border-bottom:1px solid #334155;">
-    <input type="email" id="email-input" placeholder="이메일 주소 입력"
-           style="background:#0f172a; border:1px solid #334155; color:#e2e8f0;
-                  padding:10px 16px; border-radius:8px; width:300px;"/>
-    <button onclick="submitEmail()"
-            style="background:#0891b2; color:white; border:none; padding:10px 20px;
-                   border-radius:8px; cursor:pointer; font-weight:bold; margin-left:8px;">
-        발송
-    </button>
-    <button onclick="document.getElementById('email-form').style.display='none'"
-            style="background:#334155; color:#e2e8f0; border:none; padding:10px 20px;
-                   border-radius:8px; cursor:pointer; margin-left:8px;">
-        취소
-    </button>
+<div class="email-form" id="email-form">
+    <div class="email-row">
+        <input type="email" id="email-input" placeholder="이메일 주소 입력"/>
+        <button onclick="submitEmail()" class="btn btn-cyan">발송</button>
+        <button onclick="document.getElementById('email-form').style.display='none'" class="btn" style="background:#334155; color:#e2e8f0;">취소</button>
+    </div>
     <div id="email-result" style="margin-top:8px; font-size:0.9rem;"></div>
 </div>
 
@@ -79,11 +125,9 @@
     <div class="chart-card" id="chart4"></div>
 </div>
 
-<!-- 🕸️ 부작용 네트워크 그래프 -->
-<div style="background:#1e293b; margin:0 40px 30px; border-radius:12px; padding:20px; border:1px solid #334155;">
-    <h3 style="color:#38bdf8; margin-bottom:16px;">🕸️ 부작용 네트워크 그래프</h3>
-    <canvas id="network-canvas" width="800" height="500"
-            style="width:100%; background:#0f172a; border-radius:8px;"></canvas>
+<div class="network-section">
+    <h3>🕸️ 부작용 네트워크 그래프</h3>
+    <canvas id="network-canvas" style="width:100%; background:#0f172a; border-radius:8px; display:block;"></canvas>
 </div>
 
 <script>
@@ -92,43 +136,32 @@
     Plotly.newPlot('chart3', JSON.parse('{{ charts.chart3 | safe }}'));
     Plotly.newPlot('chart4', JSON.parse('{{ charts.chart4 | safe }}'));
 
-    // 📧 이메일
-    function sendEmail() {
-        document.getElementById('email-form').style.display = 'block';
-    }
-
     function submitEmail() {
         const email = document.getElementById('email-input').value;
         if (!email) { alert('이메일을 입력해주세요!'); return; }
-        document.getElementById('email-result').innerHTML =
-            '<span><div class="spinner"></div>발송 중...</span>';
-
+        document.getElementById('email-result').innerHTML = '<span><div class="spinner"></div>발송 중...</span>';
         fetch(`/api/send_report/{{ drugname }}`, {
-            method: 'POST',
-            headers: {'Content-Type': 'application/json'},
+            method: 'POST', headers: {'Content-Type': 'application/json'},
             body: JSON.stringify({email})
         })
         .then(res => res.json())
         .then(data => {
-            if (data.error) {
-                document.getElementById('email-result').innerHTML =
-                    `<span style="color:#f87171">❌ ${data.error}</span>`;
-            } else {
-                document.getElementById('email-result').innerHTML =
-                    `<span style="color:#34d399">✅ ${data.message}</span>`;
-            }
+            document.getElementById('email-result').innerHTML = data.error
+                ? `<span style="color:#f87171">❌ ${data.error}</span>`
+                : `<span style="color:#34d399">✅ ${data.message}</span>`;
         });
     }
 
-    // 🕸️ 네트워크 그래프
-    fetch('/api/network/{{ drugname }}')
-    .then(res => res.json())
-    .then(data => {
-        const canvas = document.getElementById('network-canvas');
-        const ctx = canvas.getContext('2d');
-        const W = canvas.offsetWidth;
-        const H = 500;
+    // 네트워크 그래프
+    const canvas = document.getElementById('network-canvas');
+    const ctx = canvas.getContext('2d');
+
+    function drawNetwork(data) {
+        const W = canvas.parentElement.clientWidth - 32;
+        const H = Math.max(300, Math.min(500, W * 0.6));
         canvas.width = W;
+        canvas.height = H;
+        canvas.style.height = H + 'px';
 
         const nodes = data.nodes;
         const edges = data.edges;
@@ -154,7 +187,7 @@
                 ctx.beginPath();
                 ctx.moveTo(src.x, src.y);
                 ctx.lineTo(tgt.x, tgt.y);
-                ctx.strokeStyle = `rgba(56, 189, 248, ${alpha})`;
+                ctx.strokeStyle = `rgba(56,189,248,${alpha})`;
                 ctx.lineWidth = Math.max(1, edge.weight / 100);
                 ctx.stroke();
             });
@@ -164,16 +197,14 @@
                 ctx.fillStyle = node.type === 'drug' ? '#f59e0b' : '#7c3aed';
                 ctx.fill();
                 ctx.strokeStyle = node.type === 'drug' ? '#fbbf24' : '#a78bfa';
-                ctx.lineWidth = 2;
-                ctx.stroke();
+                ctx.lineWidth = 2; ctx.stroke();
                 ctx.fillStyle = '#e2e8f0';
-                ctx.font = node.type === 'drug' ? 'bold 13px Arial' : '10px Arial';
+                ctx.font = node.type === 'drug' ? 'bold 12px Arial' : '9px Arial';
                 ctx.textAlign = 'center';
-                const label = node.id.length > 15 ? node.id.substring(0, 13) + '..' : node.id;
-                ctx.fillText(label, node.x, node.y + node.size + 14);
+                const label = node.id.length > 14 ? node.id.substring(0, 12) + '..' : node.id;
+                ctx.fillText(label, node.x, node.y + node.size + 13);
             });
         }
-
         draw();
 
         canvas.addEventListener('mousemove', (e) => {
@@ -189,14 +220,17 @@
                     ctx.fillStyle = node.type === 'drug' ? '#fbbf24' : '#a78bfa';
                     ctx.fill();
                     ctx.fillStyle = '#ffffff';
-                    ctx.font = 'bold 12px Arial';
+                    ctx.font = 'bold 11px Arial';
                     ctx.textAlign = 'center';
                     ctx.fillText(node.id, node.x, node.y - node.size - 8);
                 }
             });
         });
-    });
-</script>
+    }
 
+    fetch('/api/network/{{ drugname }}')
+    .then(res => res.json())
+    .then(data => drawNetwork(data));
+</script>
 </body>
 </html>
