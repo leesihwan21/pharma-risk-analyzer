@@ -1,0 +1,11 @@
+services:
+  - type: web
+    name: pharma-risk-analyzer
+    runtime: python
+    buildCommand: pip install -r requirements_lite.txt
+    startCommand: gunicorn "app:create_app()" --bind 0.0.0.0:$PORT
+    envVars:
+      - key: SECRET_KEY
+        generateValue: true
+      - key: PYTHON_VERSION
+        value: 3.12.0
