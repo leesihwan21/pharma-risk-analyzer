@@ -2,17 +2,21 @@
 <html lang="ko">
 <head>
     <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>회원가입 - Pharma Risk Analyzer</title>
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
-        body { background: #0f172a; color: #e2e8f0; font-family: Arial, sans-serif;
-               display: flex; justify-content: center; align-items: center; min-height: 100vh; }
+        body {
+            background: #0f172a; color: #e2e8f0; font-family: Arial, sans-serif;
+            display: flex; justify-content: center; align-items: center;
+            min-height: 100vh; padding: 20px;
+        }
         .card {
             background: #1e293b; border-radius: 16px; padding: 40px;
-            width: 400px; border: 1px solid #334155;
+            width: 100%; max-width: 400px; border: 1px solid #334155;
         }
         .logo { text-align: center; margin-bottom: 32px; }
-        .logo h1 { color: #38bdf8; font-size: 1.5rem; }
+        .logo h1 { color: #38bdf8; font-size: 1.4rem; }
         .logo p { color: #94a3b8; font-size: 0.9rem; margin-top: 8px; }
         .form-group { margin-bottom: 20px; }
         label { display: block; color: #94a3b8; font-size: 0.85rem; margin-bottom: 6px; }
@@ -20,24 +24,24 @@
             width: 100%; background: #0f172a; border: 1px solid #334155;
             color: #e2e8f0; padding: 12px 16px; border-radius: 8px; font-size: 1rem;
         }
-        input:focus { outline: none; border-color: #38bdf8; }
+        input:focus { outline: none; border-color: #7c3aed; }
         .btn {
             width: 100%; background: #7c3aed; color: white; border: none;
             padding: 12px; border-radius: 8px; font-size: 1rem;
             font-weight: bold; cursor: pointer; margin-top: 8px;
         }
         .btn:hover { background: #6d28d9; }
-        .error { color: #f87171; font-size: 0.85rem; margin-top: 12px; text-align: center; }
+        .error   { color: #f87171; font-size: 0.85rem; margin-top: 12px; text-align: center; }
         .success { color: #34d399; font-size: 0.85rem; margin-top: 12px; text-align: center; }
         .link { text-align: center; margin-top: 20px; color: #94a3b8; font-size: 0.9rem; }
         .link a { color: #38bdf8; text-decoration: none; }
-        .spinner {
-            display: inline-block; width: 16px; height: 16px;
-            border: 2px solid white; border-top: 2px solid #a78bfa;
-            border-radius: 50%; animation: spin 0.8s linear infinite;
-            margin-right: 8px; vertical-align: middle;
-        }
+        .spinner { display: inline-block; width: 16px; height: 16px; border: 2px solid white; border-top: 2px solid #a78bfa; border-radius: 50%; animation: spin 0.8s linear infinite; margin-right: 8px; vertical-align: middle; }
         @keyframes spin { to { transform: rotate(360deg); } }
+
+        @media (max-width: 480px) {
+            .card { padding: 28px 20px; }
+            .logo h1 { font-size: 1.2rem; }
+        }
     </style>
 </head>
 <body>
@@ -46,7 +50,6 @@
         <h1>💊 Pharma Risk Analyzer</h1>
         <p>새 계정을 만들어보세요</p>
     </div>
-
     <div class="form-group">
         <label>아이디</label>
         <input type="text" id="username" placeholder="아이디 입력 (영문/숫자)"/>
@@ -64,52 +67,38 @@
         <input type="password" id="password2" placeholder="비밀번호 재입력"
                onkeydown="if(event.key==='Enter') register()"/>
     </div>
-
     <button class="btn" onclick="register()" id="register-btn">회원가입</button>
     <div id="message"></div>
-
-    <div class="link">
-        이미 계정이 있으신가요? <a href="/login">로그인</a>
-    </div>
+    <div class="link">이미 계정이 있으신가요? <a href="/login">로그인</a></div>
 </div>
-
 <script>
     function register() {
         const username = document.getElementById('username').value;
-        const email = document.getElementById('email').value;
+        const email    = document.getElementById('email').value;
         const password = document.getElementById('password').value;
         const password2 = document.getElementById('password2').value;
 
         if (!username || !email || !password) {
-            document.getElementById('message').innerHTML =
-                '<div class="error">모든 항목을 입력해주세요</div>'; return;
+            document.getElementById('message').innerHTML = '<div class="error">모든 항목을 입력해주세요</div>'; return;
         }
         if (password !== password2) {
-            document.getElementById('message').innerHTML =
-                '<div class="error">비밀번호가 일치하지 않아요</div>'; return;
+            document.getElementById('message').innerHTML = '<div class="error">비밀번호가 일치하지 않아요</div>'; return;
         }
         if (password.length < 6) {
-            document.getElementById('message').innerHTML =
-                '<div class="error">비밀번호는 6자 이상이어야 해요</div>'; return;
+            document.getElementById('message').innerHTML = '<div class="error">비밀번호는 6자 이상이어야 해요</div>'; return;
         }
-
-        document.getElementById('register-btn').innerHTML =
-            '<div class="spinner"></div>처리 중...';
-
+        document.getElementById('register-btn').innerHTML = '<div class="spinner"></div>처리 중...';
         fetch('/register', {
-            method: 'POST',
-            headers: {'Content-Type': 'application/json'},
+            method: 'POST', headers: {'Content-Type': 'application/json'},
             body: JSON.stringify({username, email, password})
         })
         .then(res => res.json())
         .then(data => {
             if (data.error) {
-                document.getElementById('message').innerHTML =
-                    `<div class="error">❌ ${data.error}</div>`;
+                document.getElementById('message').innerHTML = `<div class="error">❌ ${data.error}</div>`;
                 document.getElementById('register-btn').textContent = '회원가입';
             } else {
-                document.getElementById('message').innerHTML =
-                    `<div class="success">✅ ${data.message}</div>`;
+                document.getElementById('message').innerHTML = `<div class="success">✅ ${data.message}</div>`;
                 setTimeout(() => window.location.href = '/dashboard', 1000);
             }
         });
