@@ -162,6 +162,9 @@ Data      : FDA FAERS 2024 Q3 (real-world pharmacovigilance data)
 **약물 비교 | Drug Comparison**  
 ![compare](screenshots/compare.png)
 
+**AE Manager | 이상사례 관리**
+![ae_manager](screenshots/ae_manager.png)
+
 ---
 
 ## 📝 개발 배경 | Background
