@@ -11,8 +11,6 @@
             background: #0f172a; color: #e2e8f0;
             min-height: 100vh; display: flex; flex-direction: column;
         }
-
-        /* 네비 */
         .nav {
             background: #1e293b; border-bottom: 1px solid #334155;
             padding: 14px 24px;
@@ -21,11 +19,7 @@
         }
         .nav-logo { color: #38bdf8; font-size: 1.1rem; font-weight: bold; text-decoration: none; }
         .nav-right { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
-        .nav-btn {
-            padding: 8px 18px; border-radius: 8px;
-            font-size: 0.88rem; font-weight: bold;
-            text-decoration: none; border: none; cursor: pointer; white-space: nowrap;
-        }
+        .nav-btn { padding: 8px 18px; border-radius: 8px; font-size: 0.88rem; font-weight: bold; text-decoration: none; border: none; cursor: pointer; white-space: nowrap; }
         .nav-btn-outline { background: transparent; color: #94a3b8; border: 1px solid #334155; }
         .nav-btn-outline:hover { border-color: #38bdf8; color: #38bdf8; }
         .nav-btn-fill { background: #38bdf8; color: #0f172a; }
@@ -33,92 +27,41 @@
         .nav-btn-logout { background: #334155; color: #e2e8f0; }
         .nav-user { color: #94a3b8; font-size: 0.88rem; }
         .nav-user span { color: #38bdf8; font-weight: bold; }
-
-        /* 메인 */
-        .main {
-            flex: 1; display: flex;
-            align-items: center; justify-content: center;
-            padding: 40px 20px;
-        }
-        .container { max-width: 680px; width: 100%; text-align: center; }
-        .badge {
-            display: inline-block;
-            background: #1e293b; border: 1px solid #334155;
-            color: #94a3b8; font-size: 0.75rem;
-            padding: 4px 12px; border-radius: 20px;
-            margin-bottom: 20px; letter-spacing: 0.05em;
-        }
+        .main { flex: 1; display: flex; align-items: center; justify-content: center; padding: 40px 20px; }
+        .container { max-width: 720px; width: 100%; text-align: center; }
+        .badge { display: inline-block; background: #1e293b; border: 1px solid #334155; color: #94a3b8; font-size: 0.75rem; padding: 4px 12px; border-radius: 20px; margin-bottom: 20px; letter-spacing: 0.05em; }
         h1 { font-size: 2.8rem; color: #38bdf8; margin-bottom: 12px; line-height: 1.2; }
         .subtitle { color: #64748b; font-size: 1rem; margin-bottom: 40px; line-height: 1.6; }
-
-        .btn-main {
-            display: inline-block;
-            background: #38bdf8; color: #0f172a;
-            padding: 14px 36px; border-radius: 10px;
-            text-decoration: none; font-weight: bold;
-            font-size: 1rem; transition: background 0.2s;
-        }
+        .btn-main { display: inline-block; background: #38bdf8; color: #0f172a; padding: 14px 36px; border-radius: 10px; text-decoration: none; font-weight: bold; font-size: 1rem; transition: background 0.2s; }
         .btn-main:hover { background: #0ea5e9; }
-
-        /* 기능 카드 그리드 */
-        .features {
-            display: grid;
-            grid-template-columns: repeat(4, 1fr);
-            gap: 12px; margin-top: 48px;
-        }
-        .feature-card {
-            background: #1e293b; border: 1px solid #334155;
-            border-radius: 10px; padding: 20px 12px;
-            font-size: 0.85rem; color: #94a3b8;
-            line-height: 1.5; text-decoration: none; display: block;
-            transition: border-color 0.2s, background 0.2s, transform 0.15s;
-        }
-        .feature-card:hover {
-            border-color: #38bdf8; background: #263347;
-            transform: translateY(-3px);
-        }
-        .feature-card.highlight {
-            border-color: #059669;
-        }
-        .feature-card.highlight:hover {
-            border-color: #34d399; background: #0f2620;
-        }
+        .features { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; margin-top: 48px; }
+        .feature-card { background: #1e293b; border: 1px solid #334155; border-radius: 10px; padding: 20px 12px; font-size: 0.85rem; color: #94a3b8; line-height: 1.5; text-decoration: none; display: block; transition: border-color 0.2s, background 0.2s, transform 0.15s; }
+        .feature-card:hover { border-color: #38bdf8; background: #263347; transform: translateY(-3px); }
+        .feature-card.highlight { border-color: #059669; }
+        .feature-card.highlight:hover { border-color: #34d399; background: #0f2620; }
+        .feature-card.highlight-blue { border-color: #1d4ed8; }
+        .feature-card.highlight-blue:hover { border-color: #38bdf8; background: #0f1f3a; }
         .feature-card .icon { font-size: 1.6rem; display: block; margin-bottom: 8px; }
         .feature-card strong { color: #e2e8f0; display: block; margin-bottom: 4px; font-size: 0.95rem; }
-        .new-badge {
-            display: inline-block; background: #059669; color: white;
-            font-size: 0.68rem; padding: 2px 7px; border-radius: 10px;
-            margin-left: 4px; vertical-align: middle; font-weight: bold;
-        }
-
-        /* 반응형 */
-        @media (max-width: 680px) {
-            h1 { font-size: 2rem; }
-            .features { grid-template-columns: repeat(2, 1fr); }
-        }
-        @media (max-width: 400px) {
-            h1 { font-size: 1.7rem; }
-            .features { grid-template-columns: repeat(2, 1fr); }
-            .btn-main { width: 100%; text-align: center; }
-        }
+        .new-badge { display: inline-block; background: #059669; color: white; font-size: 0.68rem; padding: 2px 7px; border-radius: 10px; margin-left: 4px; vertical-align: middle; font-weight: bold; }
+        @media (max-width: 680px) { h1 { font-size: 2rem; } .features { grid-template-columns: repeat(2, 1fr); } }
+        @media (max-width: 400px) { h1 { font-size: 1.7rem; } .features { grid-template-columns: repeat(2, 1fr); } .btn-main { width: 100%; text-align: center; } }
     </style>
 </head>
 <body>
 
-    <!-- 네비게이션 -->
     <nav class="nav">
         <a href="/" class="nav-logo">💊 Pharma Risk Analyzer</a>
         <div class="nav-right" id="nav-auth"></div>
     </nav>
 
-    <!-- 메인 -->
     <div class="main">
         <div class="container">
-            <div class="badge">FDA FAERS 2024 Q3 · YOLOv8 · ML · AE Manager</div>
+            <div class="badge">FDA FAERS 2024 Q3 · YOLOv8 · ML · AE Manager · PRR</div>
             <h1>💊 Pharma Risk<br>Analyzer</h1>
             <p class="subtitle">
                 약물 부작용 AI 위험도 분석 시스템<br>
-                실제 FDA 데이터 기반 · 머신러닝 예측 · 알약 이미지 탐지 · AE 관리
+                실제 FDA 데이터 기반 · 머신러닝 예측 · 알약 이미지 탐지 · AE 관리 · PRR 신호 탐지
             </p>
             <a href="/dashboard" class="btn-main">대시보드 보기 →</a>
 
@@ -153,10 +96,15 @@
                     <strong>한국 데이터</strong>
                     식약처 이상사례
                 </a>
-                <a href="/ae_manager" class="feature-card highlight" style="grid-column: span 2;">
+                <a href="/prr" class="feature-card highlight-blue">
+                    <span class="icon">📡</span>
+                    <strong>PRR 신호 탐지 <span class="new-badge">NEW</span></strong>
+                    FDA/EMA 기준 부작용 신호 탐지
+                </a>
+                <a href="/ae_manager" class="feature-card highlight">
                     <span class="icon">🧪</span>
                     <strong>AE Manager <span class="new-badge">NEW</span></strong>
-                    CTCAE 자동 분류 · SAE 판정 · 15일 보고 타임라인 관리
+                    CTCAE · SAE · 보고 타임라인
                 </a>
             </div>
         </div>

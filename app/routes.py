@@ -1501,3 +1501,101 @@ def ae_e2b(ae_id):
         download_name=f'E2B_AE-{report.id:06d}_{report.patient_code}.xml',
         mimetype='application/xml'
     )
+
+# ── PRR (Proportional Reporting Ratio) 신호 탐지 ─────────────
+ 
+@main.route('/api/prr/<drugname>')
+@cache.cached(timeout=600)
+def calculate_prr(drugname):
+    """
+    PRR (Proportional Reporting Ratio) 계산
+    FDA/EMA에서 사용하는 약물 부작용 신호 탐지 지표
+ 
+    PRR = (a/b) / (c/d)
+    a = 약물A + 부작용X 보고 건수
+    b = 약물A 전체 보고 건수
+    c = 다른 약물 + 부작용X 보고 건수
+    d = 다른 약물 전체 보고 건수
+ 
+    신호 기준: PRR >= 2 AND 보고건수 >= 3
+    """
+    df = load_df()
+    drugname = drugname.upper()
+ 
+    drug_reports = df[df['drugname'].str.upper() == drugname]
+    if len(drug_reports) == 0:
+        return jsonify({'error': f'약물을 찾을 수 없어요: {drugname}'}), 404
+ 
+    other_reports = df[df['drugname'].str.upper() != drugname]
+ 
+    total_drug = len(drug_reports)
+    total_other = len(other_reports)
+ 
+    if total_other == 0:
+        return jsonify({'error': '비교 데이터가 부족해요'}), 400
+ 
+    # 약물의 Top 20 부작용에 대해 PRR 계산
+    top_reactions = drug_reports['pt'].value_counts().head(20).index.tolist()
+ 
+    results = []
+    for reac in top_reactions:
+        a = len(drug_reports[drug_reports['pt'] == reac])
+        b = total_drug
+        c = len(other_reports[other_reports['pt'] == reac])
+        d = total_other
+ 
+        if c == 0 or b == 0:
+            continue
+ 
+        prr = (a / b) / (c / d)
+        
+        # 95% 신뢰구간 계산 (로그 PRR 기반)
+        import math
+        try:
+            se = math.sqrt((1/a) - (1/b) + (1/c) - (1/d))
+            prr_lower = math.exp(math.log(prr) - 1.96 * se)
+            prr_upper = math.exp(math.log(prr) + 1.96 * se)
+        except (ValueError, ZeroDivisionError):
+            prr_lower = prr_upper = prr
+ 
+        # 신호 판정 (Evans 기준: PRR >= 2, n >= 3, Chi-square >= 4)
+        is_signal = prr >= 2 and a >= 3
+ 
+        results.append({
+            'reaction': reac,
+            'drug_count': int(a),           # 약물A에서 해당 부작용 건수
+            'drug_total': int(b),           # 약물A 전체 건수
+            'other_count': int(c),          # 다른 약물에서 해당 부작용 건수
+            'other_total': int(d),          # 다른 약물 전체 건수
+            'drug_pct': round(a/b*100, 2),  # 약물A에서 비율
+            'other_pct': round(c/d*100, 2), # 다른 약물에서 비율
+            'prr': round(prr, 2),
+            'prr_lower': round(prr_lower, 2),
+            'prr_upper': round(prr_upper, 2),
+            'is_signal': is_signal,
+            'signal_level': (
+                '🔴 강한 신호' if prr >= 5 and a >= 3 else
+                '🟡 신호' if prr >= 2 and a >= 3 else
+                '⚪ 비신호'
+            )
+        })
+ 
+    # PRR 높은 순으로 정렬
+    results.sort(key=lambda x: x['prr'], reverse=True)
+ 
+    # 신호 요약
+    signal_count = sum(1 for r in results if r['is_signal'])
+    strong_signal_count = sum(1 for r in results if r['prr'] >= 5 and r['drug_count'] >= 3)
+ 
+    return jsonify({
+        'drugname': drugname,
+        'total_reports': total_drug,
+        'signal_count': signal_count,
+        'strong_signal_count': strong_signal_count,
+        'results': results
+    })
+ 
+ 
+@main.route('/prr')
+def prr_page():
+    return render_template('prr.html')
