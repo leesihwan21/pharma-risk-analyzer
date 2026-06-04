@@ -7,7 +7,15 @@
 [![Python](https://img.shields.io/badge/Python-3.12-blue)](https://python.org)
 [![Flask](https://img.shields.io/badge/Flask-3.1-green)](https://flask.palletsprojects.com)
 [![YOLOv8](https://img.shields.io/badge/YOLOv8-Ultralytics-orange)](https://ultralytics.com)
-[![FAERS](https://img.shields.io/badge/Data-FDA%20FAERS%202024Q3-red)](https://www.fda.gov/drugs/questions-and-answers-fdas-adverse-event-reporting-system-faers)
+[![FAERS](https://img.shields.io/badge/Data-FDA%20FAERS%202024Q3-red)](https://www.fda.gov/drugs/surveillance/fdas-adverse-event-reporting-system-faers)
+
+---
+
+## 🌐 Live Demo
+**배포 URL**: https://pharma-risk-analyzer.onrender.com
+
+> ⚠️ 무료 플랜 사용 중으로 첫 접속 시 50초 정도 로딩될 수 있어요.  
+> ML/YOLO 기능(AI 예측, 알약 탐지, 웹캠)은 배포 버전에서 제외됩니다.
 
 ---
 
