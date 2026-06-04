@@ -143,7 +143,7 @@ Data      : FDA FAERS 2024 Q3 (real-world pharmacovigilance data)
 
 ## 📊 데이터 출처 | Data Sources
 
-- **FDA FAERS 2024 Q3** : [FDA 공식 사이트](https://www.fda.gov/drugs/questions-and-answers-fdas-adverse-event-reporting-system-faers) — 실제 이상사례 자발적 보고 데이터
+- **FDA FAERS 2024 Q3** : [FDA 공식 사이트]https://www.fda.gov/drugs/surveillance/fdas-adverse-event-reporting-system-faers — 실제 이상사례 자발적 보고 데이터
 - **한국 식약처 이상사례** : 연도별(2019~2024) 증상 보고 통계
 
 ---
