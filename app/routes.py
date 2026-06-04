@@ -1278,3 +1278,122 @@ def ae_stats():
         'causality_distribution': causality_dist,
         'outcome_distribution': outcome_dist,
     })
+
+@main.route('/api/ae/<int:ae_id>/pdf')
+def ae_pdf(ae_id):
+    report = AEReport.query.get_or_404(ae_id)
+
+    buf = io.BytesIO()
+    doc = SimpleDocTemplate(buf, pagesize=A4,
+                            rightMargin=2*cm, leftMargin=2*cm,
+                            topMargin=2*cm, bottomMargin=2*cm)
+
+    styles = getSampleStyleSheet()
+    title_style = ParagraphStyle('title', fontSize=16, spaceAfter=10,
+                                  textColor=colors.HexColor('#1a56db'), fontName='Helvetica-Bold')
+    header_style = ParagraphStyle('header', fontSize=12, spaceAfter=6,
+                                   textColor=colors.HexColor('#1a56db'), fontName='Helvetica-Bold')
+    sub_style = ParagraphStyle('sub', fontSize=10, spaceAfter=6, fontName='Helvetica')
+
+    story = []
+
+    # 제목
+    story.append(Paragraph("Adverse Event Report", title_style))
+    story.append(Paragraph(f"Generated: {datetime.now().strftime('%Y-%m-%d %H:%M')}", sub_style))
+    story.append(Spacer(1, 0.5*cm))
+
+    # SAE 경고 박스
+    if report.is_sae:
+        sae_style = ParagraphStyle('sae', fontSize=11, spaceAfter=8,
+                                    textColor=colors.HexColor('#991b1b'),
+                                    fontName='Helvetica-Bold')
+        story.append(Paragraph("⚠ SERIOUS ADVERSE EVENT (SAE)", sae_style))
+        if report.report_deadline:
+            story.append(Paragraph(
+                f"Reporting Deadline: {report.report_deadline.strftime('%Y-%m-%d')} "
+                f"({report.days_until_deadline()}days remaining)",
+                ParagraphStyle('deadline', fontSize=10, textColor=colors.HexColor('#991b1b'), fontName='Helvetica')
+            ))
+        story.append(Spacer(1, 0.3*cm))
+
+    # 환자 정보
+    story.append(Paragraph("Patient Information", header_style))
+    patient_data = [
+        ['Field', 'Value'],
+        ['Patient Code', report.patient_code],
+        ['Age', str(report.age) if report.age else 'N/A'],
+        ['Sex', 'Female' if report.sex == 'F' else 'Male' if report.sex == 'M' else 'N/A'],
+    ]
+    t = _make_table(patient_data)
+    story.append(t)
+    story.append(Spacer(1, 0.4*cm))
+
+    # 약물 정보
+    story.append(Paragraph("Drug Information", header_style))
+    drug_data = [
+        ['Field', 'Value'],
+        ['Drug Name', report.drugname],
+        ['Dose', report.dose or 'N/A'],
+        ['Route', report.route or 'N/A'],
+    ]
+    t2 = _make_table(drug_data)
+    story.append(t2)
+    story.append(Spacer(1, 0.4*cm))
+
+    # AE 정보
+    story.append(Paragraph("Adverse Event Details", header_style))
+    grade_labels = {1:'Grade 1 (Mild)', 2:'Grade 2 (Moderate)', 3:'Grade 3 (Severe)',
+                    4:'Grade 4 (Life-threatening)', 5:'Grade 5 (Death)'}
+    ae_data = [
+        ['Field', 'Value'],
+        ['AE Term (MedDRA PT)', report.ae_term],
+        ['CTCAE Grade', grade_labels.get(report.ctcae_grade, 'N/A')],
+        ['SAE', 'YES' if report.is_sae else 'NO'],
+        ['SAE Category', report.sae_category or 'N/A'],
+        ['Causality', report.causality or 'N/A'],
+        ['Onset Date', report.ae_start_date.strftime('%Y-%m-%d') if report.ae_start_date else 'N/A'],
+        ['End Date', report.ae_end_date.strftime('%Y-%m-%d') if report.ae_end_date else 'Ongoing'],
+        ['Action Taken', report.action_taken or 'N/A'],
+        ['Outcome', report.outcome or 'N/A'],
+    ]
+    t3 = _make_table(ae_data)
+    story.append(t3)
+    story.append(Spacer(1, 0.4*cm))
+
+    # 보고 정보
+    story.append(Paragraph("Reporting Information", header_style))
+    report_data = [
+        ['Field', 'Value'],
+        ['Report Date', report.reported_at.strftime('%Y-%m-%d %H:%M')],
+        ['Deadline', report.report_deadline.strftime('%Y-%m-%d') if report.report_deadline else 'N/A'],
+        ['Status', 'Submitted' if report.is_submitted else 'Pending'],
+    ]
+    t4 = _make_table(report_data)
+    story.append(t4)
+
+    if report.notes:
+        story.append(Spacer(1, 0.4*cm))
+        story.append(Paragraph("Notes", header_style))
+        story.append(Paragraph(report.notes, sub_style))
+
+    doc.build(story)
+    buf.seek(0)
+
+    return send_file(buf, as_attachment=True,
+                     download_name=f'AE_{report.patient_code}_{report.id}.pdf',
+                     mimetype='application/pdf')
+
+
+def _make_table(data):
+    """PDF 테이블 생성 헬퍼"""
+    t = Table(data, colWidths=[6*cm, 11*cm])
+    t.setStyle(TableStyle([
+        ('BACKGROUND', (0,0), (-1,0), colors.HexColor('#1a56db')),
+        ('TEXTCOLOR', (0,0), (-1,0), colors.white),
+        ('FONTNAME', (0,0), (-1,0), 'Helvetica-Bold'),
+        ('FONTSIZE', (0,0), (-1,-1), 9),
+        ('GRID', (0,0), (-1,-1), 0.5, colors.HexColor('#e5e7eb')),
+        ('ROWBACKGROUNDS', (0,1), (-1,-1), [colors.white, colors.HexColor('#f9fafb')]),
+        ('PADDING', (0,0), (-1,-1), 6),
+    ]))
+    return t
