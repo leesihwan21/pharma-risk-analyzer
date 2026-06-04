@@ -1,0 +1,166 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <title>약물 비교 - Pharma Risk Analyzer</title>
+    <script src="https://cdn.plot.ly/plotly-latest.min.js"></script>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { background: #0f172a; color: #e2e8f0; font-family: Arial, sans-serif; }
+        .header { background: #1e293b; padding: 20px 40px; display: flex; align-items: center; justify-content: space-between; border-bottom: 1px solid #334155; }
+        .header h1 { color: #38bdf8; font-size: 1.5rem; }
+        .header a { color: #94a3b8; text-decoration: none; }
+        .search-bar { background: #1e293b; padding: 20px 40px; border-bottom: 1px solid #334155; }
+        .search-bar input { background: #0f172a; border: 1px solid #334155; color: #e2e8f0; padding: 10px 16px; border-radius: 8px; font-size: 1rem; width: 250px; }
+        .compare-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; padding: 30px 40px; }
+        .drug-card { background: #1e293b; border-radius: 12px; padding: 24px; border: 1px solid #334155; }
+        .drug-card h2 { font-size: 1.3rem; margin-bottom: 16px; }
+        .stat-row { display: flex; justify-content: space-between; padding: 8px 0; border-bottom: 1px solid #334155; font-size: 0.9rem; }
+        .stat-row:last-child { border-bottom: none; }
+        .stat-val { font-weight: bold; color: #38bdf8; }
+        .better { color: #34d399 !important; }
+        .worse { color: #f87171 !important; }
+        .chart-section { padding: 0 40px 30px; }
+        .chart-card { background: #1e293b; border-radius: 12px; padding: 20px; border: 1px solid #334155; margin-bottom: 20px; }
+        .spinner { display: inline-block; width: 16px; height: 16px; border: 2px solid #334155; border-top: 2px solid #38bdf8; border-radius: 50%; animation: spin 0.8s linear infinite; margin-right: 8px; vertical-align: middle; }
+        @keyframes spin { to { transform: rotate(360deg); } }
+    </style>
+</head>
+<body>
+
+<div class="header">
+    <h1>⚖️ 약물 비교 분석</h1>
+    <a href="/dashboard">← 대시보드로</a>
+</div>
+
+<div class="search-bar">
+    <input type="text" id="drug1-input" placeholder="약물 1 (예: METHOTREXATE)" style="margin-right:12px;"/>
+    <span style="color:#94a3b8; margin-right:12px;">vs</span>
+    <input type="text" id="drug2-input" placeholder="약물 2 (예: PREDNISONE)" style="margin-right:12px;"/>
+    <button onclick="compareDrugs()"
+            style="background:#38bdf8; color:#0f172a; border:none; padding:10px 24px;
+                   border-radius:8px; cursor:pointer; font-weight:bold;">
+        비교 시작
+    </button>
+    <span id="compare-status" style="margin-left:12px; color:#94a3b8; font-size:0.9rem;"></span>
+</div>
+
+<div id="compare-result" style="display:none;">
+    <div class="compare-grid">
+        <div class="drug-card" id="card1">
+            <h2 id="drug1-name" style="color:#38bdf8;"></h2>
+            <div id="stats1"></div>
+        </div>
+        <div class="drug-card" id="card2">
+            <h2 id="drug2-name" style="color:#a78bfa;"></h2>
+            <div id="stats2"></div>
+        </div>
+    </div>
+
+    <div class="chart-section">
+        <div class="chart-card">
+            <div id="compare-bar-chart"></div>
+        </div>
+        <div class="chart-card">
+            <div id="compare-reac-chart"></div>
+        </div>
+    </div>
+</div>
+
+<script>
+function compareDrugs() {
+    const drug1 = document.getElementById('drug1-input').value;
+    const drug2 = document.getElementById('drug2-input').value;
+    if (!drug1 || !drug2) { alert('약물 2개를 입력해주세요!'); return; }
+
+    document.getElementById('compare-status').innerHTML =
+        '<div class="spinner"></div>비교 중...';
+
+    fetch(`/api/compare?drug1=${drug1}&drug2=${drug2}`)
+    .then(res => res.json())
+    .then(data => {
+        if (data.error) {
+            document.getElementById('compare-status').innerHTML =
+                `<span style="color:#f87171">❌ ${data.error}</span>`;
+            return;
+        }
+
+        document.getElementById('compare-status').innerHTML = '';
+        document.getElementById('compare-result').style.display = 'block';
+
+        const d1 = data.drug1;
+        const d2 = data.drug2;
+
+        document.getElementById('drug1-name').textContent = `💊 ${d1.drug}`;
+        document.getElementById('drug2-name').textContent = `💊 ${d2.drug}`;
+
+        // 통계 비교
+        function statHTML(label, val1, val2, lowerIsBetter=false) {
+            let cls1 = '', cls2 = '';
+            if (lowerIsBetter) {
+                cls1 = val1 < val2 ? 'better' : 'worse';
+                cls2 = val2 < val1 ? 'better' : 'worse';
+            } else {
+                cls1 = val1 > val2 ? 'better' : '';
+                cls2 = val2 > val1 ? 'better' : '';
+            }
+            return `
+                <div class="stat-row">
+                    <span style="color:#94a3b8;">${label}</span>
+                    <span class="stat-val ${cls1}">${val1}</span>
+                </div>`;
+        }
+
+        document.getElementById('stats1').innerHTML = `
+            <div class="stat-row"><span style="color:#94a3b8;">총 보고 건수</span><span class="stat-val">${d1.total_reports.toLocaleString()}</span></div>
+            <div class="stat-row"><span style="color:#94a3b8;">평균 나이</span><span class="stat-val">${d1.age_avg}세</span></div>
+            <div class="stat-row"><span style="color:#94a3b8;">여성 비율</span><span class="stat-val">${d1.female_pct}%</span></div>
+            <div class="stat-row"><span style="color:#94a3b8;">남성 비율</span><span class="stat-val">${d1.male_pct}%</span></div>
+            <div class="stat-row"><span style="color:#94a3b8;">사망 건수</span><span class="stat-val ${d1.death_cnt > d2.death_cnt ? 'worse' : 'better'}">${d1.death_cnt.toLocaleString()}</span></div>
+            <div class="stat-row"><span style="color:#94a3b8;">입원 건수</span><span class="stat-val ${d1.hosp_cnt > d2.hosp_cnt ? 'worse' : 'better'}">${d1.hosp_cnt.toLocaleString()}</span></div>`;
+
+        document.getElementById('stats2').innerHTML = `
+            <div class="stat-row"><span style="color:#94a3b8;">총 보고 건수</span><span class="stat-val">${d2.total_reports.toLocaleString()}</span></div>
+            <div class="stat-row"><span style="color:#94a3b8;">평균 나이</span><span class="stat-val">${d2.age_avg}세</span></div>
+            <div class="stat-row"><span style="color:#94a3b8;">여성 비율</span><span class="stat-val">${d2.female_pct}%</span></div>
+            <div class="stat-row"><span style="color:#94a3b8;">남성 비율</span><span class="stat-val">${d2.male_pct}%</span></div>
+            <div class="stat-row"><span style="color:#94a3b8;">사망 건수</span><span class="stat-val ${d2.death_cnt > d1.death_cnt ? 'worse' : 'better'}">${d2.death_cnt.toLocaleString()}</span></div>
+            <div class="stat-row"><span style="color:#94a3b8;">입원 건수</span><span class="stat-val ${d2.hosp_cnt > d1.hosp_cnt ? 'worse' : 'better'}">${d2.hosp_cnt.toLocaleString()}</span></div>`;
+
+        // 비교 바 차트
+        Plotly.newPlot('compare-bar-chart', [
+            { name: d1.drug, type: 'bar', x: ['총 보고', '사망', '입원'], y: [d1.total_reports, d1.death_cnt, d1.hosp_cnt], marker: { color: '#38bdf8' } },
+            { name: d2.drug, type: 'bar', x: ['총 보고', '사망', '입원'], y: [d2.total_reports, d2.death_cnt, d2.hosp_cnt], marker: { color: '#a78bfa' } }
+        ], {
+            title: '주요 지표 비교',
+            barmode: 'group',
+            paper_bgcolor: '#1e293b', plot_bgcolor: '#1e293b',
+            font: { color: '#e2e8f0' }, height: 380,
+            margin: { t: 50, b: 50 }
+        });
+
+        // Top 10 부작용 비교
+        const allReacs = [...new Set([
+            ...d1.top_reactions.map(r => r.reaction),
+            ...d2.top_reactions.map(r => r.reaction)
+        ])].slice(0, 10);
+
+        const d1Map = Object.fromEntries(d1.top_reactions.map(r => [r.reaction, r.count]));
+        const d2Map = Object.fromEntries(d2.top_reactions.map(r => [r.reaction, r.count]));
+
+        Plotly.newPlot('compare-reac-chart', [
+            { name: d1.drug, type: 'bar', x: allReacs, y: allReacs.map(r => d1Map[r] || 0), marker: { color: '#38bdf8' } },
+            { name: d2.drug, type: 'bar', x: allReacs, y: allReacs.map(r => d2Map[r] || 0), marker: { color: '#a78bfa' } }
+        ], {
+            title: 'Top 부작용 비교',
+            barmode: 'group',
+            paper_bgcolor: '#1e293b', plot_bgcolor: '#1e293b',
+            font: { color: '#e2e8f0' }, height: 400,
+            margin: { t: 50, b: 120 },
+            xaxis: { tickangle: -45 }
+        });
+    });
+}
+</script>
+</body>
+</html>

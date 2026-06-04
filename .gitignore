@@ -1,0 +1,85 @@
+# ===========================
+# Python
+# ===========================
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+.Python
+*.egg-info/
+dist/
+build/
+
+# ===========================
+# 가상환경 | Virtual Environment
+# ===========================
+venv/
+env/
+.venv/
+
+# ===========================
+# 환경변수 (절대 올리면 안됨!) | Environment Variables
+# ===========================
+.env
+*.env
+app/.env
+
+# ===========================
+# Flask
+# ===========================
+instance/
+*.db
+pharma.db
+
+# ===========================
+# ML 모델 / 대용량 파일 | ML Models (too large for GitHub)
+# ===========================
+*.pkl
+*.pt
+*.pth
+ml/best.pt
+ml/model.pkl
+ml/le_drug.pkl
+ml/le_reac.pkl
+ml/risk_rates.pkl
+ml/medical_pills.yaml
+yolov8n.pt
+
+# ===========================
+# 데이터 원본 / 전처리 결과 (대용량) | Raw & Processed Data
+# ===========================
+data/raw/
+data/processed/
+datasets/
+*.csv
+*.zip
+*.txt
+
+# ===========================
+# 학습 로그 | Training Logs
+# ===========================
+runs/
+*.log
+tensorboard/
+
+# ===========================
+# IDE / Editor
+# ===========================
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# ===========================
+# OS
+# ===========================
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# ===========================
+# Jupyter Notebooks 체크포인트
+# ===========================
+.ipynb_checkpoints/
+notebooks/.ipynb_checkpoints/
