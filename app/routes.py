@@ -21,7 +21,8 @@ from flask_restx import Api, Resource, fields, Namespace
 from app import cache, limiter, mail
 from app import cache, limiter
 from app import cache
-from datetime import datetime
+from datetime import datetime, timedelta, date
+from flask_login import current_user
 from reportlab.lib.pagesizes import A4
 from reportlab.lib import colors
 from reportlab.platypus import SimpleDocTemplate, Table, TableStyle, Paragraph, Spacer
