@@ -1960,3 +1960,101 @@ def api_interaction():
         'risk_score': min(risk_score * 10, 100),
         'top_reactions': top_reactions
     })
+@main.route('/dosage')
+def dosage_page():
+    return render_template('dosage.html')
+
+
+@main.route('/api/dosage/crcl', methods=['POST'])
+def api_crcl():
+    from flask import jsonify, request
+    data = request.get_json()
+    age = float(data.get('age', 0))
+    weight = float(data.get('weight', 0))
+    creatinine = float(data.get('creatinine', 0))
+    sex = data.get('sex', 'M')
+
+    if not all([age, weight, creatinine]):
+        return jsonify({'error': 'missing values'}), 400
+
+    crcl = ((140 - age) * weight) / (72 * creatinine)
+    if sex == 'F':
+        crcl *= 0.85
+
+    if crcl >= 90:
+        stage = 'Normal (G1)'
+        dose_adj = 'No dose adjustment required'
+        color = 'green'
+    elif crcl >= 60:
+        stage = 'Mild reduction (G2)'
+        dose_adj = 'Dose adjustment may be required for some drugs'
+        color = 'yellow'
+    elif crcl >= 30:
+        stage = 'Moderate reduction (G3)'
+        dose_adj = 'Reduce dose by 50-75% for most drugs'
+        color = 'orange'
+    elif crcl >= 15:
+        stage = 'Severe reduction (G4)'
+        dose_adj = 'Reduce dose by 25-50% or extend dosing interval'
+        color = 'red'
+    else:
+        stage = 'Renal failure (G5)'
+        dose_adj = 'Nephrotoxic drugs contraindicated, consider dialysis'
+        color = 'darkred'
+
+    return jsonify({
+        'crcl': round(crcl, 1),
+        'stage': stage,
+        'dose_adj': dose_adj,
+        'color': color
+    })
+
+
+@main.route('/api/dosage/pediatric', methods=['POST'])
+def api_pediatric():
+    from flask import jsonify, request
+    data = request.get_json()
+    adult_dose = float(data.get('adult_dose', 0))
+    age = float(data.get('age', 0))
+    weight = float(data.get('weight', 0))
+    height = float(data.get('height', 0))
+
+    if not adult_dose:
+        return jsonify({'error': 'missing values'}), 400
+
+    results = {}
+
+    if weight:
+        results['clark'] = round(adult_dose * weight / 70, 2)
+    if age:
+        results['young'] = round(adult_dose * age / (age + 12), 2)
+    if weight and height:
+        import math
+        bsa = math.sqrt((height * weight) / 3600)
+        results['bsa'] = round(adult_dose * bsa / 1.73, 2)
+        results['bsa_value'] = round(bsa, 2)
+
+    return jsonify(results)
+
+
+@main.route('/api/dosage/bsa', methods=['POST'])
+def api_bsa():
+    from flask import jsonify, request
+    import math
+    data = request.get_json()
+    weight = float(data.get('weight', 0))
+    height = float(data.get('height', 0))
+    dose_per_m2 = float(data.get('dose_per_m2', 0))
+
+    if not all([weight, height]):
+        return jsonify({'error': 'missing values'}), 400
+
+    bsa = math.sqrt((height * weight) / 3600)
+    total_dose = round(bsa * dose_per_m2, 2) if dose_per_m2 else None
+    bsa_dubois = 0.007184 * (height ** 0.725) * (weight ** 0.425)
+
+    return jsonify({
+        'bsa_mosteller': round(bsa, 3),
+        'bsa_dubois': round(bsa_dubois, 3),
+        'total_dose': total_dose
+    })

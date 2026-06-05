@@ -1,0 +1,288 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Dosage Calculator | Pharma Risk Analyzer</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body { font-family: Arial, sans-serif; background: #0f172a; color: #e2e8f0; min-height: 100vh; }
+    .nav { background: #1e293b; border-bottom: 1px solid #334155; padding: 14px 24px; display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 10px; }
+    .nav-logo { color: #38bdf8; font-size: 1.1rem; font-weight: bold; text-decoration: none; }
+    .nav-links { display: flex; gap: 8px; flex-wrap: wrap; }
+    .nav-btn { padding: 8px 18px; border-radius: 8px; font-size: 0.88rem; font-weight: bold; text-decoration: none; color: #94a3b8; border: 1px solid #334155; }
+    .nav-btn:hover { border-color: #38bdf8; color: #38bdf8; }
+    .nav-btn.active { background: #38bdf8; color: #0f172a; border-color: #38bdf8; }
+
+    .container { max-width: 960px; margin: 48px auto; padding: 0 24px; }
+    .page-header { margin-bottom: 32px; }
+    .page-header h1 { font-size: 1.9rem; color: #38bdf8; margin-bottom: 8px; }
+    .page-header p { color: #64748b; font-size: 0.95rem; }
+
+    .tabs { display: flex; gap: 8px; margin-bottom: 28px; flex-wrap: wrap; }
+    .tab-btn { padding: 10px 20px; border-radius: 8px; font-size: 0.88rem; font-weight: bold; cursor: pointer; border: 1px solid #334155; color: #94a3b8; background: transparent; }
+    .tab-btn.active { background: #38bdf8; color: #0f172a; border-color: #38bdf8; }
+
+    .tab-content { display: none; }
+    .tab-content.active { display: block; }
+
+    .card { background: #1e293b; border: 1px solid #334155; border-radius: 14px; padding: 28px; margin-bottom: 20px; }
+    .card h2 { font-size: 1.1rem; color: #e2e8f0; margin-bottom: 6px; }
+    .card p.desc { color: #64748b; font-size: 0.88rem; margin-bottom: 20px; }
+
+    .input-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-bottom: 20px; }
+    .input-group { display: flex; flex-direction: column; gap: 6px; }
+    .input-group label { font-size: 0.78rem; color: #64748b; text-transform: uppercase; letter-spacing: 0.05em; }
+    .input-group input, .input-group select {
+      padding: 12px 16px; background: #0f172a; border: 1px solid #334155;
+      border-radius: 10px; color: #e2e8f0; font-size: 0.95rem; outline: none;
+    }
+    .input-group input:focus, .input-group select:focus { border-color: #38bdf8; }
+    .input-group input::placeholder { color: #475569; }
+
+    .calc-btn {
+      width: 100%; padding: 13px; background: #38bdf8; color: #0f172a;
+      border: none; border-radius: 10px; font-size: 1rem; font-weight: bold; cursor: pointer;
+    }
+    .calc-btn:hover { background: #0ea5e9; }
+
+    .result-card { background: #0f172a; border: 1px solid #334155; border-radius: 12px; padding: 20px; margin-top: 16px; display: none; }
+    .result-value { font-size: 2rem; font-weight: bold; color: #38bdf8; margin-bottom: 8px; }
+    .result-label { font-size: 0.88rem; color: #64748b; margin-bottom: 12px; }
+    .result-detail { font-size: 0.92rem; color: #e2e8f0; line-height: 1.6; }
+    .result-badge { display: inline-block; padding: 4px 14px; border-radius: 20px; font-size: 0.82rem; font-weight: bold; margin-bottom: 10px; }
+
+    .formula-box { background: #0f172a; border: 1px solid #334155; border-radius: 8px; padding: 12px 16px; margin-bottom: 16px; font-size: 0.82rem; color: #64748b; font-family: monospace; }
+
+    .result-grid { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 12px; margin-top: 16px; }
+    .result-item { background: #0f172a; border: 1px solid #334155; border-radius: 10px; padding: 16px; text-align: center; }
+    .result-item .val { font-size: 1.4rem; font-weight: bold; color: #38bdf8; }
+    .result-item .lbl { font-size: 0.78rem; color: #64748b; margin-top: 4px; }
+
+    .warning { padding: 12px 16px; background: rgba(251,191,36,0.1); border: 1px solid #fbbf24; border-radius: 8px; color: #fbbf24; font-size: 0.82rem; margin-top: 12px; }
+  </style>
+</head>
+<body>
+
+<nav class="nav">
+  <a href="/" class="nav-logo">💊 Pharma Risk Analyzer</a>
+  <div class="nav-links">
+    <a href="/dashboard" class="nav-btn">Dashboard</a>
+    <a href="/trend" class="nav-btn">Trend</a>
+    <a href="/shap" class="nav-btn">SHAP</a>
+    <a href="/drug-lookup" class="nav-btn">Drug Lookup</a>
+    <a href="/interaction" class="nav-btn">Interaction</a>
+    <a href="/dosage" class="nav-btn active">Dosage</a>
+    <a href="/ae_manager" class="nav-btn">AE Manager</a>
+  </div>
+</nav>
+
+<div class="container">
+  <div class="page-header">
+    <h1>💉 복용량 계산기</h1>
+    <p>신장기능·체중·나이·BSA 기반 임상약학 계산 도구 — 연구/교육 목적 전용</p>
+  </div>
+
+  <div class="tabs">
+    <button class="tab-btn active" onclick="switchTab('crcl')">신장기능 (CrCl)</button>
+    <button class="tab-btn" onclick="switchTab('pediatric')">소아 용량</button>
+    <button class="tab-btn" onclick="switchTab('bsa')">BSA 항암제</button>
+    <button class="tab-btn" onclick="switchTab('basic')">기본 용량</button>
+  </div>
+
+  <!-- 탭 1: CrCl -->
+  <div id="tab-crcl" class="tab-content active">
+    <div class="card">
+      <h2>신장기능 기반 용량 조절 (Cockcroft-Gault)</h2>
+      <p class="desc">크레아티닌 청소율(CrCl)을 계산해 신기능 단계와 용량 조절 가이드를 제공합니다.</p>
+      <div class="formula-box">CrCl = ((140 - 나이) × 체중) / (72 × 혈청크레아티닌) × [여성: × 0.85]</div>
+      <div class="input-grid">
+        <div class="input-group"><label>나이 (세)</label><input type="number" id="crcl-age" placeholder="예: 65"></div>
+        <div class="input-group"><label>체중 (kg)</label><input type="number" id="crcl-weight" placeholder="예: 60"></div>
+        <div class="input-group"><label>혈청 크레아티닌 (mg/dL)</label><input type="number" id="crcl-cr" placeholder="예: 1.2" step="0.1"></div>
+        <div class="input-group">
+          <label>성별</label>
+          <select id="crcl-sex">
+            <option value="M">남성</option>
+            <option value="F">여성</option>
+          </select>
+        </div>
+      </div>
+      <button class="calc-btn" onclick="calcCrCl()">계산</button>
+      <div class="result-card" id="crcl-result">
+        <div class="result-value" id="crcl-val"></div>
+        <div class="result-label">mL/min (크레아티닌 청소율)</div>
+        <div class="result-badge" id="crcl-badge"></div>
+        <div class="result-detail" id="crcl-detail"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 탭 2: 소아 용량 -->
+  <div id="tab-pediatric" class="tab-content">
+    <div class="card">
+      <h2>소아 용량 계산 (Clark / Young / BSA)</h2>
+      <p class="desc">성인 용량을 기준으로 세 가지 공식으로 소아 용량을 계산합니다.</p>
+      <div class="input-grid">
+        <div class="input-group"><label>성인 용량 (mg)</label><input type="number" id="ped-adult" placeholder="예: 500"></div>
+        <div class="input-group"><label>소아 나이 (세)</label><input type="number" id="ped-age" placeholder="예: 8"></div>
+        <div class="input-group"><label>소아 체중 (kg)</label><input type="number" id="ped-weight" placeholder="예: 25"></div>
+        <div class="input-group"><label>소아 신장 (cm)</label><input type="number" id="ped-height" placeholder="예: 120"></div>
+      </div>
+      <button class="calc-btn" onclick="calcPediatric()">계산</button>
+      <div class="result-card" id="ped-result">
+        <div class="result-grid">
+          <div class="result-item"><div class="val" id="ped-clark"></div><div class="lbl">Clark 공식<br>(체중 기반)</div></div>
+          <div class="result-item"><div class="val" id="ped-young"></div><div class="lbl">Young 공식<br>(나이 기반)</div></div>
+          <div class="result-item"><div class="val" id="ped-bsa"></div><div class="lbl">BSA 공식<br>(체중+신장)</div></div>
+        </div>
+        <div class="warning">⚠️ 소아 용량은 반드시 소아과 전문의 또는 임상약사와 확인하세요.</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 탭 3: BSA 항암제 -->
+  <div id="tab-bsa" class="tab-content">
+    <div class="card">
+      <h2>BSA 기반 항암제 용량 계산 (Mosteller / DuBois)</h2>
+      <p class="desc">체표면적(BSA)을 계산하고 mg/m² 기준 항암제 총 용량을 산출합니다.</p>
+      <div class="formula-box">
+        Mosteller: BSA = √(신장(cm) × 체중(kg) / 3600)<br>
+        DuBois: BSA = 0.007184 × 신장^0.725 × 체중^0.425
+      </div>
+      <div class="input-grid">
+        <div class="input-group"><label>체중 (kg)</label><input type="number" id="bsa-weight" placeholder="예: 65"></div>
+        <div class="input-group"><label>신장 (cm)</label><input type="number" id="bsa-height" placeholder="예: 170"></div>
+        <div class="input-group"><label>약물 용량 (mg/m²) — 선택</label><input type="number" id="bsa-dose" placeholder="예: 75"></div>
+        <div class="input-group"></div>
+      </div>
+      <button class="calc-btn" onclick="calcBSA()">계산</button>
+      <div class="result-card" id="bsa-result">
+        <div class="result-grid">
+          <div class="result-item"><div class="val" id="bsa-mosteller"></div><div class="lbl">Mosteller BSA<br>(m²)</div></div>
+          <div class="result-item"><div class="val" id="bsa-dubois"></div><div class="lbl">DuBois BSA<br>(m²)</div></div>
+          <div class="result-item"><div class="val" id="bsa-total"></div><div class="lbl">총 용량<br>(mg)</div></div>
+        </div>
+        <div class="warning">⚠️ 항암제 용량은 반드시 종양내과 전문의 처방에 따라 투여하세요.</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 탭 4: 기본 용량 -->
+  <div id="tab-basic" class="tab-content">
+    <div class="card">
+      <h2>기본 용량 계산 (mg/kg)</h2>
+      <p class="desc">체중 기반 mg/kg 용량을 계산합니다.</p>
+      <div class="input-grid">
+        <div class="input-group"><label>체중 (kg)</label><input type="number" id="basic-weight" placeholder="예: 70"></div>
+        <div class="input-group"><label>용량 (mg/kg)</label><input type="number" id="basic-dose" placeholder="예: 10" step="0.1"></div>
+        <div class="input-group"><label>최대 용량 (mg) — 선택</label><input type="number" id="basic-max" placeholder="예: 500"></div>
+        <div class="input-group"><label>투여 횟수 (/일)</label><input type="number" id="basic-freq" placeholder="예: 3"></div>
+      </div>
+      <button class="calc-btn" onclick="calcBasic()">계산</button>
+      <div class="result-card" id="basic-result">
+        <div class="result-grid">
+          <div class="result-item"><div class="val" id="basic-single"></div><div class="lbl">1회 용량 (mg)</div></div>
+          <div class="result-item"><div class="val" id="basic-daily"></div><div class="lbl">1일 총 용량 (mg)</div></div>
+          <div class="result-item"><div class="val" id="basic-note" style="font-size:0.9rem; color:#fbbf24;"></div><div class="lbl">참고</div></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="warning" style="margin-top: 8px;">
+    ⚠️ 본 계산기는 교육·연구 목적으로 제작되었습니다. 실제 임상 투약 결정은 반드시 의사·약사와 상담하세요.
+  </div>
+</div>
+
+<script>
+function switchTab(tab) {
+  document.querySelectorAll('.tab-btn').forEach((b, i) => {
+    b.classList.toggle('active', ['crcl','pediatric','bsa','basic'][i] === tab);
+  });
+  document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+  document.getElementById('tab-' + tab).classList.add('active');
+}
+
+async function calcCrCl() {
+  const age = document.getElementById('crcl-age').value;
+  const weight = document.getElementById('crcl-weight').value;
+  const cr = document.getElementById('crcl-cr').value;
+  const sex = document.getElementById('crcl-sex').value;
+
+  const res = await fetch('/api/dosage/crcl', {
+    method: 'POST', headers: {'Content-Type': 'application/json'},
+    body: JSON.stringify({age, weight, creatinine: cr, sex})
+  });
+  const data = await res.json();
+  if (!res.ok) return;
+
+  const colors = {green: '#34d399', yellow: '#fbbf24', orange: '#fb923c', red: '#f87171', darkred: '#dc2626'};
+  document.getElementById('crcl-val').textContent = data.crcl + ' mL/min';
+  document.getElementById('crcl-badge').textContent = data.stage;
+  document.getElementById('crcl-badge').style.cssText = `background: rgba(0,0,0,0.3); border: 1px solid ${colors[data.color]}; color: ${colors[data.color]};`;
+  document.getElementById('crcl-detail').textContent = '권고사항: ' + data.dose_adj;
+  document.getElementById('crcl-result').style.display = 'block';
+}
+
+async function calcPediatric() {
+  const adult_dose = document.getElementById('ped-adult').value;
+  const age = document.getElementById('ped-age').value;
+  const weight = document.getElementById('ped-weight').value;
+  const height = document.getElementById('ped-height').value;
+
+  const res = await fetch('/api/dosage/pediatric', {
+    method: 'POST', headers: {'Content-Type': 'application/json'},
+    body: JSON.stringify({adult_dose, age, weight, height})
+  });
+  const data = await res.json();
+  if (!res.ok) return;
+
+  document.getElementById('ped-clark').textContent = data.clark ? data.clark + ' mg' : '-';
+  document.getElementById('ped-young').textContent = data.young ? data.young + ' mg' : '-';
+  document.getElementById('ped-bsa').textContent = data.bsa ? data.bsa + ' mg' : '-';
+  document.getElementById('ped-result').style.display = 'block';
+}
+
+async function calcBSA() {
+  const weight = document.getElementById('bsa-weight').value;
+  const height = document.getElementById('bsa-height').value;
+  const dose_per_m2 = document.getElementById('bsa-dose').value;
+
+  const res = await fetch('/api/dosage/bsa', {
+    method: 'POST', headers: {'Content-Type': 'application/json'},
+    body: JSON.stringify({weight, height, dose_per_m2})
+  });
+  const data = await res.json();
+  if (!res.ok) return;
+
+  document.getElementById('bsa-mosteller').textContent = data.bsa_mosteller + ' m²';
+  document.getElementById('bsa-dubois').textContent = data.bsa_dubois + ' m²';
+  document.getElementById('bsa-total').textContent = data.total_dose ? data.total_dose + ' mg' : '-';
+  document.getElementById('bsa-result').style.display = 'block';
+}
+
+function calcBasic() {
+  const weight = parseFloat(document.getElementById('basic-weight').value) || 0;
+  const dose = parseFloat(document.getElementById('basic-dose').value) || 0;
+  const max = parseFloat(document.getElementById('basic-max').value) || 0;
+  const freq = parseFloat(document.getElementById('basic-freq').value) || 1;
+
+  if (!weight || !dose) return;
+
+  let single = Math.round(weight * dose * 10) / 10;
+  let note = '';
+  if (max && single > max) {
+    note = `최대 용량 적용 (${max}mg)`;
+    single = max;
+  }
+  const daily = Math.round(single * freq * 10) / 10;
+
+  document.getElementById('basic-single').textContent = single + ' mg';
+  document.getElementById('basic-daily').textContent = daily + ' mg';
+  document.getElementById('basic-note').textContent = note || '정상 범위';
+  document.getElementById('basic-result').style.display = 'block';
+}
+</script>
+</body>
+</html>
