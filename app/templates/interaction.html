@@ -1,0 +1,208 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Drug Interaction | Pharma Risk Analyzer</title>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body { font-family: Arial, sans-serif; background: #0f172a; color: #e2e8f0; min-height: 100vh; }
+    .nav { background: #1e293b; border-bottom: 1px solid #334155; padding: 14px 24px; display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 10px; }
+    .nav-logo { color: #38bdf8; font-size: 1.1rem; font-weight: bold; text-decoration: none; }
+    .nav-links { display: flex; gap: 8px; flex-wrap: wrap; }
+    .nav-btn { padding: 8px 18px; border-radius: 8px; font-size: 0.88rem; font-weight: bold; text-decoration: none; color: #94a3b8; border: 1px solid #334155; }
+    .nav-btn:hover { border-color: #38bdf8; color: #38bdf8; }
+    .nav-btn.active { background: #38bdf8; color: #0f172a; border-color: #38bdf8; }
+
+    .container { max-width: 900px; margin: 48px auto; padding: 0 24px; }
+    .page-header { margin-bottom: 32px; }
+    .page-header h1 { font-size: 1.9rem; color: #38bdf8; margin-bottom: 8px; }
+    .page-header p { color: #64748b; font-size: 0.95rem; }
+
+    .input-row { display: flex; gap: 12px; align-items: center; margin-bottom: 32px; flex-wrap: wrap; }
+    .input-row input { flex: 1; min-width: 180px; padding: 13px 18px; background: #1e293b; border: 1px solid #334155; border-radius: 10px; color: #e2e8f0; font-size: 1rem; outline: none; }
+    .input-row input:focus { border-color: #38bdf8; }
+    .input-row input::placeholder { color: #475569; }
+    .vs-badge { color: #64748b; font-weight: bold; font-size: 1rem; flex-shrink: 0; }
+    .input-row button { padding: 13px 32px; background: #38bdf8; color: #0f172a; border: none; border-radius: 10px; font-size: 1rem; font-weight: bold; cursor: pointer; }
+    .input-row button:hover { background: #0ea5e9; }
+
+    .stats-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; margin-bottom: 20px; }
+    .stat-card { background: #1e293b; border: 1px solid #334155; border-radius: 12px; padding: 20px; text-align: center; }
+    .stat-card .stat-value { font-size: 1.8rem; font-weight: bold; margin-bottom: 6px; }
+    .stat-card .stat-label { font-size: 0.82rem; color: #64748b; }
+
+    .card { background: #1e293b; border: 1px solid #334155; border-radius: 14px; padding: 28px; margin-bottom: 20px; }
+    .card h2 { font-size: 1.05rem; color: #94a3b8; margin-bottom: 20px; }
+
+    .risk-bar-wrap { margin-bottom: 20px; }
+    .risk-bar-label { display: flex; justify-content: space-between; margin-bottom: 8px; font-size: 0.88rem; color: #94a3b8; }
+    .risk-bar-bg { background: #334155; border-radius: 8px; height: 12px; overflow: hidden; }
+    .risk-bar { height: 100%; border-radius: 8px; transition: width 0.8s ease; }
+
+    table { width: 100%; border-collapse: collapse; }
+    th, td { padding: 12px 16px; text-align: left; border-bottom: 1px solid #334155; font-size: 0.93rem; }
+    th { color: #64748b; font-weight: 600; }
+    td { color: #e2e8f0; }
+    tr:last-child td { border-bottom: none; }
+
+    .error { padding: 16px; background: #1e293b; border: 1px solid #f87171; border-radius: 10px; color: #f87171; margin-bottom: 20px; display: none; }
+    .loading { text-align: center; padding: 40px; color: #64748b; display: none; }
+    #result-area { display: none; }
+  </style>
+</head>
+<body>
+
+<nav class="nav">
+  <a href="/" class="nav-logo">💊 Pharma Risk Analyzer</a>
+  <div class="nav-links">
+    <a href="/dashboard" class="nav-btn">Dashboard</a>
+    <a href="/filter" class="nav-btn">Search</a>
+    <a href="/compare" class="nav-btn">Compare</a>
+    <a href="/prr" class="nav-btn">PRR</a>
+    <a href="/trend" class="nav-btn">Trend</a>
+    <a href="/shap" class="nav-btn">SHAP</a>
+    <a href="/drug-lookup" class="nav-btn">Drug Lookup</a>
+    <a href="/interaction" class="nav-btn active">Interaction</a>
+    <a href="/ae_manager" class="nav-btn">AE Manager</a>
+  </div>
+</nav>
+
+<div class="container">
+  <div class="page-header">
+    <h1>⚡ Drug Interaction Checker</h1>
+    <p>FDA FAERS 실데이터 기반 — 두 약물 동시 복용 시 부작용 패턴 분석</p>
+  </div>
+
+  <div class="input-row">
+    <input type="text" id="drugA" placeholder="Drug A (예: METHOTREXATE)">
+    <span class="vs-badge">+</span>
+    <input type="text" id="drugB" placeholder="Drug B (예: ASPIRIN)">
+    <button onclick="analyze()">분석</button>
+  </div>
+
+  <div id="loading" class="loading">⏳ 분석 중...</div>
+  <div id="error-msg" class="error"></div>
+
+  <div id="result-area">
+    <div class="stats-grid">
+      <div class="stat-card">
+        <div class="stat-value" id="statCoOccurrence" style="color:#38bdf8"></div>
+        <div class="stat-label">동시 복용 보고 건수</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-value" id="statSeriousRate" style="color:#f87171"></div>
+        <div class="stat-label">중증 결과 비율</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-value" id="statRiskScore" style="color:#fbbf24"></div>
+        <div class="stat-label">상호작용 위험 점수</div>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>위험도 지표</h2>
+      <div class="risk-bar-wrap">
+        <div class="risk-bar-label">
+          <span id="riskLabel">상호작용 위험 점수</span>
+          <span id="riskPct"></span>
+        </div>
+        <div class="risk-bar-bg">
+          <div class="risk-bar" id="riskBar" style="width:0%; background:#fbbf24"></div>
+        </div>
+      </div>
+      <div class="risk-bar-wrap">
+        <div class="risk-bar-label">
+          <span>중증 결과 비율 (입원/사망/생명위협)</span>
+          <span id="seriousPct"></span>
+        </div>
+        <div class="risk-bar-bg">
+          <div class="risk-bar" id="seriousBar" style="width:0%; background:#f87171"></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>동시 복용 시 주요 부작용 Top 10</h2>
+      <table>
+        <thead><tr><th>순위</th><th>부작용</th><th>보고 건수</th></tr></thead>
+        <tbody id="reactionTable"></tbody>
+      </table>
+    </div>
+
+    <div class="card">
+      <h2>데이터 요약</h2>
+      <table>
+        <tbody id="summaryTable"></tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<script>
+async function analyze() {
+  const a = document.getElementById('drugA').value.trim();
+  const b = document.getElementById('drugB').value.trim();
+  if (!a || !b) return;
+
+  document.getElementById('loading').style.display = 'block';
+  document.getElementById('result-area').style.display = 'none';
+  document.getElementById('error-msg').style.display = 'none';
+
+  try {
+    const res = await fetch('/api/interaction?drug_a=' + encodeURIComponent(a) + '&drug_b=' + encodeURIComponent(b));
+    const data = await res.json();
+
+    if (!res.ok) {
+      document.getElementById('error-msg').textContent = data.error || 'Error occurred';
+      document.getElementById('error-msg').style.display = 'block';
+      document.getElementById('loading').style.display = 'none';
+      return;
+    }
+
+    renderResult(data);
+    document.getElementById('result-area').style.display = 'block';
+  } catch(e) {
+    document.getElementById('error-msg').textContent = 'Server error.';
+    document.getElementById('error-msg').style.display = 'block';
+  }
+  document.getElementById('loading').style.display = 'none';
+}
+
+function renderResult(data) {
+  document.getElementById('statCoOccurrence').textContent = data.co_occurrence.toLocaleString();
+  document.getElementById('statSeriousRate').textContent = data.serious_rate + '%';
+  document.getElementById('statRiskScore').textContent = data.risk_score.toFixed(1);
+
+  document.getElementById('riskPct').textContent = data.risk_score.toFixed(1) + ' / 100';
+  document.getElementById('riskBar').style.width = Math.min(data.risk_score, 100) + '%';
+  document.getElementById('riskBar').style.background = data.risk_score > 50 ? '#f87171' : data.risk_score > 20 ? '#fbbf24' : '#34d399';
+
+  document.getElementById('seriousPct').textContent = data.serious_rate + '%';
+  document.getElementById('seriousBar').style.width = Math.min(data.serious_rate, 100) + '%';
+
+  const tbody = document.getElementById('reactionTable');
+  tbody.innerHTML = '';
+  if (data.top_reactions.length === 0) {
+    tbody.innerHTML = '<tr><td colspan="3" style="color:#64748b; text-align:center;">데이터 없음</td></tr>';
+  } else {
+    data.top_reactions.forEach((r, i) => {
+      tbody.innerHTML += '<tr><td>' + (i+1) + '</td><td>' + r.reaction + '</td><td>' + r.count.toLocaleString() + '</td></tr>';
+    });
+  }
+
+  const summary = document.getElementById('summaryTable');
+  summary.innerHTML =
+    '<tr><td style="color:#64748b">' + data.drug_a + ' 전체 보고</td><td>' + data.drug_a_total.toLocaleString() + '건</td></tr>' +
+    '<tr><td style="color:#64748b">' + data.drug_b + ' 전체 보고</td><td>' + data.drug_b_total.toLocaleString() + '건</td></tr>' +
+    '<tr><td style="color:#64748b">동시 복용 보고</td><td>' + data.co_occurrence.toLocaleString() + '건</td></tr>' +
+    '<tr><td style="color:#64748b">중증 결과 (입원/사망/생명위협)</td><td>' + data.serious_rate + '%</td></tr>';
+}
+
+document.addEventListener('DOMContentLoaded', () => {
+  document.getElementById('drugB').addEventListener('keydown', e => { if (e.key === 'Enter') analyze(); });
+});
+</script>
+</body>
+</html>

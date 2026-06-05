@@ -1881,3 +1881,82 @@ def api_drug_shape():
 
     except Exception as e:
         return jsonify({'error': str(e)}), 500
+@main.route('/interaction')
+def interaction_page():
+    return render_template('interaction.html')
+
+
+@main.route('/api/interaction')
+def api_interaction():
+    import pandas as pd
+    from flask import jsonify, request
+
+    drug_a = request.args.get('drug_a', '').upper().strip()
+    drug_b = request.args.get('drug_b', '').upper().strip()
+
+    if not drug_a or not drug_b:
+        return jsonify({'error': 'two drugs required'}), 400
+
+    if drug_a == drug_b:
+        return jsonify({'error': 'same drug'}), 400
+
+    df = pd.read_csv('data/processed/processed_faers.csv')
+
+    # 媛??쎈Ъ???섏옄 ID 吏묓빀
+    ids_a = set(df[df['drugname'] == drug_a]['primaryid'])
+    ids_b = set(df[df['drugname'] == drug_b]['primaryid'])
+
+    # ???쎈Ъ ?숈떆 蹂듭슜 ?섏옄
+    ids_both = ids_a & ids_b
+
+    if len(ids_a) == 0:
+        return jsonify({'error': f'{drug_a} not found'}), 404
+    if len(ids_b) == 0:
+        return jsonify({'error': f'{drug_b} not found'}), 404
+
+    if len(ids_both) == 0:
+        return jsonify({
+            'drug_a': drug_a,
+            'drug_b': drug_b,
+            'co_occurrence': 0,
+            'drug_a_total': len(ids_a),
+            'drug_b_total': len(ids_b),
+            'risk_score': 0,
+            'top_reactions': [],
+            'serious_rate': 0,
+            'message': 'no co-occurrence found'
+        })
+
+    # ?숈떆 蹂듭슜 ?섏옄 ?곗씠??    df_both = df[df['primaryid'].isin(ids_both)]
+
+    # 以묒쬆 寃곌낵 鍮꾩쑉
+    serious_outcomes = {'DE', 'HO', 'LT'}
+    df_both = df[df['primaryid'].isin(ids_both)]
+    serious = df_both[df_both['outc_cod'].isin(serious_outcomes)]['primaryid'].nunique()
+    serious_rate = round(serious / len(ids_both) * 100, 1)
+
+    # 二쇱슂 遺?묒슜 top 10
+    top_reactions = (
+        df_both['pt']
+        .value_counts()
+        .head(10)
+        .reset_index()
+        .rename(columns={'pt': 'reaction', 'count': 'count'})
+        .to_dict(orient='records')
+    )
+
+    # ?꾪뿕 ?먯닔 (?숈떆蹂듭슜 鍮꾩쑉 湲곕컲)
+    co_rate_a = len(ids_both) / len(ids_a)
+    co_rate_b = len(ids_both) / len(ids_b)
+    risk_score = round((co_rate_a + co_rate_b) / 2 * 100, 1)
+
+    return jsonify({
+        'drug_a': drug_a,
+        'drug_b': drug_b,
+        'co_occurrence': len(ids_both),
+        'drug_a_total': len(ids_a),
+        'drug_b_total': len(ids_b),
+        'serious_rate': serious_rate,
+        'risk_score': min(risk_score * 10, 100),
+        'top_reactions': top_reactions
+    })
