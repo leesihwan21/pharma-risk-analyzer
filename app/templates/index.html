@@ -7,7 +7,7 @@
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body { font-family: Arial, sans-serif; background: #0f172a; color: #e2e8f0; min-height: 100vh; display: flex; flex-direction: column; }
-        .nav { background: #1e293b; border-bottom: 1px solid #334155; padding: 14px 24px; display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 10px; }
+        .nav { background: #1e293b; border-bottom: 1px solid #334155; padding: 14px 24px; display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 10px;}
         .nav-logo { color: #38bdf8; font-size: 1.1rem; font-weight: bold; text-decoration: none; }
         .nav-right { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
         .nav-btn { padding: 8px 18px; border-radius: 8px; font-size: 0.88rem; font-weight: bold; text-decoration: none; border: none; cursor: pointer; white-space: nowrap; }
@@ -21,7 +21,7 @@
         .lang-btn { background: #1e293b; border: 1px solid #334155; color: #e2e8f0; padding: 6px 12px; border-radius: 8px; cursor: pointer; font-size: 0.82rem; font-weight: bold; }
         .lang-btn:hover { border-color: #38bdf8; color: #38bdf8; }
         .main { flex: 1; display: flex; align-items: center; justify-content: center; padding: 40px 20px; }
-        .container { max-width: 720px; width: 100%; text-align: center; }
+        .container { max-width: 900px; width: 100%; text-align: center; }
         .badge { display: inline-block; background: #1e293b; border: 1px solid #334155; color: #94a3b8; font-size: 0.75rem; padding: 4px 12px; border-radius: 20px; margin-bottom: 20px; letter-spacing: 0.05em; }
         h1 { font-size: 2.8rem; color: #38bdf8; margin-bottom: 12px; line-height: 1.2; }
         .subtitle { color: #64748b; font-size: 1rem; margin-bottom: 40px; line-height: 1.6; }
@@ -34,11 +34,14 @@
         .feature-card.highlight:hover { border-color: #34d399; background: #0f2620; }
         .feature-card.highlight-blue { border-color: #1d4ed8; }
         .feature-card.highlight-blue:hover { border-color: #38bdf8; background: #0f1f3a; }
+        .feature-card.highlight-purple { border-color: #7c3aed; }
+        .feature-card.highlight-purple:hover { border-color: #a78bfa; background: #1a0f2e; }
         .feature-card .icon { font-size: 1.6rem; display: block; margin-bottom: 8px; }
         .feature-card strong { color: #e2e8f0; display: block; margin-bottom: 4px; font-size: 0.95rem; }
         .new-badge { display: inline-block; background: #059669; color: white; font-size: 0.68rem; padding: 2px 7px; border-radius: 10px; margin-left: 4px; vertical-align: middle; font-weight: bold; }
-        @media (max-width: 680px) { h1 { font-size: 2rem; } .features { grid-template-columns: repeat(2, 1fr); } }
-        @media (max-width: 400px) { h1 { font-size: 1.7rem; } .features { grid-template-columns: repeat(2, 1fr); } .btn-main { width: 100%; text-align: center; } }
+        .new-badge.purple { background: #7c3aed; }
+        @media (max-width: 780px) { h1 { font-size: 2rem; } .features { grid-template-columns: repeat(3, 1fr); } }
+        @media (max-width: 500px) { h1 { font-size: 1.7rem; } .features { grid-template-columns: repeat(2, 1fr); } .btn-main { width: 100%; text-align: center; } }
     </style>
 </head>
 <body>
@@ -53,11 +56,11 @@
 
     <div class="main">
         <div class="container">
-            <div class="badge">FDA FAERS 2024 Q3 · YOLOv8 · ML · AE Manager · PRR</div>
+            <div class="badge">FDA FAERS 2024 Q1~2025 Q1 · YOLOv8 · XGBoost · SHAP · AE Manager · PRR</div>
             <h1>💊 Pharma Risk<br>Analyzer</h1>
             <p class="subtitle">
                 <span data-ko="약물 부작용 AI 위험도 분석 시스템" data-en="AI-powered Drug Adverse Event Risk Analysis System">약물 부작용 AI 위험도 분석 시스템</span><br>
-                <span data-ko="실제 FDA 데이터 기반 · 머신러닝 예측 · 알약 이미지 탐지 · AE 관리 · PRR 신호 탐지" data-en="Real FDA Data · ML Prediction · Pill Detection · AE Management · PRR Signal Detection">실제 FDA 데이터 기반 · 머신러닝 예측 · 알약 이미지 탐지 · AE 관리 · PRR 신호 탐지</span>
+                <span data-ko="실제 FDA 데이터 기반 · 머신러닝 예측 · SHAP 설명가능 AI · 식약처 약물 조회 · AE 관리 · PRR 신호 탐지" data-en="Real FDA Data · ML Prediction · SHAP XAI · Drug Lookup · AE Management · PRR Signal Detection">실제 FDA 데이터 기반 · 머신러닝 예측 · SHAP 설명가능 AI · 식약처 약물 조회 · AE 관리 · PRR 신호 탐지</span>
             </p>
             <a href="/dashboard" class="btn-main" data-ko="대시보드 보기 →" data-en="Go to Dashboard →">대시보드 보기 →</a>
 
@@ -71,6 +74,21 @@
                     <span class="icon">🤖</span>
                     <strong data-ko="AI 예측" data-en="AI Prediction">AI 예측</strong>
                     <span data-ko="위험도 자동 분류" data-en="Automated Risk Classification">위험도 자동 분류</span>
+                </a>
+                <a href="/shap" class="feature-card highlight-purple">
+                    <span class="icon">🔍</span>
+                    <strong>SHAP XAI <span class="new-badge purple">NEW</span></strong>
+                    <span data-ko="예측 근거 시각화" data-en="Explainable AI Visualization">예측 근거 시각화</span>
+                </a>
+                <a href="/trend" class="feature-card highlight-purple">
+                    <span class="icon">📈</span>
+                    <strong><span data-ko="쿼터별 트렌드" data-en="Quarter Trend">쿼터별 트렌드</span> <span class="new-badge purple">NEW</span></strong>
+                    <span data-ko="2024 Q1~2025 Q1 추이" data-en="2024 Q1~2025 Q1 Trend">2024 Q1~2025 Q1 추이</span>
+                </a>
+                <a href="/drug-lookup" class="feature-card highlight-purple">
+                    <span class="icon">💊</span>
+                    <strong>Drug Lookup <span class="new-badge purple">NEW</span></strong>
+                    <span data-ko="식약처 + OpenFDA 조회" data-en="MFDS + OpenFDA Lookup">식약처 + OpenFDA 조회</span>
                 </a>
                 <a href="/webcam" class="feature-card">
                     <span class="icon">📸</span>
@@ -95,12 +113,17 @@
                 <a href="/prr" class="feature-card highlight-blue">
                     <span class="icon">📡</span>
                     <strong><span data-ko="PRR 신호 탐지" data-en="PRR Signal Detection">PRR 신호 탐지</span> <span class="new-badge">NEW</span></strong>
-                    <span data-ko="FDA/EMA 기준 부작용 신호 탐지" data-en="FDA/EMA Evans Criteria Signal Detection">FDA/EMA 기준 부작용 신호 탐지</span>
+                    <span data-ko="FDA/EMA 기준 신호 탐지" data-en="FDA/EMA Evans Criteria">FDA/EMA 기준 신호 탐지</span>
                 </a>
                 <a href="/ae_manager" class="feature-card highlight">
                     <span class="icon">🧪</span>
                     <strong>AE Manager <span class="new-badge">NEW</span></strong>
                     <span data-ko="CTCAE · SAE · 보고 타임라인" data-en="CTCAE · SAE · Reporting Timeline">CTCAE · SAE · 보고 타임라인</span>
+                </a>
+                <a href="/korea" class="feature-card">
+                    <span class="icon">🔗</span>
+                    <strong data-ko="부작용 네트워크" data-en="AE Network">부작용 네트워크</strong>
+                    <span data-ko="약물-부작용 관계 그래프" data-en="Drug-Reaction Network Graph">약물-부작용 관계 그래프</span>
                 </a>
             </div>
         </div>
