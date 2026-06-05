@@ -178,17 +178,21 @@ python run.py
 
 ---
 
-## 🧠 ML 모델 | ML Model
+## 🧠 머신러닝 파이프라인 | ML Model Specifications
 
-```
-Algorithm : XGBoost Classifier
-Features  : drugname_enc, reaction_enc, sex_enc, age,
-            drug_risk_rate, reac_risk_rate, combo_risk_rate
-Target    : serious outcome (hospitalization/death = 1, other = 0)
-Accuracy  : 69.4%
-Data      : FDA FAERS 2024 Q1 ~ 2025 Q1 (480,000행)
-XAI       : SHAP TreeExplainer (feature importance visualization)
-```
+- **알고리즘**: XGBoost Classifier
+- **학습 피처**: `drugname_enc`, `reaction_enc`, `sex_enc`, `age`, `drug_risk_rate`, `reac_risk_rate`, `combo_risk_rate`
+- **예측 타겟**: Serious Outcome (입원/사망/생명위협 → 1, 기타 → 0)
+- **검증 성능**: Accuracy 69.4% (480,000행 실데이터 기준)
+- **설명력**: SHAP TreeExplainer 기반 피처 기여도 시각화
+
+### 💡 왜 XGBoost를 선택했나?
+
+FDA FAERS 데이터는 약물명·부작용명·나이·성별 등 **7개의 정형 피처(tabular data)** 로 구성됩니다. 정형 데이터에서는 딥러닝보다 XGBoost/LightGBM 계열이 일반적으로 더 높은 성능을 보이며, 실제 Kaggle 정형 데이터 경진대회에서도 압도적으로 많이 사용됩니다.
+
+딥러닝 대신 XGBoost를 선택한 핵심 이유는 두 가지입니다:
+
+1. **설명가능성 (XAI)**: SHAP TreeExplainer와의 호환성이 뛰어나 예측 근거(피처 기여도)를 직관적으로 시각화할 수 있습니다. "왜 이 약물이 위험한가"를 설명할 수 있는 것이 이 프로젝트의 핵심 강점입니다.
 
 ---
 
