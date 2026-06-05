@@ -17,3 +17,6 @@ class Config:
     MAIL_USERNAME = os.environ.get('MAIL_USERNAME') or 'your-email@gmail.com'
     MAIL_PASSWORD = os.environ.get('MAIL_PASSWORD') or 'your-app-password'
     MAIL_DEFAULT_SENDER = os.environ.get('MAIL_USERNAME') or 'your-email@gmail.com'
+    MFDS_API_KEY = os.environ.get('MFDS_API_KEY') or ''
+
+    ANTHROPIC_API_KEY = os.environ.get('ANTHROPIC_API_KEY') or ''

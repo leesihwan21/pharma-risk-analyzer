@@ -1,0 +1,231 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>SHAP Analysis | Pharma Risk Analyzer</title>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body { font-family: Arial, sans-serif; background: #0f172a; color: #e2e8f0; min-height: 100vh; }
+    .nav { background: #1e293b; border-bottom: 1px solid #334155; padding: 14px 24px; display: flex; align-items: center; justify-content: space-between; }
+    .nav-logo { color: #38bdf8; font-size: 1.1rem; font-weight: bold; text-decoration: none; }
+    .nav-links { display: flex; gap: 8px; flex-wrap: wrap; }
+    .nav-btn { padding: 8px 18px; border-radius: 8px; font-size: 0.88rem; font-weight: bold; text-decoration: none; color: #94a3b8; border: 1px solid #334155; }
+    .nav-btn:hover { border-color: #38bdf8; color: #38bdf8; }
+    .nav-btn.active { background: #38bdf8; color: #0f172a; border-color: #38bdf8; }
+
+    .container { max-width: 900px; margin: 48px auto; padding: 0 24px; }
+    .page-header { margin-bottom: 32px; }
+    .page-header h1 { font-size: 1.9rem; color: #38bdf8; margin-bottom: 8px; }
+    .page-header p { color: #64748b; font-size: 0.95rem; }
+
+    .input-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 16px; }
+    .input-group { display: flex; flex-direction: column; gap: 6px; }
+    .input-group label { font-size: 0.82rem; color: #64748b; font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em; }
+    .input-group input, .input-group select {
+      padding: 12px 16px; background: #1e293b; border: 1px solid #334155;
+      border-radius: 10px; color: #e2e8f0; font-size: 0.95rem; outline: none;
+    }
+    .input-group input:focus, .input-group select:focus { border-color: #38bdf8; }
+    .input-group input::placeholder { color: #475569; }
+
+    .analyze-btn {
+      width: 100%; padding: 14px; background: #38bdf8; color: #0f172a;
+      border: none; border-radius: 10px; font-size: 1rem;
+      font-weight: bold; cursor: pointer; margin-bottom: 32px;
+    }
+    .analyze-btn:hover { background: #0ea5e9; }
+
+    .card { background: #1e293b; border: 1px solid #334155; border-radius: 14px; padding: 28px; margin-bottom: 20px; }
+    .card h2 { font-size: 1.05rem; color: #94a3b8; margin-bottom: 20px; }
+
+    .risk-badge {
+      display: inline-block; padding: 6px 18px; border-radius: 20px;
+      font-size: 0.9rem; font-weight: bold; margin-bottom: 16px;
+    }
+    .risk-high { background: rgba(248,113,113,0.15); color: #f87171; border: 1px solid #f87171; }
+    .risk-low { background: rgba(52,211,153,0.15); color: #34d399; border: 1px solid #34d399; }
+
+    .prob-row { display: flex; gap: 20px; margin-bottom: 8px; }
+    .prob-item { flex: 1; }
+    .prob-label { font-size: 0.8rem; color: #64748b; margin-bottom: 6px; }
+    .prob-bar-bg { background: #334155; border-radius: 6px; height: 8px; overflow: hidden; }
+    .prob-bar { height: 100%; border-radius: 6px; transition: width 0.6s ease; }
+    .prob-bar-safe { background: #34d399; }
+    .prob-bar-risk { background: #f87171; }
+    .prob-value { font-size: 1.1rem; font-weight: bold; margin-top: 6px; }
+
+    .shap-row { display: flex; align-items: center; gap: 12px; margin-bottom: 12px; }
+    .shap-feature { width: 140px; font-size: 0.85rem; color: #94a3b8; text-align: right; flex-shrink: 0; }
+    .shap-bar-wrap { flex: 1; display: flex; align-items: center; height: 26px; position: relative; }
+    .shap-center { width: 2px; background: #475569; height: 100%; position: absolute; left: 50%; }
+    .shap-bar { height: 18px; border-radius: 3px; position: absolute; top: 50%; transform: translateY(-50%); }
+    .shap-pos { background: #f87171; left: 50%; }
+    .shap-neg { background: #34d399; right: 50%; }
+    .shap-val { width: 70px; font-size: 0.82rem; color: #64748b; flex-shrink: 0; }
+    .shap-feature-val { width: 120px; font-size: 0.8rem; color: #475569; flex-shrink: 0; text-align: right; }
+
+    .legend { display: flex; gap: 20px; margin-bottom: 18px; font-size: 0.82rem; color: #64748b; }
+    .legend-dot { width: 10px; height: 10px; border-radius: 2px; display: inline-block; margin-right: 5px; vertical-align: middle; }
+
+    .error { padding: 16px; background: #1e293b; border: 1px solid #f87171; border-radius: 10px; color: #f87171; margin-bottom: 20px; display: none; }
+    .loading { text-align: center; padding: 40px; color: #64748b; display: none; }
+    #result-area { display: none; }
+  </style>
+</head>
+<body>
+
+<nav class="nav">
+  <a href="/" class="nav-logo">💊 Pharma Risk Analyzer</a>
+  <div class="nav-links">
+    <a href="/dashboard" class="nav-btn">Dashboard</a>
+    <a href="/filter" class="nav-btn">Search</a>
+    <a href="/compare" class="nav-btn">Compare</a>
+    <a href="/prr" class="nav-btn">PRR</a>
+    <a href="/trend" class="nav-btn">Trend</a>
+    <a href="/shap" class="nav-btn active">SHAP</a>
+    <a href="/ae_manager" class="nav-btn">AE Manager</a>
+  </div>
+</nav>
+
+<div class="container">
+  <div class="page-header">
+    <h1>🔍 SHAP Risk Explanation</h1>
+    <p>AI prediction with explainability — which factors drive the risk score</p>
+  </div>
+
+  <div class="input-grid">
+    <div class="input-group">
+      <label>Drug Name</label>
+      <input type="text" id="drugInput" placeholder="e.g. METHOTREXATE">
+    </div>
+    <div class="input-group">
+      <label>Reaction</label>
+      <input type="text" id="reacInput" placeholder="e.g. FATIGUE">
+    </div>
+    <div class="input-group">
+      <label>Age</label>
+      <input type="number" id="ageInput" value="50" min="0" max="120">
+    </div>
+    <div class="input-group">
+      <label>Sex</label>
+      <select id="sexInput">
+        <option value="F">Female</option>
+        <option value="M">Male</option>
+      </select>
+    </div>
+  </div>
+  <button class="analyze-btn" onclick="loadShap()">Analyze Risk</button>
+
+  <div id="loading" class="loading">⏳ Running SHAP analysis...</div>
+  <div id="error-msg" class="error"></div>
+
+  <div id="result-area">
+    <div class="card">
+      <h2>Prediction Result</h2>
+      <div id="riskBadge"></div>
+      <div class="prob-row">
+        <div class="prob-item">
+          <div class="prob-label">Safe probability</div>
+          <div class="prob-bar-bg"><div class="prob-bar prob-bar-safe" id="safeBar" style="width:0%"></div></div>
+          <div class="prob-value" id="safeVal" style="color:#34d399"></div>
+        </div>
+        <div class="prob-item">
+          <div class="prob-label">Risk probability</div>
+          <div class="prob-bar-bg"><div class="prob-bar prob-bar-risk" id="riskBar" style="width:0%"></div></div>
+          <div class="prob-value" id="riskVal" style="color:#f87171"></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>SHAP Feature Importance</h2>
+      <div class="legend">
+        <span><span class="legend-dot" style="background:#f87171"></span>Increases risk</span>
+        <span><span class="legend-dot" style="background:#34d399"></span>Decreases risk</span>
+      </div>
+      <div id="shapBars"></div>
+    </div>
+  </div>
+</div>
+
+<script>
+async function loadShap() {
+  const drug = document.getElementById('drugInput').value.trim();
+  const reac = document.getElementById('reacInput').value.trim();
+  const age = document.getElementById('ageInput').value;
+  const sex = document.getElementById('sexInput').value;
+
+  if (!drug || !reac) {
+    document.getElementById('error-msg').textContent = 'Please enter drug name and reaction.';
+    document.getElementById('error-msg').style.display = 'block';
+    return;
+  }
+
+  document.getElementById('loading').style.display = 'block';
+  document.getElementById('result-area').style.display = 'none';
+  document.getElementById('error-msg').style.display = 'none';
+
+  try {
+    const url = '/api/shap?drug=' + encodeURIComponent(drug) +
+                '&reaction=' + encodeURIComponent(reac) +
+                '&age=' + age + '&sex=' + sex;
+    const res = await fetch(url);
+    const data = await res.json();
+
+    if (!res.ok) {
+      document.getElementById('error-msg').textContent = data.error || 'Error occurred';
+      document.getElementById('error-msg').style.display = 'block';
+      document.getElementById('loading').style.display = 'none';
+      return;
+    }
+
+    renderResult(data);
+    document.getElementById('result-area').style.display = 'block';
+
+  } catch(e) {
+    document.getElementById('error-msg').textContent = 'Server error.';
+    document.getElementById('error-msg').style.display = 'block';
+  }
+  document.getElementById('loading').style.display = 'none';
+}
+
+function renderResult(data) {
+  const badge = document.getElementById('riskBadge');
+  badge.innerHTML = '<span class="risk-badge ' + (data.prediction === 1 ? 'risk-high' : 'risk-low') + '">' + data.risk_label + '</span>';
+
+  document.getElementById('safeBar').style.width = data.probability.safe + '%';
+  document.getElementById('riskBar').style.width = data.probability.risk + '%';
+  document.getElementById('safeVal').textContent = data.probability.safe + '%';
+  document.getElementById('riskVal').textContent = data.probability.risk + '%';
+
+  const maxShap = Math.max(...data.shap.map(d => Math.abs(d.shap)));
+  const container = document.getElementById('shapBars');
+  container.innerHTML = '';
+
+  data.shap.forEach(d => {
+    const pct = maxShap > 0 ? (Math.abs(d.shap) / maxShap * 45) : 0;
+    const isPos = d.shap >= 0;
+    const row = document.createElement('div');
+    row.className = 'shap-row';
+    row.innerHTML =
+      '<div class="shap-feature">' + d.feature + '</div>' +
+      '<div class="shap-bar-wrap">' +
+        '<div class="shap-center"></div>' +
+        '<div class="shap-bar ' + (isPos ? 'shap-pos' : 'shap-neg') + '" style="width:' + pct + '%"></div>' +
+      '</div>' +
+      '<div class="shap-val">' + (d.shap >= 0 ? '+' : '') + d.shap + '</div>' +
+      '<div class="shap-feature-val">val: ' + d.value + '</div>';
+    container.appendChild(row);
+  });
+}
+
+document.addEventListener('DOMContentLoaded', () => {
+  document.getElementById('reacInput').addEventListener('keydown', e => {
+    if (e.key === 'Enter') loadShap();
+  });
+});
+</script>
+</body>
+</html>

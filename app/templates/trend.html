@@ -1,0 +1,203 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Trend Analysis | Pharma Risk Analyzer</title>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body { font-family: Arial, sans-serif; background: #0f172a; color: #e2e8f0; min-height: 100vh; }
+    .nav { background: #1e293b; border-bottom: 1px solid #334155; padding: 14px 24px; display: flex; align-items: center; justify-content: space-between; }
+    .nav-logo { color: #38bdf8; font-size: 1.1rem; font-weight: bold; text-decoration: none; }
+    .nav-links { display: flex; gap: 8px; }
+    .nav-btn { padding: 8px 18px; border-radius: 8px; font-size: 0.88rem; font-weight: bold; text-decoration: none; color: #94a3b8; border: 1px solid #334155; }
+    .nav-btn:hover { border-color: #38bdf8; color: #38bdf8; }
+    .nav-btn.active { background: #38bdf8; color: #0f172a; border-color: #38bdf8; }
+
+    .container { max-width: 900px; margin: 48px auto; padding: 0 24px; }
+
+    .page-header { margin-bottom: 32px; }
+    .page-header h1 { font-size: 1.9rem; color: #38bdf8; margin-bottom: 8px; }
+    .page-header p { color: #64748b; font-size: 0.95rem; }
+
+    .search-bar { display: flex; gap: 10px; margin-bottom: 36px; }
+    .search-bar input {
+      flex: 1; padding: 13px 18px;
+      background: #1e293b; border: 1px solid #334155;
+      border-radius: 10px; color: #e2e8f0; font-size: 1rem;
+      outline: none;
+    }
+    .search-bar input:focus { border-color: #38bdf8; }
+    .search-bar input::placeholder { color: #475569; }
+    .search-bar button {
+      padding: 13px 32px; background: #38bdf8; color: #0f172a;
+      border: none; border-radius: 10px; font-size: 1rem;
+      font-weight: bold; cursor: pointer;
+    }
+    .search-bar button:hover { background: #0ea5e9; }
+
+    .card {
+      background: #1e293b; border: 1px solid #334155;
+      border-radius: 14px; padding: 28px; margin-bottom: 20px;
+    }
+    .card h2 { font-size: 1.05rem; color: #94a3b8; margin-bottom: 22px; }
+
+    table { width: 100%; border-collapse: collapse; }
+    th, td { padding: 13px 16px; text-align: left; border-bottom: 1px solid #334155; font-size: 0.93rem; }
+    th { color: #64748b; font-weight: 600; }
+    td { color: #e2e8f0; }
+    tr:last-child td { border-bottom: none; }
+
+    .up { color: #f87171; }
+    .down { color: #34d399; }
+    .flat { color: #64748b; }
+
+    .error { padding: 16px; background: #1e293b; border: 1px solid #f87171; border-radius: 10px; color: #f87171; margin-bottom: 20px; }
+    .loading { text-align: center; padding: 40px; color: #64748b; }
+    #result-area { display: none; }
+    #error-msg { display: none; }
+    #loading { display: none; }
+  </style>
+</head>
+<body>
+
+<nav class="nav">
+  <a href="/" class="nav-logo">💊 Pharma Risk Analyzer</a>
+  <div class="nav-links">
+    <a href="/dashboard" class="nav-btn">Dashboard</a>
+    <a href="/filter" class="nav-btn">Search</a>
+    <a href="/compare" class="nav-btn">Compare</a>
+    <a href="/prr" class="nav-btn">PRR</a>
+    <a href="/trend" class="nav-btn active">Trend</a>
+    <a href="/ae_manager" class="nav-btn">AE Manager</a>
+  </div>
+</nav>
+
+<div class="container">
+  <div class="page-header">
+    <h1>📈 Quarter Trend Analysis</h1>
+    <p>FDA FAERS quarterly adverse event report trend by drug</p>
+  </div>
+
+  <div class="search-bar">
+    <input type="text" id="drugInput" placeholder="Enter drug name (e.g. METHOTREXATE)" autocomplete="off">
+    <button onclick="loadTrend()">Analyze</button>
+  </div>
+
+  <div id="loading" class="loading">⏳ Loading...</div>
+  <div id="error-msg" class="error"></div>
+
+  <div id="result-area">
+    <div class="card">
+      <h2 id="chartTitle"></h2>
+      <canvas id="trendChart" height="90"></canvas>
+    </div>
+    <div class="card">
+      <h2>Quarter Summary</h2>
+      <table>
+        <thead><tr><th>Quarter</th><th>Reports</th><th>vs. Previous</th></tr></thead>
+        <tbody id="tableBody"></tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<script>
+let chart = null;
+
+async function loadTrend() {
+  const drug = document.getElementById('drugInput').value.trim();
+  if (!drug) return;
+
+  document.getElementById('loading').style.display = 'block';
+  document.getElementById('result-area').style.display = 'none';
+  document.getElementById('error-msg').style.display = 'none';
+
+  try {
+    const res = await fetch('/api/trend?drug=' + encodeURIComponent(drug));
+    const data = await res.json();
+
+    if (!res.ok) {
+      document.getElementById('error-msg').textContent = data.error || 'Error occurred';
+      document.getElementById('error-msg').style.display = 'block';
+      document.getElementById('loading').style.display = 'none';
+      return;
+    }
+
+    renderChart(data);
+    renderTable(data);
+    document.getElementById('chartTitle').textContent = data.drug + ' — Quarterly Report Count';
+    document.getElementById('result-area').style.display = 'block';
+
+  } catch(e) {
+    document.getElementById('error-msg').textContent = 'Server error.';
+    document.getElementById('error-msg').style.display = 'block';
+  }
+  document.getElementById('loading').style.display = 'none';
+}
+
+function renderChart(data) {
+  const labels = data.trend.map(d => d.quarter);
+  const counts = data.trend.map(d => d.count);
+  if (chart) chart.destroy();
+  const ctx = document.getElementById('trendChart').getContext('2d');
+  chart = new Chart(ctx, {
+    type: 'line',
+    data: {
+      labels: labels,
+      datasets: [{
+        label: 'Reports',
+        data: counts,
+        borderColor: '#38bdf8',
+        backgroundColor: 'rgba(56,189,248,0.08)',
+        borderWidth: 2.5,
+        pointRadius: 6,
+        pointBackgroundColor: '#38bdf8',
+        fill: true,
+        tension: 0.3
+      }]
+    },
+    options: {
+      responsive: true,
+      plugins: {
+        legend: { display: false },
+        tooltip: {
+          backgroundColor: '#1e293b',
+          borderColor: '#334155',
+          borderWidth: 1,
+          titleColor: '#94a3b8',
+          bodyColor: '#e2e8f0',
+          callbacks: { label: ctx => ' ' + ctx.raw + ' reports' }
+        }
+      },
+      scales: {
+        x: { ticks: { color: '#64748b' }, grid: { color: '#1e293b' } },
+        y: { beginAtZero: true, ticks: { color: '#64748b', stepSize: 1 }, grid: { color: '#334155' } }
+      }
+    }
+  });
+}
+
+function renderTable(data) {
+  const tbody = document.getElementById('tableBody');
+  tbody.innerHTML = '';
+  data.trend.forEach((d, i) => {
+    const prev = i > 0 ? data.trend[i-1].count : null;
+    const diff = prev !== null ? d.count - prev : null;
+    const diffStr = diff === null ? '<span class="flat">—</span>'
+      : diff > 0 ? '<span class="up">▲ ' + diff + '</span>'
+      : diff < 0 ? '<span class="down">▼ ' + Math.abs(diff) + '</span>'
+      : '<span class="flat">— 0</span>';
+    tbody.innerHTML += '<tr><td>' + d.quarter + '</td><td>' + d.count.toLocaleString() + '</td><td>' + diffStr + '</td></tr>';
+  });
+}
+
+document.addEventListener('DOMContentLoaded', () => {
+  document.getElementById('drugInput').addEventListener('keydown', e => {
+    if (e.key === 'Enter') loadTrend();
+  });
+});
+</script>
+</body>
+</html>

@@ -1,20 +1,23 @@
 # 💊 Pharma Risk Analyzer
+
 ### 약물 부작용 AI 위험도 분석 시스템
 
 > **AI-powered Drug Adverse Event Risk Analysis System**  
-> FDA FAERS 실데이터 + YOLOv8 알약 탐지 + 머신러닝 위험도 예측
+> FDA FAERS 실데이터 + YOLOv8 알약 탐지 + 머신러닝 위험도 예측 + SHAP 설명가능 AI + 식약처 약물 조회
 
 [![Python](https://img.shields.io/badge/Python-3.12-blue)](https://python.org)
 [![Flask](https://img.shields.io/badge/Flask-3.1-green)](https://flask.palletsprojects.com)
 [![YOLOv8](https://img.shields.io/badge/YOLOv8-Ultralytics-orange)](https://ultralytics.com)
-[![FAERS](https://img.shields.io/badge/Data-FDA%20FAERS%202024Q3-red)](https://www.fda.gov/drugs/surveillance/fdas-adverse-event-reporting-system-faers)
+[![FAERS](https://img.shields.io/badge/Data-FDA%20FAERS%202024Q1--2025Q1-red)](https://www.fda.gov/drugs/surveillance/fdas-adverse-event-reporting-system-faers)
+[![XAI](https://img.shields.io/badge/XAI-SHAP-purple)](https://shap.readthedocs.io)
+[![MFDS](https://img.shields.io/badge/API-%EC%8B%9D%EC%95%BD%EC%B2%98%20%EB%82%B1%EC%95%8C%EC%8B%9D%EB%B3%84-brightgreen)](https://www.mfds.go.kr)
 
 ---
 
 ## 🌐 Live Demo
-**배포 URL**: https://pharma-risk-analyzer.onrender.com
 
-> ⚠️ 무료 플랜 사용 중으로 첫 접속 시 50초 정도 로딩될 수 있어요.  
+**배포 URL**: https://pharma-risk-analyzer.onrender.com
+> ⚠️ 무료 플랜 사용 중으로 첫 접속 시 50초 정도 로딩될 수 있습니다.  
 > ML/YOLO 기능(AI 예측, 알약 탐지, 웹캠)은 배포 버전에서 제외됩니다.
 
 ---
@@ -22,10 +25,10 @@
 ## 📌 프로젝트 개요 | Overview
 
 **한국어**  
-FDA FAERS(Adverse Event Reporting System) 2024년 3분기 실데이터를 기반으로, 약물별 부작용 발생 패턴을 분석하고 머신러닝으로 위험도를 예측하는 웹 애플리케이션입니다. YOLOv8 기반 알약 이미지 탐지 기능과 한국 식약처 이상사례 데이터도 통합되어 있습니다.
+FDA FAERS(Adverse Event Reporting System) 2024 Q1 ~ 2025 Q1 멀티쿼터 실데이터를 기반으로, 약물별 부작용 발생 패턴을 분석하고 머신러닝(XGBoost)으로 위험도를 예측하는 웹 애플리케이션입니다. SHAP 기반 설명가능 AI(XAI)로 예측 근거를 시각화하며, 식약처 낱알식별 API와 OpenFDA를 통해 한국/미국 약물 정보를 통합 제공합니다.
 
 **English**  
-A web application that analyzes drug adverse event patterns and predicts risk levels using machine learning, based on real-world FDA FAERS 2024 Q3 data. Integrates YOLOv8-based pill image detection and Korean MFDS adverse event data.
+A web application analyzing drug adverse event patterns and predicting risk levels using XGBoost ML, based on real-world FDA FAERS multi-quarter data (2024 Q1 ~ 2025 Q1). Features SHAP-based explainable AI, quarterly trend analysis, and integrated Korean MFDS + OpenFDA drug lookup.
 
 ---
 
@@ -35,7 +38,10 @@ A web application that analyzes drug adverse event patterns and predicts risk le
 |------|------|---------|
 | 📊 대시보드 | FAERS 데이터 기반 부작용 통계 시각화 (6개 차트) | Adverse event statistics dashboard |
 | 🔍 약물 검색 | 약물명 자동완성 + 상세 부작용 분석 | Drug search with autocomplete |
-| 🤖 AI 위험도 예측 | 약물·부작용·나이·성별 입력 → 위험도 분류 | ML-based risk prediction |
+| 🤖 AI 위험도 예측 | 약물·부작용·나이·성별 입력 → 위험도 분류 (XGBoost) | XGBoost-based risk prediction |
+| 🔍 SHAP 설명가능 AI | 예측 근거 피처 기여도 시각화 — 왜 위험한지 설명 | SHAP-based XAI feature importance |
+| 📈 쿼터별 트렌드 | 2024 Q1~2025 Q1 분기별 부작용 보고 추이 시각화 | Quarterly adverse event trend analysis |
+| 💊 Drug Lookup | 약물명 또는 모양/색상으로 식약처+OpenFDA 통합 조회 | Korean MFDS + OpenFDA drug info lookup |
 | 📸 알약 이미지 탐지 | YOLOv8으로 알약 종류 자동 인식 후 위험도 분석 | YOLOv8 pill detection + risk analysis |
 | 📹 실시간 웹캠 탐지 | 웹캠으로 실시간 알약 탐지 | Real-time webcam pill detection |
 | ⚖️ 약물 비교 | 두 약물의 부작용 패턴 나란히 비교 | Side-by-side drug comparison |
@@ -43,10 +49,10 @@ A web application that analyzes drug adverse event patterns and predicts risk le
 | 📄 PDF 리포트 | 약물 분석 결과 PDF 자동 생성 | Automated PDF report generation |
 | 🇰🇷 한국 데이터 | 식약처 이상사례 연도별 트렌드 분석 | Korean MFDS adverse event trends |
 | 🔐 회원 기능 | 로그인·즐겨찾기·검색기록 관리 | User auth, favorites, history |
-| 🧪 AE Manager | CTCAE 자동분류·SAE 판정·15일 보고 타임라인·PDF/E2B 출력·수정/삭제 | AE management with CTCAE auto-grading, SAE detection, reporting timeline |
-| 📡 PRR 신호 탐지 | FDA/EMA Evans 기준 Proportional Reporting Ratio 계산 및 시각화 | PRR-based signal detection (FDA/EMA Evans criteria) |
-| 🗂 ICH E2B XML | 규제기관 제출용 ICH E2B(R3) 형식 XML 자동 생성 | ICH E2B(R3) XML export for regulatory submission |
-| 🌐 한/영 다국어 | 전체 11개 페이지 한국어·영어 실시간 전환 (localStorage 유지) | Korean/English i18n across all pages |
+| 🧪 AE Manager | CTCAE 자동분류·SAE 판정·15일 보고 타임라인·PDF/E2B 출력 | AE management with CTCAE auto-grading |
+| 📡 PRR 신호 탐지 | FDA/EMA Evans 기준 PRR 계산 및 시각화 | PRR-based signal detection |
+| 🗂 ICH E2B XML | 규제기관 제출용 ICH E2B(R3) 형식 XML 자동 생성 | ICH E2B(R3) XML export |
+| 🌐 한/영 다국어 | 전체 페이지 한국어·영어 실시간 전환 | Korean/English i18n |
 
 ---
 
@@ -54,9 +60,10 @@ A web application that analyzes drug adverse event patterns and predicts risk le
 
 ```
 Backend   : Flask 3.1, SQLAlchemy, Flask-Login, Flask-Limiter, Flask-Caching
-ML/AI     : scikit-learn (Random Forest), YOLOv8 (Ultralytics)
-Data      : FDA FAERS 2024 Q3, 한국 식약처 이상사례 데이터
-Viz       : Plotly, NetworkX (Canvas)
+ML/AI     : XGBoost, SHAP (XAI), YOLOv8 (Ultralytics)
+Data      : FDA FAERS 2024 Q1~2025 Q1 (멀티쿼터), 한국 식약처 이상사례 데이터
+External  : 식약처 낱알식별 OpenAPI, OpenFDA Drug Label API
+Viz       : Plotly, NetworkX (Canvas), Chart.js
 DB        : SQLite (개발/배포), PyMySQL 지원
 Report    : ReportLab (PDF), ICH E2B(R3) XML
 Frontend  : Jinja2 Templates, Vanilla JS, 반응형 CSS
@@ -72,13 +79,10 @@ Test      : pytest (28개 테스트)
 ```
 pharma-risk-analyzer/
 ├── app/
-│   ├── __init__.py           # Flask 앱 팩토리, 확장 초기화
-│   ├── models.py             # DB 모델 (User, DrugSearch, FavoriteDrug, PredictionLog, AEReport)
-│   ├── routes.py             # 전체 기능 라우트 (ML/YOLO 포함)
-│   ├── routes_lite.py        # 배포용 경량 라우트 (ML/YOLO 제외)
-│   ├── static/
-│   │   └── lang.js           # 한/영 다국어 전환 모듈
-│   └── templates/            # HTML 템플릿 (11개 페이지)
+│   ├── __init__.py           # Flask 앱 팩토리
+│   ├── models.py             # DB 모델
+│   ├── routes.py             # 전체 기능 라우트
+│   └── templates/            # HTML 템플릿 (14개 페이지)
 │       ├── index.html
 │       ├── dashboard.html
 │       ├── drug_detail.html
@@ -88,32 +92,29 @@ pharma-risk-analyzer/
 │       ├── webcam.html
 │       ├── ae_manager.html
 │       ├── prr.html
+│       ├── trend.html        # ✅ 신규: 쿼터별 트렌드
+│       ├── shap.html         # ✅ 신규: SHAP XAI 분석
+│       ├── drug_lookup.html  # ✅ 신규: 약물 정보 통합 조회
 │       ├── login.html
 │       └── register.html
 ├── data/
 │   ├── raw/
-│   │   ├── faers_ascii_2024q3/   # FDA FAERS 원본 데이터
-│   │   └── korea_adr.csv         # 한국 이상사례 데이터
+│   │   ├── faers_ascii_2024q1/   # ✅ FDA FAERS 멀티쿼터
+│   │   ├── faers_ascii_2024q2/
+│   │   ├── faers_ascii_2024q3/
+│   │   ├── faers_ascii_2025q1/
+│   │   └── korea_adr.csv
 │   ├── processed/
-│   │   └── processed_faers.csv   # 전처리 완료 데이터
-│   ├── download_faers.py         # FAERS 데이터 다운로드
-│   └── preprocess.py             # 데이터 전처리
+│   │   └── processed_faers.csv   # 480,000행 멀티쿼터 통합
+│   ├── download_faers.py         # 멀티쿼터 자동 다운로드
+│   └── preprocess.py             # 메모리 효율적 전처리
 ├── ml/
-│   ├── train_model.py            # 분류 모델 학습
-│   ├── train_yolo.py             # YOLOv8 파인튜닝
-│   ├── model.pkl                 # 학습된 분류 모델
-│   ├── le_drug.pkl / le_reac.pkl # 라벨 인코더
-│   ├── risk_rates.pkl            # 사전 계산된 위험률
-│   └── best.pt                   # YOLOv8 가중치
-├── tests/
-│   ├── conftest.py               # 테스트 픽스처
-│   ├── test_api.py               # API 테스트
-│   └── test_ae.py                # AE Manager 테스트 (28개)
-├── config.py                     # 앱 설정
-├── run.py                        # 실행 진입점
-├── requirements.txt              # 전체 패키지
-├── requirements_lite.txt         # 배포용 경량 패키지
-└── render.yaml                   # Render 배포 설정
+│   ├── train_model.py            # XGBoost 모델 학습
+│   ├── model.pkl                 # 학습된 XGBoost 모델
+│   └── ...
+├── config.py
+├── run.py
+└── README.md
 ```
 
 ---
@@ -128,23 +129,25 @@ cd pharma-risk-analyzer
 # 2. 가상환경 생성 및 활성화
 python -m venv venv
 venv\Scripts\activate        # Windows
-# source venv/bin/activate   # Mac/Linux
 
 # 3. 패키지 설치
 pip install -r requirements.txt
 
-# 4. 환경변수 설정 (.env 파일 생성)
+# 4. 환경변수 설정 (app/.env 파일 생성)
 SECRET_KEY=your-secret-key
-MAIL_USERNAME=your-email@gmail.com
-MAIL_PASSWORD=your-app-password
+MFDS_API_KEY=your-mfds-api-key      # 식약처 공공데이터포털 발급
+ANTHROPIC_API_KEY=your-api-key      # 선택사항
 
-# 5. 데이터 전처리 (최초 1회)
+# 5. 멀티쿼터 데이터 다운로드 (최초 1회)
+python data/download_faers.py
+
+# 6. 데이터 전처리
 python data/preprocess.py
 
-# 6. ML 모델 학습 (최초 1회)
+# 7. ML 모델 학습
 python ml/train_model.py
 
-# 7. 앱 실행
+# 8. 앱 실행
 python run.py
 ```
 
@@ -152,86 +155,37 @@ python run.py
 
 ---
 
-## 🧪 AE Manager 기능 상세 | AE Manager Details
+## 🧠 ML 모델 | ML Model
 
-임상시험 이상사례(Adverse Event) 관리를 위한 종합 모듈입니다.
-
-| 기능 | 설명 |
-|------|------|
-| CTCAE 자동 분류 | AE 용어 입력 시 Grade 1~5 자동 판정 |
-| SAE 자동 판정 | 입원·사망·생명위협 등 기준으로 SAE 자동 분류 |
-| 15일 보고 타임라인 | SAE 등록 시 자동으로 규제기관 보고 마감일 설정 |
-| PDF 출력 | ICH 형식의 AE 보고서 PDF 자동 생성 |
-| ICH E2B XML | 규제기관 제출용 E2B(R3) XML 파일 자동 생성 |
-| 마감 상태 관리 | 기한초과·긴급·주의·정상 상태 실시간 표시 |
-| 수정/삭제 | 등록된 AE 수정 및 삭제 기능 |
-
----
-
-## 📡 PRR 신호 탐지 | PRR Signal Detection
-
-FDA, EMA에서 실제로 사용하는 약물 부작용 신호 탐지 지표입니다.
-
-```
-PRR = (약물A에서 부작용X 비율) / (다른 약물들에서 부작용X 비율)
-
-신호 기준 (Evans 기준):
-- 🔴 강한 신호: PRR ≥ 5, 보고건수 ≥ 3
-- 🟡 신호: PRR ≥ 2, 보고건수 ≥ 3
-- ⚪ 비신호: PRR < 2
-```
-
----
-
-## 🧠 ML 모델 설명 | ML Model
-
-**한국어**  
-FDA FAERS 데이터에서 약물(drugname), 부작용(pt), 나이(age), 성별(sex), 사전 계산된 위험률(drug/reaction/combo risk rate) 7개 피처를 사용하여 해당 케이스가 입원·사망 등 중증 결과로 이어질지를 이진 분류합니다.
-
-**English**  
-Binary classification model predicting whether an adverse event case leads to serious outcomes (hospitalization/death), using 7 features: drug name, reaction type, age, sex, and pre-computed drug/reaction/combo risk rates from FAERS data.
+XGBoost 분류 모델로 약물·부작용·나이·성별·위험률 7개 피처를 사용해 중증 결과(입원/사망) 여부를 이진 분류합니다. SHAP으로 각 피처의 기여도를 시각화해 예측 근거를 설명합니다.
 
 ```
 Features  : drugname_enc, reaction_enc, sex_enc, age,
             drug_risk_rate, reac_risk_rate, combo_risk_rate
 Target    : serious outcome (hospitalization/death = 1, other = 0)
-Algorithm : Random Forest Classifier
-Data      : FDA FAERS 2024 Q3 (real-world pharmacovigilance data)
+Algorithm : XGBoost Classifier
+Accuracy  : 69.4%
+Data      : FDA FAERS 2024 Q1 ~ 2025 Q1 (480,000행)
 ```
+
+---
+
+## 💊 Drug Lookup 기능 | Drug Lookup
+
+식약처 낱알식별 OpenAPI와 OpenFDA Drug Label API를 연동해 한국/미국 약물 정보를 통합 제공합니다.
+
+- **약물명 검색**: 한국어/영문 약물명으로 식약처 + OpenFDA 동시 조회
+- **이미지 + 모양/색상 검색**: 약 사진 업로드 후 모양·색상·인쇄문자로 식약처 낱알식별 검색
+- **제공 정보**: 약물명, 성분, 제조사, 모양, 색상, 효능, 부작용, 용법, 경고
 
 ---
 
 ## 📊 데이터 출처 | Data Sources
 
-- **FDA FAERS 2024 Q3** : [FDA 공식 사이트](https://www.fda.gov/drugs/surveillance/fdas-adverse-event-reporting-system-faers) — 실제 이상사례 자발적 보고 데이터
-- **한국 식약처 이상사례** : 연도별(2019~2024) 증상 보고 통계
-
----
-
-## 🖥️ 주요 화면 | Screenshots
-
-**대시보드 | Dashboard**  
-![dashboard](screenshots/dashboard.png)
-
-**약물 검색 결과 | Drug Search**  
-![search](screenshots/search.png)
-
-**약물 상세 분석 | Drug Detail**  
-![drug_detail](screenshots/drug_detail.png)
-
-**약물 비교 | Drug Comparison**  
-![compare](screenshots/compare.png)
-
-**AE Manager | 이상사례 관리**  
-![ae_manager](screenshots/ae_manager.png)
-
----
-
-## 📝 개발 배경 | Background
-
-임상약학 석사 과정(아주대학교)과 AI 개발 교육(국비, MBC아카데미 수원) 과정에서 쌓은 생명과학·AI 역량을 결합하여, 실제 규제기관 데이터를 활용한 약물 안전성 분석 툴을 개발했습니다.
-
-This project combines expertise in clinical pharmacy (M.S., Ajou University) and AI development training to build a practical drug safety analysis tool using real regulatory data from the FDA.
+- **FDA FAERS 2024 Q1 ~ 2025 Q1**: FDA 공식 사이트 — 실제 이상사례 자발적 보고 데이터
+- **한국 식약처 이상사례**: 연도별(2019~2024) 증상 보고 통계
+- **식약처 낱알식별 OpenAPI**: 공공데이터포털(data.go.kr)
+- **OpenFDA Drug Label API**: FDA 공식 약물 라벨 정보
 
 ---
 
@@ -245,4 +199,5 @@ This tool is built for research and portfolio purposes only and should not be us
 ## 👤 개발자 | Developer
 
 **이시환 (Sihwan Lee)**  
+임상약학 석사 (아주대학교) | AI 개발 교육 (국비, MBC아카데미 수원)  
 GitHub: [@leesihwan21](https://github.com/leesihwan21)

@@ -1,0 +1,409 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Drug Lookup | Pharma Risk Analyzer</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body { font-family: Arial, sans-serif; background: #0f172a; color: #e2e8f0; min-height: 100vh; }
+    .nav { background: #1e293b; border-bottom: 1px solid #334155; padding: 14px 24px; display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 10px; }
+    .nav-logo { color: #38bdf8; font-size: 1.1rem; font-weight: bold; text-decoration: none; }
+    .nav-links { display: flex; gap: 8px; flex-wrap: wrap; }
+    .nav-btn { padding: 8px 18px; border-radius: 8px; font-size: 0.88rem; font-weight: bold; text-decoration: none; color: #94a3b8; border: 1px solid #334155; }
+    .nav-btn:hover { border-color: #38bdf8; color: #38bdf8; }
+    .nav-btn.active { background: #38bdf8; color: #0f172a; border-color: #38bdf8; }
+
+    .container { max-width: 900px; margin: 48px auto; padding: 0 24px; }
+    .page-header { margin-bottom: 32px; }
+    .page-header h1 { font-size: 1.9rem; color: #38bdf8; margin-bottom: 8px; }
+    .page-header p { color: #64748b; font-size: 0.95rem; }
+
+    .tabs { display: flex; gap: 8px; margin-bottom: 24px; }
+    .tab-btn { padding: 10px 24px; border-radius: 8px; font-size: 0.92rem; font-weight: bold; cursor: pointer; border: 1px solid #334155; color: #94a3b8; background: transparent; }
+    .tab-btn.active { background: #38bdf8; color: #0f172a; border-color: #38bdf8; }
+
+    /* 탭 1: 약물명 검색 */
+    .search-bar { display: flex; gap: 10px; margin-bottom: 32px; }
+    .search-bar input { flex: 1; padding: 13px 18px; background: #1e293b; border: 1px solid #334155; border-radius: 10px; color: #e2e8f0; font-size: 1rem; outline: none; }
+    .search-bar input:focus { border-color: #38bdf8; }
+    .search-bar input::placeholder { color: #475569; }
+    .search-bar button { padding: 13px 32px; background: #38bdf8; color: #0f172a; border: none; border-radius: 10px; font-size: 1rem; font-weight: bold; cursor: pointer; }
+    .search-bar button:hover { background: #0ea5e9; }
+
+    /* 탭 2: 이미지 + 모양/색상 검색 */
+    .upload-area { border: 2px dashed #334155; border-radius: 14px; padding: 24px; text-align: center; margin-bottom: 20px; cursor: pointer; transition: border-color 0.2s; }
+    .upload-area:hover { border-color: #38bdf8; }
+    .upload-icon { font-size: 2rem; margin-bottom: 8px; }
+    .upload-text { color: #64748b; font-size: 0.92rem; }
+    .upload-text span { color: #38bdf8; }
+    #fileInput { display: none; }
+    #previewImg { max-width: 180px; max-height: 180px; border-radius: 10px; margin-top: 12px; display: none; }
+
+    .filter-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 20px; }
+    .filter-group label { font-size: 0.78rem; color: #64748b; text-transform: uppercase; letter-spacing: 0.05em; display: block; margin-bottom: 6px; }
+    .filter-group select { width: 100%; padding: 12px 16px; background: #1e293b; border: 1px solid #334155; border-radius: 10px; color: #e2e8f0; font-size: 0.95rem; outline: none; }
+    .filter-group select:focus { border-color: #38bdf8; }
+
+    .search-btn { width: 100%; padding: 14px; background: #38bdf8; color: #0f172a; border: none; border-radius: 10px; font-size: 1rem; font-weight: bold; cursor: pointer; margin-bottom: 32px; }
+    .search-btn:hover { background: #0ea5e9; }
+
+    /* 결과 카드 */
+    .card { background: #1e293b; border: 1px solid #334155; border-radius: 14px; padding: 28px; margin-bottom: 20px; }
+    .card-header { display: flex; align-items: center; gap: 10px; margin-bottom: 20px; }
+    .card-header h2 { font-size: 1.05rem; color: #94a3b8; }
+    .source-badge { padding: 3px 10px; border-radius: 20px; font-size: 0.75rem; font-weight: bold; }
+    .badge-kr { background: rgba(56,189,248,0.15); color: #38bdf8; border: 1px solid #38bdf8; }
+    .badge-fda { background: rgba(248,113,113,0.15); color: #f87171; border: 1px solid #f87171; }
+
+    .info-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+    .info-item label { font-size: 0.78rem; color: #64748b; text-transform: uppercase; letter-spacing: 0.05em; display: block; margin-bottom: 4px; }
+    .info-item p { font-size: 0.95rem; color: #e2e8f0; line-height: 1.5; }
+    .info-item.full { grid-column: 1 / -1; }
+
+    .drug-img { width: 120px; height: 60px; object-fit: contain; border-radius: 8px; background: #334155; padding: 8px; margin-bottom: 16px; }
+
+    /* 검색 결과 목록 */
+    .result-list { display: grid; gap: 12px; }
+    .result-item { background: #0f172a; border: 1px solid #334155; border-radius: 10px; padding: 16px; display: flex; gap: 16px; align-items: center; cursor: pointer; transition: border-color 0.2s; }
+    .result-item:hover { border-color: #38bdf8; }
+    .result-item img { width: 80px; height: 40px; object-fit: contain; background: #1e293b; border-radius: 6px; padding: 4px; flex-shrink: 0; }
+    .result-item-info h3 { font-size: 0.95rem; color: #e2e8f0; margin-bottom: 4px; }
+    .result-item-info p { font-size: 0.82rem; color: #64748b; }
+
+    .not-found { padding: 20px; background: #1e293b; border: 1px solid #334155; border-radius: 10px; color: #64748b; text-align: center; }
+    .error { padding: 16px; background: #1e293b; border: 1px solid #f87171; border-radius: 10px; color: #f87171; margin-bottom: 20px; display: none; }
+    .loading { text-align: center; padding: 40px; color: #64748b; display: none; }
+    #result-area { display: none; }
+    #detail-area { display: none; }
+
+    .back-btn { padding: 8px 20px; background: transparent; border: 1px solid #334155; color: #94a3b8; border-radius: 8px; cursor: pointer; margin-bottom: 16px; font-size: 0.88rem; }
+    .back-btn:hover { border-color: #38bdf8; color: #38bdf8; }
+  </style>
+</head>
+<body>
+
+<nav class="nav">
+  <a href="/" class="nav-logo">💊 Pharma Risk Analyzer</a>
+  <div class="nav-links">
+    <a href="/dashboard" class="nav-btn">Dashboard</a>
+    <a href="/filter" class="nav-btn">Search</a>
+    <a href="/compare" class="nav-btn">Compare</a>
+    <a href="/prr" class="nav-btn">PRR</a>
+    <a href="/trend" class="nav-btn">Trend</a>
+    <a href="/shap" class="nav-btn">SHAP</a>
+    <a href="/drug-lookup" class="nav-btn active">Drug Lookup</a>
+    <a href="/ae_manager" class="nav-btn">AE Manager</a>
+  </div>
+</nav>
+
+<div class="container">
+  <div class="page-header">
+    <h1>💊 Drug Lookup</h1>
+    <p>약물명 검색 또는 약 사진 업로드 후 모양/색상으로 식약처 정보 조회</p>
+  </div>
+
+  <!-- 탭 -->
+  <div class="tabs">
+    <button class="tab-btn active" onclick="switchTab('name')">약물명 검색</button>
+    <button class="tab-btn" onclick="switchTab('image')">이미지 + 모양/색상 검색</button>
+  </div>
+
+  <!-- 탭 1: 약물명 검색 -->
+  <div id="tab-name">
+    <div class="search-bar">
+      <input type="text" id="drugInput" placeholder="약물명 입력 (예: 타이레놀, ASPIRIN)">
+      <button onclick="lookupByName()">조회</button>
+    </div>
+  </div>
+
+  <!-- 탭 2: 이미지 + 모양/색상 -->
+  <div id="tab-image" style="display:none;">
+    <div class="upload-area" id="uploadArea" onclick="document.getElementById('fileInput').click()">
+      <div class="upload-icon">📷</div>
+      <div class="upload-text">약 사진을 드래그하거나 <span>클릭해서 업로드</span> (선택사항)</div>
+      <img id="previewImg" src="" alt="preview">
+    </div>
+    <input type="file" id="fileInput" accept="image/*">
+
+    <div class="filter-grid">
+      <div class="filter-group">
+        <label>모양</label>
+        <select id="shapeSelect">
+          <option value="">전체</option>
+          <option value="원형">원형</option>
+          <option value="타원형">타원형</option>
+          <option value="장방형">장방형</option>
+          <option value="삼각형">삼각형</option>
+          <option value="사각형">사각형</option>
+          <option value="마름모형">마름모형</option>
+          <option value="오각형">오각형</option>
+          <option value="육각형">육각형</option>
+          <option value="팔각형">팔각형</option>
+          <option value="기타">기타</option>
+        </select>
+      </div>
+      <div class="filter-group">
+        <label>색상</label>
+        <select id="colorSelect">
+          <option value="">전체</option>
+          <option value="하양">하양</option>
+          <option value="노랑">노랑</option>
+          <option value="주황">주황</option>
+          <option value="분홍">분홍</option>
+          <option value="빨강">빨강</option>
+          <option value="갈색">갈색</option>
+          <option value="초록">초록</option>
+          <option value="청록">청록</option>
+          <option value="파랑">파랑</option>
+          <option value="남색">남색</option>
+          <option value="자주">자주</option>
+          <option value="보라">보라</option>
+          <option value="회색">회색</option>
+          <option value="검정">검정</option>
+          <option value="투명">투명</option>
+        </select>
+      </div>
+      <div class="filter-group">
+        <label>앞면 인쇄</label>
+        <input type="text" id="printFront" placeholder="예: KP" style="width:100%; padding:12px 16px; background:#1e293b; border:1px solid #334155; border-radius:10px; color:#e2e8f0; font-size:0.95rem; outline:none;">
+      </div>
+      <div class="filter-group">
+        <label>뒷면 인쇄</label>
+        <input type="text" id="printBack" placeholder="예: 500" style="width:100%; padding:12px 16px; background:#1e293b; border:1px solid #334155; border-radius:10px; color:#e2e8f0; font-size:0.95rem; outline:none;">
+      </div>
+    </div>
+    <button class="search-btn" onclick="lookupByShape()">식약처 검색</button>
+  </div>
+
+  <div id="loading" class="loading">⏳ 조회 중...</div>
+  <div id="error-msg" class="error"></div>
+
+  <!-- 검색 결과 목록 -->
+  <div id="result-area">
+    <div id="result-list" class="result-list"></div>
+  </div>
+
+  <!-- 상세 정보 -->
+  <div id="detail-area">
+    <button class="back-btn" onclick="backToList()">← 목록으로</button>
+    <div id="kr-card" class="card">
+      <div class="card-header">
+        <h2>한국 식약처 정보</h2>
+        <span class="source-badge badge-kr">식약처 낱알식별</span>
+      </div>
+      <img id="krImg" class="drug-img" src="" alt="약 이미지" style="display:none;">
+      <div class="info-grid">
+        <div class="info-item"><label>약물명</label><p id="krName"></p></div>
+        <div class="info-item"><label>제조사</label><p id="krCompany"></p></div>
+        <div class="info-item"><label>모양</label><p id="krShape"></p></div>
+        <div class="info-item"><label>색상</label><p id="krColor"></p></div>
+        <div class="info-item"><label>구분</label><p id="krEtc"></p></div>
+        <div class="info-item"><label>분류</label><p id="krClass"></p></div>
+        <div class="info-item full"><label>설명</label><p id="krChart"></p></div>
+      </div>
+    </div>
+
+    <div id="fda-card" class="card" style="display:none;">
+      <div class="card-header">
+        <h2>FDA 정보</h2>
+        <span class="source-badge badge-fda">OpenFDA Drug Label</span>
+      </div>
+      <div class="info-grid">
+        <div class="info-item"><label>Brand Name</label><p id="fdaBrand"></p></div>
+        <div class="info-item"><label>Generic Name</label><p id="fdaGeneric"></p></div>
+        <div class="info-item"><label>Manufacturer</label><p id="fdaMfr"></p></div>
+        <div class="info-item full"><label>Purpose / 효능</label><p id="fdaPurpose"></p></div>
+        <div class="info-item full"><label>Adverse Reactions / 부작용</label><p id="fdaAdverse"></p></div>
+        <div class="info-item full"><label>Warnings / 경고</label><p id="fdaWarnings"></p></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+let lastResults = [];
+
+function switchTab(tab) {
+  document.querySelectorAll('.tab-btn').forEach((b, i) => b.classList.toggle('active', (i === 0) === (tab === 'name')));
+  document.getElementById('tab-name').style.display = tab === 'name' ? 'block' : 'none';
+  document.getElementById('tab-image').style.display = tab === 'image' ? 'block' : 'none';
+  clearResults();
+}
+
+function clearResults() {
+  document.getElementById('result-area').style.display = 'none';
+  document.getElementById('detail-area').style.display = 'none';
+  document.getElementById('error-msg').style.display = 'none';
+}
+
+// 이미지 미리보기
+document.getElementById('fileInput').addEventListener('change', function(e) {
+  const file = e.target.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = ev => {
+    const img = document.getElementById('previewImg');
+    img.src = ev.target.result;
+    img.style.display = 'block';
+  };
+  reader.readAsDataURL(file);
+});
+
+const uploadArea = document.getElementById('uploadArea');
+uploadArea.addEventListener('dragover', e => { e.preventDefault(); uploadArea.style.borderColor = '#38bdf8'; });
+uploadArea.addEventListener('dragleave', () => uploadArea.style.borderColor = '#334155');
+uploadArea.addEventListener('drop', e => {
+  e.preventDefault();
+  uploadArea.style.borderColor = '#334155';
+  const file = e.dataTransfer.files[0];
+  if (file && file.type.startsWith('image/')) {
+    const reader = new FileReader();
+    reader.onload = ev => { document.getElementById('previewImg').src = ev.target.result; document.getElementById('previewImg').style.display = 'block'; };
+    reader.readAsDataURL(file);
+  }
+});
+
+async function lookupByName() {
+  const drug = document.getElementById('drugInput').value.trim();
+  if (!drug) return;
+  showLoading();
+  try {
+    const res = await fetch('/api/drug-lookup?name=' + encodeURIComponent(drug));
+    const data = await res.json();
+    if (!res.ok) { showError(data.error || 'Error'); return; }
+    showDetail(data);
+  } catch(e) { showError('Server error'); }
+  hideLoading();
+}
+
+async function lookupByShape() {
+  const shape = document.getElementById('shapeSelect').value;
+  const color = document.getElementById('colorSelect').value;
+  const front = document.getElementById('printFront').value.trim();
+  const back = document.getElementById('printBack').value.trim();
+
+  if (!shape && !color && !front && !back) {
+    showError('모양 또는 색상을 선택해주세요');
+    return;
+  }
+
+  showLoading();
+  try {
+    let url = '/api/drug-shape?';
+    if (shape) url += 'shape=' + encodeURIComponent(shape) + '&';
+    if (color) url += 'color=' + encodeURIComponent(color) + '&';
+    if (front) url += 'front=' + encodeURIComponent(front) + '&';
+    if (back) url += 'back=' + encodeURIComponent(back) + '&';
+
+    const res = await fetch(url);
+    const data = await res.json();
+    if (!res.ok) { showError(data.error || 'Error'); return; }
+    showResultList(data.items);
+  } catch(e) { showError('Server error'); }
+  hideLoading();
+}
+
+function showResultList(items) {
+  lastResults = items;
+  const container = document.getElementById('result-list');
+  container.innerHTML = '';
+
+  if (!items || items.length === 0) {
+    container.innerHTML = '<div class="not-found">검색 결과가 없습니다.</div>';
+    document.getElementById('result-area').style.display = 'block';
+    return;
+  }
+
+  items.forEach((item, i) => {
+    const div = document.createElement('div');
+    div.className = 'result-item';
+    div.innerHTML =
+      (item.img_url ? '<img src="' + item.img_url + '" onerror="this.style.display=\'none\'">' : '') +
+      '<div class="result-item-info"><h3>' + (item.name || '-') + '</h3>' +
+      '<p>' + (item.company || '') + ' · ' + (item.shape || '') + ' · ' + (item.color || '') + '</p></div>';
+    div.onclick = () => showDetailFromItem(item);
+    container.appendChild(div);
+  });
+
+  document.getElementById('result-area').style.display = 'block';
+  document.getElementById('detail-area').style.display = 'none';
+}
+
+function showDetailFromItem(item) {
+  document.getElementById('result-area').style.display = 'none';
+  document.getElementById('krName').textContent = item.name || '-';
+  document.getElementById('krCompany').textContent = item.company || '-';
+  document.getElementById('krShape').textContent = item.shape || '-';
+  document.getElementById('krColor').textContent = item.color || '-';
+  document.getElementById('krEtc').textContent = item.etc_otc || '-';
+  document.getElementById('krClass').textContent = item.class_name || '-';
+  document.getElementById('krChart').textContent = item.chart || '-';
+  if (item.img_url) { document.getElementById('krImg').src = item.img_url; document.getElementById('krImg').style.display = 'block'; }
+  document.getElementById('fda-card').style.display = 'none';
+  document.getElementById('detail-area').style.display = 'block';
+
+  // OpenFDA도 조회
+  fetchFDA(item.name);
+}
+
+function showDetail(data) {
+  document.getElementById('result-area').style.display = 'none';
+  if (data.korean) {
+    const k = data.korean;
+    document.getElementById('krName').textContent = k.name || '-';
+    document.getElementById('krCompany').textContent = k.company || '-';
+    document.getElementById('krShape').textContent = k.shape || '-';
+    document.getElementById('krColor').textContent = k.color || '-';
+    document.getElementById('krEtc').textContent = k.etc_otc || '-';
+    document.getElementById('krClass').textContent = k.class_name || '-';
+    document.getElementById('krChart').textContent = '-';
+    if (k.img_url) { document.getElementById('krImg').src = k.img_url; document.getElementById('krImg').style.display = 'block'; }
+  }
+  if (data.openfda) {
+    const f = data.openfda;
+    document.getElementById('fdaBrand').textContent = f.brand_name || '-';
+    document.getElementById('fdaGeneric').textContent = f.generic_name || '-';
+    document.getElementById('fdaMfr').textContent = f.manufacturer || '-';
+    document.getElementById('fdaPurpose').textContent = f.purpose || '-';
+    document.getElementById('fdaAdverse').textContent = f.adverse_reactions || '-';
+    document.getElementById('fdaWarnings').textContent = f.warnings || '-';
+    document.getElementById('fda-card').style.display = 'block';
+  } else {
+    document.getElementById('fda-card').style.display = 'none';
+  }
+  document.getElementById('detail-area').style.display = 'block';
+}
+
+async function fetchFDA(drugname) {
+  try {
+    const res = await fetch('/api/drug-lookup?name=' + encodeURIComponent(drugname));
+    const data = await res.json();
+    if (data.openfda) {
+      const f = data.openfda;
+      document.getElementById('fdaBrand').textContent = f.brand_name || '-';
+      document.getElementById('fdaGeneric').textContent = f.generic_name || '-';
+      document.getElementById('fdaMfr').textContent = f.manufacturer || '-';
+      document.getElementById('fdaPurpose').textContent = f.purpose || '-';
+      document.getElementById('fdaAdverse').textContent = f.adverse_reactions || '-';
+      document.getElementById('fdaWarnings').textContent = f.warnings || '-';
+      document.getElementById('fda-card').style.display = 'block';
+    }
+  } catch(e) {}
+}
+
+function backToList() {
+  document.getElementById('detail-area').style.display = 'none';
+  document.getElementById('result-area').style.display = 'block';
+}
+
+function showLoading() { document.getElementById('loading').style.display = 'block'; clearResults(); }
+function hideLoading() { document.getElementById('loading').style.display = 'none'; }
+function showError(msg) { const e = document.getElementById('error-msg'); e.textContent = msg; e.style.display = 'block'; hideLoading(); }
+
+document.addEventListener('DOMContentLoaded', () => {
+  document.getElementById('drugInput').addEventListener('keydown', e => { if (e.key === 'Enter') lookupByName(); });
+});
+</script>
+</body>
+</html>

@@ -1,128 +1,114 @@
 import pandas as pd
 import os
 
-ASCII_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)),
-                         'raw', 'faers_ascii_2024q3', 'ASCII')
+DATA_DIR = os.path.dirname(os.path.abspath(__file__))
+RAW_DIR = os.path.join(DATA_DIR, 'raw')
 
-def load_data():
-    print("📂 데이터 로딩 중...")
+# ✅ 쿼터별 파일명 패턴 정의
+def quarter_to_prefix(quarter: str) -> str:
+    """'2024q3' → '24Q3'"""
+    year, q = quarter.split('q')
+    return f'{year[2:]}Q{q}'
 
-    # 환자 정보
+
+def load_and_merge_quarter(quarter: str) -> pd.DataFrame:
+    """
+    단일 쿼터 로드 + 병합 + 샘플링까지 한 번에 처리
+    → 메모리에 쿼터 하나치만 올라감
+    """
+    prefix = quarter_to_prefix(quarter)
+    ascii_dir = os.path.join(RAW_DIR, f'faers_ascii_{quarter}', 'ASCII')
+
+    print(f'  📂 {quarter} 로딩 중...')
+
+    # 필요한 컬럼만 읽어서 메모리 절약
     demo = pd.read_csv(
-        os.path.join(ASCII_DIR, 'DEMO24Q3.txt'),
-        sep='$',
-        encoding='latin-1',
-        low_memory=False
+        os.path.join(ascii_dir, f'DEMO{prefix}.txt'),
+        sep='$', encoding='latin-1', low_memory=False,
+        usecols=lambda c: c.strip().lower() in ['primaryid', 'age', 'sex', 'reporter_country']
     )
-
-    # 약물 정보
     drug = pd.read_csv(
-        os.path.join(ASCII_DIR, 'DRUG24Q3.txt'),
-        sep='$',
-        encoding='latin-1',
-        low_memory=False
+        os.path.join(ascii_dir, f'DRUG{prefix}.txt'),
+        sep='$', encoding='latin-1', low_memory=False,
+        usecols=lambda c: c.strip().lower() in ['primaryid', 'drugname', 'role_cod']
     )
-
-    # 부작용 정보
     reac = pd.read_csv(
-        os.path.join(ASCII_DIR, 'REAC24Q3.txt'),
-        sep='$',
-        encoding='latin-1',
-        low_memory=False
+        os.path.join(ascii_dir, f'REAC{prefix}.txt'),
+        sep='$', encoding='latin-1', low_memory=False,
+        usecols=lambda c: c.strip().lower() in ['primaryid', 'pt']
     )
-
-    # 결과
     outc = pd.read_csv(
-        os.path.join(ASCII_DIR, 'OUTC24Q3.txt'),
-        sep='$',
-        encoding='latin-1',
-        low_memory=False
+        os.path.join(ascii_dir, f'OUTC{prefix}.txt'),
+        sep='$', encoding='latin-1', low_memory=False,
+        usecols=lambda c: c.strip().lower() in ['primaryid', 'outc_cod']
     )
-
-    print(f"✅ DEMO: {demo.shape}")
-    print(f"✅ DRUG: {drug.shape}")
-    print(f"✅ REAC: {reac.shape}")
-    print(f"✅ OUTC: {outc.shape}")
-
-    return demo, drug, reac, outc
-
-def preprocess(demo, drug, reac, outc):
-    print("DEMO 컬럼:", demo.columns.tolist())
-    print("DRUG 컬럼:", drug.columns.tolist())
-    print("REAC 컬럼:", reac.columns.tolist())
-    print("OUTC 컬럼:", outc.columns.tolist())
-
-def preprocess_data(demo, drug, reac, outc):
-    print("🔄 데이터 전처리 중...")
-
-    # 환자 정보에서 필요한 컬럼만 선택
-    demo = demo[['primaryid', 'age', 'sex', 'reporter_country']]
-    drug = drug[['primaryid', 'drugname', 'role_cod']]
-    reac = reac[['primaryid', 'pt']]
-    outc = outc[['primaryid', 'outc_cod']]
 
     # 컬럼 소문자 통일
-    demo.columns = demo.columns.str.lower()
-    drug.columns = drug.columns.str.lower()
-    reac.columns = reac.columns.str.lower()
-    outc.columns = outc.columns.str.lower()
+    for df in [demo, drug, reac, outc]:
+        df.columns = df.columns.str.strip().str.lower()
 
-    # 약물명 대문자 통일 및 결측치 제거
+    # 정제
     drug['drugname'] = drug['drugname'].str.upper().str.strip()
     drug = drug.dropna(subset=['drugname'])
-
-    # 부작용명 대문자 통일 및 결측치 제거
     reac['pt'] = reac['pt'].str.upper().str.strip()
     reac = reac.dropna(subset=['pt'])
+    demo = demo[(demo['age'] >= 0) & (demo['age'] <= 120)]
 
-    # 나이 이상값 제거 (0~120세 사이)
-    if 'age' in demo.columns:
-        demo = demo[(demo['age'] >= 0) & (demo['age'] <= 120)]
+    # 병합
+    merged = pd.merge(drug[['primaryid', 'drugname']], reac[['primaryid', 'pt']], on='primaryid', how='inner')
+    merged = pd.merge(merged, demo[['primaryid', 'age', 'sex', 'reporter_country']], on='primaryid', how='left')
+    merged = pd.merge(merged, outc[['primaryid', 'outc_cod']], on='primaryid', how='left')
 
-    print("✅ 데이터 전처리 완료")
-    return demo, drug, reac, outc
+    # ✅ 쿼터 컬럼 추가 — 시계열 분석의 핵심
+    merged['quarter'] = quarter
 
+    # 쿼터별 샘플링 (12만 행) — 4개 쿼터 × 12만 = 최대 48만행
+    SAMPLE_PER_QUARTER = 120000
+    if len(merged) > SAMPLE_PER_QUARTER:
+        merged = merged.sample(n=SAMPLE_PER_QUARTER, random_state=42)
+        print(f'  ⚠️  샘플링 적용: {SAMPLE_PER_QUARTER:,}행')
 
-def merge_and_save(demo, drug, reac, outc):
-    print("\n🔗 데이터 병합 중...")
-
-    # processed 폴더 생성
-    save_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'processed')
-    os.makedirs(save_dir, exist_ok=True)
-
-    # drug + reac 병합
-    drug_reac = pd.merge(drug[['primaryid', 'drugname']],
-                         reac[['primaryid', 'pt']],
-                         on='primaryid', how='inner')
-
-    # demo 병합
-    merged = pd.merge(drug_reac,
-                      demo[['primaryid', 'age', 'sex', 'reporter_country']],
-                      on='primaryid', how='left')
-
-    # outc 병합
-    merged = pd.merge(merged,
-                      outc[['primaryid', 'outc_cod']],
-                      on='primaryid', how='left')
-
-    # 샘플링 (50만 행으로 제한)
-    if len(merged) > 500000:
-        merged = merged.sample(n=500000, random_state=42)
-        print(f"⚠️  데이터 샘플링 적용: 500,000행")
-
-    print(f"✅ 병합 완료: {merged.shape}")
-
-    save_path = os.path.join(save_dir, 'processed_faers.csv')
-    merged.to_csv(save_path, index=False)
-    print(f"💾 저장 완료: {save_path}")
-
+    print(f'  ✅ {quarter} 완료 — {len(merged):,}행')
     return merged
 
 
+def process_all_quarters(quarters: list) -> pd.DataFrame:
+    """쿼터별로 처리 후 합치기 — 메모리 효율적"""
+    results = []
 
-if __name__ == "__main__":
-    demo, drug, reac, outc = load_data()
-    demo, drug, reac, outc = preprocess_data(demo, drug, reac, outc)
-    merged_data = merge_and_save(demo, drug, reac, outc)
-    print("🎉 데이터 전처리 및 병합 완료!")
-    print(df.head())
+    for quarter in quarters:
+        ascii_dir = os.path.join(RAW_DIR, f'faers_ascii_{quarter}', 'ASCII')
+        if not os.path.exists(ascii_dir):
+            print(f'  ⚠️  {quarter} 데이터 없음, 스킵')
+            continue
+        df = load_and_merge_quarter(quarter)
+        results.append(df)
+
+    print(f'\n🔗 {len(results)}개 쿼터 합치는 중...')
+    final = pd.concat(results, ignore_index=True)
+    print(f'✅ 최종 데이터: {final.shape}')
+    print(f'   포함된 쿼터: {sorted(final["quarter"].unique())}')
+    return final
+
+
+def save(merged: pd.DataFrame):
+    save_dir = os.path.join(DATA_DIR, 'processed')
+    os.makedirs(save_dir, exist_ok=True)
+    save_path = os.path.join(save_dir, 'processed_faers.csv')
+    merged.to_csv(save_path, index=False)
+    print(f'💾 저장 완료: {save_path}')
+
+
+if __name__ == '__main__':
+    # ✅ 처리할 쿼터 목록
+    QUARTERS = [
+        '2024q1',
+        '2024q2',
+        '2024q3',
+        '2025q1',
+    ]
+
+    merged = process_all_quarters(QUARTERS)
+    save(merged)
+    print('\n🎉 전체 완료!')
+    print(merged.head())
