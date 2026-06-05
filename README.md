@@ -3,7 +3,7 @@
 ### 약물 부작용 AI 위험도 분석 시스템
 
 > **AI-powered Drug Adverse Event Risk Analysis System**  
-> FDA FAERS 실데이터 + YOLOv8 알약 탐지 + 머신러닝 위험도 예측 + SHAP 설명가능 AI + 식약처 약물 조회
+> FDA FAERS 실데이터 + YOLOv8 알약 탐지 + XGBoost 위험도 예측 + SHAP 설명가능 AI + 식약처 약물 조회 + 복용량 계산기
 
 [![Python](https://img.shields.io/badge/Python-3.12-blue)](https://python.org)
 [![Flask](https://img.shields.io/badge/Flask-3.1-green)](https://flask.palletsprojects.com)
@@ -25,10 +25,10 @@
 ## 📌 프로젝트 개요 | Overview
 
 **한국어**  
-FDA FAERS(Adverse Event Reporting System) 2024 Q1 ~ 2025 Q1 멀티쿼터 실데이터를 기반으로, 약물별 부작용 발생 패턴을 분석하고 머신러닝(XGBoost)으로 위험도를 예측하는 웹 애플리케이션입니다. SHAP 기반 설명가능 AI(XAI)로 예측 근거를 시각화하며, 식약처 낱알식별 API와 OpenFDA를 통해 한국/미국 약물 정보를 통합 제공합니다.
+FDA FAERS(Adverse Event Reporting System) 2024 Q1 ~ 2025 Q1 멀티쿼터 실데이터를 기반으로, 약물별 부작용 발생 패턴을 분석하고 XGBoost 머신러닝으로 위험도를 예측하는 웹 애플리케이션입니다. SHAP 기반 설명가능 AI(XAI)로 예측 근거를 시각화하며, 식약처 낱알식별 API와 OpenFDA를 통해 한국/미국 약물 정보를 통합 제공합니다. 임상약학 공식 기반 복용량 계산기(CrCl, 소아용량, BSA)도 포함합니다.
 
 **English**  
-A web application analyzing drug adverse event patterns and predicting risk levels using XGBoost ML, based on real-world FDA FAERS multi-quarter data (2024 Q1 ~ 2025 Q1). Features SHAP-based explainable AI, quarterly trend analysis, and integrated Korean MFDS + OpenFDA drug lookup.
+A web application analyzing drug adverse event patterns and predicting risk levels using XGBoost ML, based on real-world FDA FAERS multi-quarter data (2024 Q1 ~ 2025 Q1). Features SHAP-based explainable AI, quarterly trend analysis, integrated Korean MFDS + OpenFDA drug lookup, drug-drug interaction checker, and clinical pharmacy dosage calculators.
 
 ---
 
@@ -39,10 +39,12 @@ A web application analyzing drug adverse event patterns and predicting risk leve
 | 📊 대시보드 | FAERS 데이터 기반 부작용 통계 시각화 (6개 차트) | Adverse event statistics dashboard |
 | 🔍 약물 검색 | 약물명 자동완성 + 상세 부작용 분석 | Drug search with autocomplete |
 | 🤖 AI 위험도 예측 | 약물·부작용·나이·성별 입력 → 위험도 분류 (XGBoost) | XGBoost-based risk prediction |
-| 🔍 SHAP 설명가능 AI | 예측 근거 피처 기여도 시각화 — 왜 위험한지 설명 | SHAP-based XAI feature importance |
-| 📈 쿼터별 트렌드 | 2024 Q1~2025 Q1 분기별 부작용 보고 추이 시각화 | Quarterly adverse event trend analysis |
-| 💊 Drug Lookup | 약물명 또는 모양/색상으로 식약처+OpenFDA 통합 조회 | Korean MFDS + OpenFDA drug info lookup |
-| 📸 알약 이미지 탐지 | YOLOv8으로 알약 종류 자동 인식 후 위험도 분석 | YOLOv8 pill detection + risk analysis |
+| 🔍 SHAP 설명가능 AI | 예측 근거 피처 기여도 시각화 | SHAP-based XAI feature importance |
+| 📈 쿼터별 트렌드 | 2024 Q1~2025 Q1 분기별 부작용 보고 추이 | Quarterly adverse event trend |
+| 💊 Drug Lookup | 약물명/모양/색상으로 식약처+OpenFDA 통합 조회 | Korean MFDS + OpenFDA drug lookup |
+| ⚡ Interaction Checker | FDA FAERS 기반 두 약물 동시 복용 시 부작용 패턴 분석 | Drug-drug interaction analysis |
+| 💉 복용량 계산기 | CrCl(신장기능) · 소아용량 · BSA 항암제 · 기본 mg/kg 계산 | Clinical dosage calculator |
+| 📸 알약 이미지 탐지 | YOLOv8으로 알약 종류 자동 인식 후 위험도 분석 | YOLOv8 pill detection |
 | 📹 실시간 웹캠 탐지 | 웹캠으로 실시간 알약 탐지 | Real-time webcam pill detection |
 | ⚖️ 약물 비교 | 두 약물의 부작용 패턴 나란히 비교 | Side-by-side drug comparison |
 | 🔗 부작용 네트워크 | 약물-부작용 관계 네트워크 그래프 | Drug-reaction network graph |
@@ -56,12 +58,29 @@ A web application analyzing drug adverse event patterns and predicting risk leve
 
 ---
 
+## 💉 복용량 계산기 | Dosage Calculator
+
+임상약학에서 실제 사용하는 공식을 기반으로 한 계산 도구입니다.
+
+| 탭 | 공식 | 용도 |
+|---|---|---|
+| 신장기능 (CrCl) | Cockcroft-Gault | 크레아티닌 청소율 계산 → 신기능 단계 판정 → 용량 조절 가이드 |
+| 소아 용량 | Clark / Young / BSA | 성인 용량 기준 소아 용량 산출 (3가지 공식 비교) |
+| BSA 항암제 | Mosteller / DuBois | 체표면적 계산 → mg/m² 기준 항암제 총 용량 산출 |
+| 기본 용량 | mg/kg | 체중 기반 용량 계산 + 최대 용량 적용 |
+
+> ⚠️ **중요**: 본 계산기는 **교육·연구·포트폴리오 목적 전용**입니다.  
+> 실제 약물 투약 결정은 반드시 **의사 또는 약사와 직접 상담**하세요.  
+> 실제 임상에서는 간기능, 병용약물, 알레르기, 병력 등 다양한 요소를 종합적으로 고려해야 합니다.
+
+---
+
 ## 🛠️ 기술 스택 | Tech Stack
 
 ```
 Backend   : Flask 3.1, SQLAlchemy, Flask-Login, Flask-Limiter, Flask-Caching
 ML/AI     : XGBoost, SHAP (XAI), YOLOv8 (Ultralytics)
-Data      : FDA FAERS 2024 Q1~2025 Q1 (멀티쿼터), 한국 식약처 이상사례 데이터
+Data      : FDA FAERS 2024 Q1~2025 Q1 (멀티쿼터 480,000행), 한국 식약처 이상사례 데이터
 External  : 식약처 낱알식별 OpenAPI, OpenFDA Drug Label API
 Viz       : Plotly, NetworkX (Canvas), Chart.js
 DB        : SQLite (개발/배포), PyMySQL 지원
@@ -79,10 +98,10 @@ Test      : pytest (28개 테스트)
 ```
 pharma-risk-analyzer/
 ├── app/
-│   ├── __init__.py           # Flask 앱 팩토리
-│   ├── models.py             # DB 모델
-│   ├── routes.py             # 전체 기능 라우트
-│   └── templates/            # HTML 템플릿 (14개 페이지)
+│   ├── __init__.py
+│   ├── models.py
+│   ├── routes.py
+│   └── templates/            # HTML 템플릿 (15개 페이지)
 │       ├── index.html
 │       ├── dashboard.html
 │       ├── drug_detail.html
@@ -92,14 +111,16 @@ pharma-risk-analyzer/
 │       ├── webcam.html
 │       ├── ae_manager.html
 │       ├── prr.html
-│       ├── trend.html        # ✅ 신규: 쿼터별 트렌드
-│       ├── shap.html         # ✅ 신규: SHAP XAI 분석
-│       ├── drug_lookup.html  # ✅ 신규: 약물 정보 통합 조회
+│       ├── trend.html        # ✅ 쿼터별 트렌드
+│       ├── shap.html         # ✅ SHAP XAI 분석
+│       ├── drug_lookup.html  # ✅ 약물 정보 통합 조회
+│       ├── interaction.html  # ✅ 약물 상호작용 체커
+│       ├── dosage.html       # ✅ 복용량 계산기
 │       ├── login.html
 │       └── register.html
 ├── data/
 │   ├── raw/
-│   │   ├── faers_ascii_2024q1/   # ✅ FDA FAERS 멀티쿼터
+│   │   ├── faers_ascii_2024q1/
 │   │   ├── faers_ascii_2024q2/
 │   │   ├── faers_ascii_2024q3/
 │   │   ├── faers_ascii_2025q1/
@@ -109,9 +130,11 @@ pharma-risk-analyzer/
 │   ├── download_faers.py         # 멀티쿼터 자동 다운로드
 │   └── preprocess.py             # 메모리 효율적 전처리
 ├── ml/
-│   ├── train_model.py            # XGBoost 모델 학습
-│   ├── model.pkl                 # 학습된 XGBoost 모델
+│   ├── train_model.py
+│   ├── model.pkl
 │   └── ...
+├── notebooks/
+│   └── faers_eda.ipynb           # ✅ 멀티쿼터 EDA 분석
 ├── config.py
 ├── run.py
 └── README.md
@@ -138,7 +161,7 @@ SECRET_KEY=your-secret-key
 MFDS_API_KEY=your-mfds-api-key      # 식약처 공공데이터포털 발급
 ANTHROPIC_API_KEY=your-api-key      # 선택사항
 
-# 5. 멀티쿼터 데이터 다운로드 (최초 1회)
+# 5. 멀티쿼터 데이터 다운로드
 python data/download_faers.py
 
 # 6. 데이터 전처리
@@ -157,26 +180,15 @@ python run.py
 
 ## 🧠 ML 모델 | ML Model
 
-XGBoost 분류 모델로 약물·부작용·나이·성별·위험률 7개 피처를 사용해 중증 결과(입원/사망) 여부를 이진 분류합니다. SHAP으로 각 피처의 기여도를 시각화해 예측 근거를 설명합니다.
-
 ```
+Algorithm : XGBoost Classifier
 Features  : drugname_enc, reaction_enc, sex_enc, age,
             drug_risk_rate, reac_risk_rate, combo_risk_rate
 Target    : serious outcome (hospitalization/death = 1, other = 0)
-Algorithm : XGBoost Classifier
 Accuracy  : 69.4%
 Data      : FDA FAERS 2024 Q1 ~ 2025 Q1 (480,000행)
+XAI       : SHAP TreeExplainer (feature importance visualization)
 ```
-
----
-
-## 💊 Drug Lookup 기능 | Drug Lookup
-
-식약처 낱알식별 OpenAPI와 OpenFDA Drug Label API를 연동해 한국/미국 약물 정보를 통합 제공합니다.
-
-- **약물명 검색**: 한국어/영문 약물명으로 식약처 + OpenFDA 동시 조회
-- **이미지 + 모양/색상 검색**: 약 사진 업로드 후 모양·색상·인쇄문자로 식약처 낱알식별 검색
-- **제공 정보**: 약물명, 성분, 제조사, 모양, 색상, 효능, 부작용, 용법, 경고
 
 ---
 
@@ -191,8 +203,11 @@ Data      : FDA FAERS 2024 Q1 ~ 2025 Q1 (480,000행)
 
 ## ⚠️ 면책조항 | Disclaimer
 
-본 도구는 연구·포트폴리오 목적으로 제작되었으며, 실제 임상적 의사결정에 사용해서는 안 됩니다.  
-This tool is built for research and portfolio purposes only and should not be used for actual clinical decision-making.
+본 도구는 **연구·포트폴리오 목적**으로 제작되었으며, 실제 임상적 의사결정에 사용해서는 안 됩니다.  
+복용량 계산기를 포함한 모든 기능은 교육 목적이며, **실제 약물 투약은 반드시 의사 또는 약사와 상담**하세요.
+
+This tool is built for **research and portfolio purposes only** and should not be used for actual clinical decision-making.  
+All features including the dosage calculator are for educational purposes. **Always consult a doctor or pharmacist for actual medication decisions.**
 
 ---
 
