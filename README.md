@@ -1,6 +1,6 @@
 # 💊 Pharma Risk Analyzer
 
-### 약물 부작용 AI 위험도 분석 시스템
+### AI 기반 약물 부작용 위험도 분석 및 임상 지원 시스템 > AI-powered Drug Adverse Event Risk Analysis & Clinical Decision Support System
 
 > **AI-powered Drug Adverse Event Risk Analysis System**  
 > FDA FAERS 실데이터 + YOLOv8 알약 탐지 + XGBoost 위험도 예측 + SHAP 설명가능 AI + 식약처 약물 조회 + 복용량 계산기
