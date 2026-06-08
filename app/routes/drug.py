@@ -308,13 +308,13 @@ def generate_report(drugname):
 
         prompt = f"""반드시 한국어로만 답하세요. 영어를 절대 사용하지 마세요.
 
-다음 FDA FAERS 약물 데이터를 3-4문장으로 한국어 요약해주세요:
-약물명: {drugname}
-총 부작용 보고건수: {len(result)}건
-주요 부작용 TOP5: {', '.join(top_reac_list)}
-사망 보고: {death_cnt}건
-입원 보고: {hosp_cnt}건
-평균 나이: {round(float(age_data.mean()), 1) if len(age_data) > 0 else 'N/A'}세"""
+        다음 FDA FAERS 약물 데이터를 3-4문장으로 한국어 요약해주세요:
+        약물명: {drugname}
+        총 부작용 보고건수: {len(result)}건
+        주요 부작용 TOP5: {', '.join(top_reac_list)}
+        사망 보고: {death_cnt}건
+        입원 보고: {hosp_cnt}건
+        평균 나이: {round(float(age_data.mean()), 1) if len(age_data) > 0 else 'N/A'}세"""
 
         response = http_requests.post('http://localhost:11434/api/generate',
             json={'model': 'llama3.2', 'prompt': prompt, 'stream': False}, timeout=60)
