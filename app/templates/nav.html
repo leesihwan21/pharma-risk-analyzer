@@ -1,0 +1,54 @@
+<style>
+    .nav { background: #1e293b; border-bottom: 1px solid #334155; padding: 14px 24px; display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 10px; }
+    .nav-logo { color: #38bdf8; font-size: 1.1rem; font-weight: bold; text-decoration: none; }
+    .nav-links { display: flex; gap: 6px; flex-wrap: wrap; align-items: center; }
+    .nav-btn { padding: 7px 14px; border-radius: 8px; font-size: 0.82rem; font-weight: bold; text-decoration: none; color: #94a3b8; border: 1px solid #334155; white-space: nowrap; }
+    .nav-btn:hover { border-color: #38bdf8; color: #38bdf8; }
+    .nav-btn.active { background: #38bdf8; color: #0f172a; border-color: #38bdf8; }
+    .nav-btn-fill { background: #38bdf8; color: #0f172a; border: none; }
+    .nav-btn-fill:hover { background: #0ea5e9; }
+    .nav-btn-logout { background: #334155; color: #e2e8f0; border: none; cursor: pointer; padding: 7px 14px; border-radius: 8px; font-size: 0.82rem; font-weight: bold; }
+    .nav-user { color: #94a3b8; font-size: 0.82rem; }
+    .nav-user span { color: #38bdf8; font-weight: bold; }
+    .lang-btn { background: #1e293b; border: 1px solid #334155; color: #e2e8f0; padding: 6px 12px; border-radius: 8px; cursor: pointer; font-size: 0.82rem; font-weight: bold; }
+    .lang-btn:hover { border-color: #38bdf8; color: #38bdf8; }
+</style>
+<nav class="nav">
+    <a href="/" class="nav-logo">&#x1F48A; Pharma Risk Analyzer</a>
+    <div class="nav-links">
+        <a href="/dashboard" class="nav-btn">Dashboard</a>
+        <a href="/shap" class="nav-btn">SHAP</a>
+        <a href="/trend" class="nav-btn">Trend</a>
+        <a href="/drug-lookup" class="nav-btn">Drug Lookup</a>
+        <a href="/interaction" class="nav-btn">Interaction</a>
+        <a href="/dosage" class="nav-btn">Dosage</a>
+        <a href="/prr" class="nav-btn">PRR</a>
+        <a href="/ae_manager" class="nav-btn">AE Manager</a>
+        <a href="/ae/list" class="nav-btn">AE &#47785;&#47197;</a>
+        <a href="/korea" class="nav-btn">Korea</a>
+        <button id="lang-btn" class="lang-btn" onclick="if(typeof toggleLang==='function')toggleLang()">&#x1F310; EN</button>
+        <div id="nav-auth" style="display:flex; gap:6px; align-items:center;"></div>
+    </div>
+</nav>
+<script>
+(function() {
+    fetch('/api/me')
+    .then(function(res){ return res.json(); })
+    .then(function(data) {
+        var nav = document.getElementById('nav-auth');
+        if (data.logged_in) {
+            nav.innerHTML = '<span class="nav-user">&#x1F464; <span>' + data.username + '</span></span><button class="nav-btn-logout" onclick="fetch(\'/logout\').then(function(){location.reload();})">&#47196;&#44536;&#50500;&#50883;</button>';
+        } else {
+            nav.innerHTML = '<a href="/login" class="nav-btn">&#47196;&#44536;&#51064;</a><a href="/register" class="nav-btn nav-btn-fill">&#54924;&#50896;&#44032;&#51077;</a>';
+        }
+        document.querySelectorAll('.nav-btn[href]').forEach(function(link) {
+            if (link.getAttribute('href') === window.location.pathname) {
+                link.classList.add('active');
+            }
+        });
+    })
+    .catch(function() {
+        document.getElementById('nav-auth').innerHTML = '<a href="/login" class="nav-btn">&#47196;&#44536;&#51064;</a><a href="/register" class="nav-btn nav-btn-fill">&#54924;&#50896;&#44032;&#51077;</a>';
+    });
+})();
+</script>

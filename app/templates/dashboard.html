@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="ko">
 <head>
     <meta charset="UTF-8">
@@ -49,16 +49,8 @@
     </style>
 </head>
 <body>
+{% include 'nav.html' %}
 
-<div class="header">
-    <h1>💊 Pharma Risk Analyzer</h1>
-    <div class="header-right">
-        <div id="header-auth" style="display:flex;align-items:center;gap:8px;font-size:0.88rem;"></div>
-        <button id="lang-btn" class="lang-btn" onclick="toggleLang()">🇺🇸 EN</button>
-        <button onclick="toggleTheme()" id="theme-btn" class="btn btn-gray" data-ko="☀️ 라이트 모드" data-en="☀️ Light Mode">☀️ 라이트 모드</button>
-        <a href="/" data-ko="← 홈으로" data-en="← Home">← 홈으로</a>
-    </div>
-</div>
 
 <div class="section">
     <h3 data-ko="📸 알약 이미지 탐지" data-en="📸 Pill Image Detection">📸 알약 이미지 탐지</h3>
@@ -338,3 +330,6 @@
 </script>
 </body>
 </html>
+
+
+
