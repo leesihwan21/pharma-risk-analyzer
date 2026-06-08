@@ -1,37 +1,35 @@
-﻿from flask import Blueprint, render_template, jsonify, request, send_file  # send_file ???
-import pandas as pd
-import plotly.express as px
-import plotly
-import json
+﻿import json
+import io
 import os
-import pycountry
+import math
+import base64
 import pickle
-from ultralytics import YOLO
+import threading
+
 import cv2
 import numpy as np
-import networkx as nx
-import threading
-from PIL import Image
-import io
-import base64
+import pandas as pd
+import plotly
+import plotly.express as px
+import pycountry
+import shap
 import requests as http_requests
-from flask import Response
-from flask_mail import Message
-from flask_restx import Api, Resource, fields, Namespace
-from app import cache, limiter, mail
-from app import cache, limiter
-from app import cache
-from datetime import datetime, timedelta, date
-from flask_login import current_user
+from PIL import Image
+from ultralytics import YOLO
+
+from flask import Blueprint, render_template, jsonify, request, send_file, Response
 from flask_login import LoginManager, login_user, logout_user, login_required, current_user
-from reportlab.lib.pagesizes import A4
+from flask_mail import Message
+from werkzeug.security import generate_password_hash, check_password_hash
+
 from reportlab.lib import colors
-from reportlab.platypus import SimpleDocTemplate, Table, TableStyle, Paragraph, Spacer
+from reportlab.lib.pagesizes import A4
 from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
 from reportlab.lib.units import cm
-from app.models import db, DrugSearch, FavoriteDrug, PredictionLog
-from flask_login import login_user, logout_user, login_required, current_user
-from werkzeug.security import generate_password_hash, check_password_hash
+from reportlab.platypus import SimpleDocTemplate, Table, TableStyle, Paragraph, Spacer
+
+from datetime import datetime, timedelta
+from app import cache, limiter, mail
 from app.models import db, DrugSearch, FavoriteDrug, PredictionLog, User, AEReport
 
 main = Blueprint('main', __name__)
@@ -52,9 +50,6 @@ def load_model():
 def load_yolo():
     yolo_path = os.path.join(MODEL_DIR, 'best.pt')
     return YOLO(yolo_path)
-
-def safe_encode(le, values):
-    return [le.transform([v])[0] if v in le.classes_ else -1 for v in values]
 
 @main.route('/api/detect', methods=['POST'])
 @limiter.limit("20 per minute")
@@ -1038,46 +1033,41 @@ KOREA_DATA_PATH = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(_
 def korea_dashboard():
     df = pd.read_csv(KOREA_DATA_PATH, encoding='cp949')
 
-    # 2024?? Top 10 ????
+    sym_col   = '연도별증상(2024)'
+    cnt_2024  = '연도별보고건수(2024)'
+    cnt_2023  = '연도별보고건수(2023)'
+
+    # 2024년 Top 10
     fig1 = px.bar(
         df.head(10),
-        x='??????????(2024)',
-        y='?????????????(2024)',
-        title='??? 2024?? Top 10 ???????',
-        color='?????????????(2024)',
+        x=sym_col,
+        y=cnt_2024,
+        title='국내 2024년 Top 10 이상사례',
+        color=cnt_2024,
         color_continuous_scale='Blues'
     )
     fig1.update_layout(xaxis_tickangle=-45, template='plotly_dark', height=420)
 
-    # ?????? ????? (Top 5 ????)
+    # 연도별 추이 (Top 5 증상)
     years = ['2019', '2020', '2021', '2022', '2023', '2024']
-    top5 = df.head(5)['??????????(2024)'].tolist()
+    top5 = df.head(5)[sym_col].tolist()
 
-    traces = []
+    fig2 = px.line(title='국내 Top 5 이상사례 연도별 추이')
     for symptom in top5:
-        row = df[df['??????????(2024)'] == symptom]
-        if len(row) == 0:
-            continue
         counts = []
         for y in years:
-            col = f'?????????????({y})'
-            if col in df.columns:
-                counts.append(int(row[col].values[0]) if len(row[col].values) > 0 else 0)
-            else:
-                counts.append(0)
-        traces.append({'x': years, 'y': counts, 'name': symptom, 'type': 'scatter', 'mode': 'lines+markers'})
-
-    fig2 = px.line(title='??? Top 5 ???? ?????? ?????')
-    for t in traces:
-        fig2.add_scatter(x=t['x'], y=t['y'], name=t['name'], mode='lines+markers')
+            col = f'연도별보고건수({y})'
+            row = df[df[sym_col] == symptom]
+            counts.append(int(row[col].values[0]) if len(row) > 0 and col in df.columns else 0)
+        fig2.add_scatter(x=years, y=counts, name=symptom, mode='lines+markers')
     fig2.update_layout(template='plotly_dark', height=420)
 
-    # 2024 vs 2023 ????
+    # 2024 vs 2023 비교
     fig3 = px.bar(
         df.head(10),
-        x='??????????(2024)',
-        y=['?????????????(2024)', '?????????????(2023)'],
-        title='2024 vs 2023 Top 10 ???? ????',
+        x=sym_col,
+        y=[cnt_2024, cnt_2023],
+        title='2024 vs 2023 Top 10 이상사례 비교',
         barmode='group',
         color_discrete_sequence=['#38bdf8', '#a78bfa']
     )
@@ -1664,8 +1654,6 @@ def trend_page():
 
 @main.route('/api/trend')
 def api_trend():
-    import pandas as pd
-    from flask import jsonify, request
     df = pd.read_csv('data/processed/processed_faers.csv')
     drugname = request.args.get('drug', '').upper()
     if not drugname:
@@ -1684,12 +1672,6 @@ def shap_page():
 
 @main.route('/api/shap')
 def api_shap():
-    import pickle
-    import shap
-    import numpy as np
-    import pandas as pd
-    from flask import jsonify, request
-
     drugname = request.args.get('drug', '').upper()
     reaction = request.args.get('reaction', '').upper()
     age = float(request.args.get('age', 50))
@@ -1768,8 +1750,6 @@ def drug_lookup_page():
  
 @main.route('/api/drug-lookup')
 def api_drug_lookup():
-    import requests as req
-    from flask import jsonify, request, current_app
  
     drugname = request.args.get('name', '').strip()
     if not drugname:
@@ -1837,10 +1817,6 @@ def api_drug_lookup():
 
 @main.route('/api/drug-vision', methods=['POST'])
 def api_drug_vision():
-    import base64
-    import json
-    import requests as req
-    from flask import jsonify, request, current_app
  
     if 'image' not in request.files:
         return jsonify({'error': 'no image'}), 400
@@ -1896,8 +1872,6 @@ def api_drug_vision():
     return jsonify({'detected_drug': drug_name})
 @main.route('/api/drug-shape')
 def api_drug_shape():
-    import requests as req
-    from flask import jsonify, request, current_app
 
     shape = request.args.get('shape', '')
     color = request.args.get('color', '')
@@ -1944,9 +1918,6 @@ def interaction_page():
 
 @main.route('/api/interaction')
 def api_interaction():
-    import pandas as pd
-    from flask import jsonify, request
-
     drug_a = request.args.get('drug_a', '').upper().strip()
     drug_b = request.args.get('drug_b', '').upper().strip()
 
@@ -2023,7 +1994,6 @@ def dosage_page():
 
 @main.route('/api/dosage/crcl', methods=['POST'])
 def api_crcl():
-    from flask import jsonify, request
     data = request.get_json()
     age = float(data.get('age', 0))
     weight = float(data.get('weight', 0))
@@ -2068,7 +2038,6 @@ def api_crcl():
 
 @main.route('/api/dosage/pediatric', methods=['POST'])
 def api_pediatric():
-    from flask import jsonify, request
     data = request.get_json()
     adult_dose = float(data.get('adult_dose', 0))
     age = float(data.get('age', 0))
@@ -2095,8 +2064,6 @@ def api_pediatric():
 
 @main.route('/api/dosage/bsa', methods=['POST'])
 def api_bsa():
-    from flask import jsonify, request
-    import math
     data = request.get_json()
     weight = float(data.get('weight', 0))
     height = float(data.get('height', 0))
