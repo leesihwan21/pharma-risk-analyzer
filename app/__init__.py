@@ -26,8 +26,13 @@ def create_app():
     login_manager.login_message = '로그인이 필요해요!'
     mail.init_app(app)
 
-    from app.routes import main
+    from app.routes import main, auth, drug, ae, analysis, vision
     app.register_blueprint(main)
+    app.register_blueprint(auth)
+    app.register_blueprint(drug)
+    app.register_blueprint(ae)
+    app.register_blueprint(analysis)
+    app.register_blueprint(vision)
 
     # Swagger API 문서
     api = Api(app,

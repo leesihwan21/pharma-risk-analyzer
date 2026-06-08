@@ -1,0 +1,462 @@
+import io
+import os
+import math
+import pickle
+import shap
+import numpy as np
+import pandas as pd
+import requests as http_requests
+
+from flask import Blueprint, render_template, jsonify, request, current_app
+from app import cache
+
+analysis = Blueprint('analysis', __name__)
+
+DATA_PATH = os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))),
+                         'data', 'processed', 'processed_faers.csv')
+MODEL_DIR = os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))), 'ml')
+
+def load_df():
+    return pd.read_csv(DATA_PATH)
+
+def load_model():
+    model = pickle.load(open(os.path.join(MODEL_DIR, 'model.pkl'), 'rb'))
+    le_drug = pickle.load(open(os.path.join(MODEL_DIR, 'le_drug.pkl'), 'rb'))
+    le_reac = pickle.load(open(os.path.join(MODEL_DIR, 'le_reac.pkl'), 'rb'))
+    return model, le_drug, le_reac
+
+# ── PRR ──────────────────────────────────────
+@analysis.route('/prr')
+def prr_page():
+    return render_template('prr.html')
+
+@analysis.route('/api/prr/<drugname>')
+@cache.cached(timeout=600)
+def calculate_prr(drugname):
+    df = load_df()
+    drugname = drugname.upper()
+
+    drug_reports = df[df['drugname'].str.upper() == drugname]
+    if len(drug_reports) == 0:
+        return jsonify({'error': f'약물을 찾을 수 없어요: {drugname}'}), 404
+
+    other_reports = df[df['drugname'].str.upper() != drugname]
+    total_drug = len(drug_reports)
+    total_other = len(other_reports)
+
+    if total_other == 0:
+        return jsonify({'error': '비교 데이터가 없습니다'}), 400
+
+    top_reactions = drug_reports['pt'].value_counts().head(20).index.tolist()
+    results = []
+
+    for reac in top_reactions:
+        a = len(drug_reports[drug_reports['pt'] == reac])
+        b = total_drug
+        c = len(other_reports[other_reports['pt'] == reac])
+        d = total_other
+
+        if c == 0 or b == 0:
+            continue
+
+        prr = (a / b) / (c / d)
+        try:
+            se = math.sqrt((1/a) - (1/b) + (1/c) - (1/d))
+            prr_lower = math.exp(math.log(prr) - 1.96 * se)
+            prr_upper = math.exp(math.log(prr) + 1.96 * se)
+        except (ValueError, ZeroDivisionError):
+            prr_lower = prr_upper = prr
+
+        is_signal = prr >= 2 and a >= 3
+        results.append({
+            'reaction': reac,
+            'drug_count': int(a),
+            'drug_total': int(b),
+            'other_count': int(c),
+            'other_total': int(d),
+            'drug_pct': round(a/b*100, 2),
+            'other_pct': round(c/d*100, 2),
+            'prr': round(prr, 2),
+            'prr_lower': round(prr_lower, 2),
+            'prr_upper': round(prr_upper, 2),
+            'is_signal': is_signal,
+            'signal_level': (
+                '🔴 강한 신호' if prr >= 5 and a >= 3 else
+                '🟡 신호' if prr >= 2 and a >= 3 else
+                '⚪ 비신호'
+            )
+        })
+
+    results.sort(key=lambda x: x['prr'], reverse=True)
+    signal_count = sum(1 for r in results if r['is_signal'])
+    strong_signal_count = sum(1 for r in results if r['prr'] >= 5 and r['drug_count'] >= 3)
+
+    return jsonify({
+        'drugname': drugname,
+        'total_reports': total_drug,
+        'signal_count': signal_count,
+        'strong_signal_count': strong_signal_count,
+        'results': results
+    })
+
+# ── Trend ─────────────────────────────────────
+@analysis.route('/trend')
+def trend_page():
+    return render_template('trend.html')
+
+@analysis.route('/api/trend')
+def api_trend():
+    drugname = request.args.get('drug', '').upper()
+    if not drugname:
+        return jsonify({'error': 'no drug'}), 400
+    df = load_df()
+    filtered = df[df['drugname'] == drugname]
+    if filtered.empty:
+        return jsonify({'error': 'not found'}), 404
+    trend = filtered.groupby('quarter').size().reset_index(name='count')
+    trend = trend.sort_values('quarter')
+    return jsonify({'drug': drugname, 'trend': trend.to_dict(orient='records')})
+
+# ── SHAP ──────────────────────────────────────
+@analysis.route('/shap')
+def shap_page():
+    return render_template('shap.html')
+
+@analysis.route('/api/shap')
+def api_shap():
+    drugname = request.args.get('drug', '').upper()
+    reaction = request.args.get('reaction', '').upper()
+    age = float(request.args.get('age', 50))
+    sex = request.args.get('sex', 'F')
+
+    try:
+        model, le_drug, le_reac = load_model()
+        risk_rates = pickle.load(open(os.path.join(MODEL_DIR, 'risk_rates.pkl'), 'rb'))
+    except Exception as e:
+        return jsonify({'error': 'model load failed: ' + str(e)}), 500
+
+    if drugname not in le_drug.classes_:
+        return jsonify({'error': 'unknown drug: ' + drugname}), 400
+    if reaction not in le_reac.classes_:
+        return jsonify({'error': 'unknown reaction: ' + reaction}), 400
+
+    drug_enc = le_drug.transform([drugname])[0]
+    reac_enc = le_reac.transform([reaction])[0]
+    sex_enc = 0 if sex == 'F' else 1
+    drug_risk_rate = risk_rates['drug_risk'].get(drug_enc, 0.5)
+    reac_risk_rate = risk_rates['reac_risk'].get(reac_enc, 0.5)
+    combo_risk_rate = risk_rates['combo_risk'].get(f"{drug_enc}_{reac_enc}", 0.5)
+
+    feature_names = ['drug', 'reaction', 'sex', 'age', 'drug_risk_rate', 'reac_risk_rate', 'combo_risk_rate']
+    X = np.array([[drug_enc, reac_enc, sex_enc, age, drug_risk_rate, reac_risk_rate, combo_risk_rate]])
+
+    explainer = shap.TreeExplainer(model)
+    shap_values = explainer.shap_values(X)
+    sv = shap_values[1][0] if isinstance(shap_values, list) else shap_values[0]
+
+    pred = int(model.predict(X)[0])
+    prob = model.predict_proba(X)[0]
+
+    feature_display = {
+        'drug': drugname, 'reaction': reaction, 'sex': sex, 'age': age,
+        'drug_risk_rate': round(drug_risk_rate, 3),
+        'reac_risk_rate': round(reac_risk_rate, 3),
+        'combo_risk_rate': round(combo_risk_rate, 3)
+    }
+
+    shap_result = [
+        {'feature': name, 'value': feature_display[name], 'shap': round(float(sv[i]), 4)}
+        for i, name in enumerate(feature_names)
+    ]
+    shap_result.sort(key=lambda x: abs(x['shap']), reverse=True)
+
+    return jsonify({
+        'drug': drugname, 'reaction': reaction,
+        'prediction': pred,
+        'risk_label': 'HIGH RISK' if pred == 1 else 'LOW RISK',
+        'probability': {
+            'safe': round(float(prob[0]) * 100, 1),
+            'risk': round(float(prob[1]) * 100, 1)
+        },
+        'shap': shap_result
+    })
+
+# ── Drug Lookup ───────────────────────────────
+@analysis.route('/drug-lookup')
+def drug_lookup_page():
+    return render_template('drug_lookup.html')
+
+@analysis.route('/api/drug-lookup')
+def api_drug_lookup():
+    drugname = request.args.get('name', '').strip()
+    if not drugname:
+        return jsonify({'error': 'no name'}), 400
+
+    api_key = current_app.config.get('MFDS_API_KEY', '')
+    results = {'korean': None, 'openfda': None}
+
+    try:
+        mfds_url = 'https://apis.data.go.kr/1471000/MdcinGrnIdntfcInfoService03/getMdcinGrnIdntfcInfoList03'
+        params = {'serviceKey': api_key, 'item_name': drugname, 'type': 'json', 'numOfRows': 1}
+        r = http_requests.get(mfds_url, params=params, timeout=5)
+        data = r.json()
+        items = data.get('body', {}).get('items', [])
+        if items:
+            item = items[0]
+            results['korean'] = {
+                'name': item.get('ITEM_NAME', ''),
+                'company': item.get('ENTP_NAME', ''),
+                'shape': item.get('DRUG_SHAPE', ''),
+                'color': item.get('COLOR_CLASS1', ''),
+                'etc_otc': item.get('ETC_OTC_CODE', ''),
+                'class_name': item.get('CLASS_NAME', ''),
+                'img_url': item.get('ITEM_IMAGE', '')
+            }
+    except Exception as e:
+        results['korean_error'] = str(e)
+
+    try:
+        fda_url = 'https://api.fda.gov/drug/label.json'
+        params = {
+            'search': f'openfda.brand_name:"{drugname.upper()}" OR openfda.generic_name:"{drugname.upper()}"',
+            'limit': 1
+        }
+        r = http_requests.get(fda_url, params=params, timeout=5)
+        data = r.json()
+        items = data.get('results', [])
+        if items:
+            item = items[0]
+            openfda = item.get('openfda', {})
+            results['openfda'] = {
+                'brand_name': openfda.get('brand_name', [''])[0] if openfda.get('brand_name') else '',
+                'generic_name': openfda.get('generic_name', [''])[0] if openfda.get('generic_name') else '',
+                'manufacturer': openfda.get('manufacturer_name', [''])[0] if openfda.get('manufacturer_name') else '',
+                'purpose': item.get('purpose', [''])[0][:300] if item.get('purpose') else '',
+                'warnings': item.get('warnings', [''])[0][:300] if item.get('warnings') else '',
+                'adverse_reactions': item.get('adverse_reactions', [''])[0][:500] if item.get('adverse_reactions') else '',
+                'dosage': item.get('dosage_and_administration', [''])[0][:300] if item.get('dosage_and_administration') else ''
+            }
+    except Exception as e:
+        results['openfda_error'] = str(e)
+
+    if not results['korean'] and not results['openfda']:
+        return jsonify({'error': 'not found', 'drug': drugname}), 404
+
+    results['drug'] = drugname
+    return jsonify(results)
+
+@analysis.route('/api/drug-shape')
+def api_drug_shape():
+    shape = request.args.get('shape', '')
+    color = request.args.get('color', '')
+    front = request.args.get('front', '')
+    back = request.args.get('back', '')
+    api_key = current_app.config.get('MFDS_API_KEY', '')
+
+    try:
+        url = 'https://apis.data.go.kr/1471000/MdcinGrnIdntfcInfoService03/getMdcinGrnIdntfcInfoList03'
+        params = {'serviceKey': api_key, 'type': 'json', 'numOfRows': 10}
+        if shape: params['drug_shape'] = shape
+        if color: params['color_class1'] = color
+        if front: params['print_front'] = front
+        if back: params['print_back'] = back
+
+        r = http_requests.get(url, params=params, timeout=5)
+        data = r.json()
+        items = data.get('body', {}).get('items', [])
+
+        result = [{
+            'name': item.get('ITEM_NAME', ''),
+            'company': item.get('ENTP_NAME', ''),
+            'shape': item.get('DRUG_SHAPE', ''),
+            'color': item.get('COLOR_CLASS1', ''),
+            'etc_otc': item.get('ETC_OTC_CODE', ''),
+            'class_name': item.get('CLASS_NAME', ''),
+            'chart': item.get('CHART', ''),
+            'img_url': item.get('ITEM_IMAGE', ''),
+            'print_front': item.get('PRINT_FRONT', ''),
+            'print_back': item.get('PRINT_BACK', '')
+        } for item in items]
+
+        return jsonify({'items': result, 'total': data.get('body', {}).get('totalCount', 0)})
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+# ── Interaction ───────────────────────────────
+@analysis.route('/interaction')
+def interaction_page():
+    return render_template('interaction.html')
+
+@analysis.route('/api/interaction')
+def api_interaction():
+    drug_a = request.args.get('drug_a', '').upper().strip()
+    drug_b = request.args.get('drug_b', '').upper().strip()
+
+    if not drug_a or not drug_b:
+        return jsonify({'error': 'two drugs required'}), 400
+    if drug_a == drug_b:
+        return jsonify({'error': 'same drug'}), 400
+
+    df = pd.read_csv(DATA_PATH)
+    ids_a = set(df[df['drugname'] == drug_a]['primaryid'])
+    ids_b = set(df[df['drugname'] == drug_b]['primaryid'])
+    ids_both = ids_a & ids_b
+
+    if len(ids_a) == 0:
+        return jsonify({'error': f'{drug_a} not found'}), 404
+    if len(ids_b) == 0:
+        return jsonify({'error': f'{drug_b} not found'}), 404
+
+    if len(ids_both) == 0:
+        return jsonify({
+            'drug_a': drug_a, 'drug_b': drug_b,
+            'co_occurrence': 0, 'drug_a_total': len(ids_a),
+            'drug_b_total': len(ids_b), 'risk_score': 0,
+            'top_reactions': [], 'serious_rate': 0,
+            'message': 'no co-occurrence found'
+        })
+
+    df_both = df[df['primaryid'].isin(ids_both)]
+    serious_outcomes = {'DE', 'HO', 'LT'}
+    serious = df_both[df_both['outc_cod'].isin(serious_outcomes)]['primaryid'].nunique()
+    serious_rate = round(serious / len(ids_both) * 100, 1)
+
+    top_reactions = (
+        df_both['pt'].value_counts().head(10).reset_index()
+        .rename(columns={'pt': 'reaction', 'count': 'count'})
+        .to_dict(orient='records')
+    )
+
+    co_rate_a = len(ids_both) / len(ids_a)
+    co_rate_b = len(ids_both) / len(ids_b)
+    risk_score = round((co_rate_a + co_rate_b) / 2 * 100, 1)
+
+    return jsonify({
+        'drug_a': drug_a, 'drug_b': drug_b,
+        'co_occurrence': len(ids_both),
+        'drug_a_total': len(ids_a), 'drug_b_total': len(ids_b),
+        'serious_rate': serious_rate,
+        'risk_score': min(risk_score * 10, 100),
+        'top_reactions': top_reactions
+    })
+
+# ── Dosage ────────────────────────────────────
+@analysis.route('/dosage')
+def dosage_page():
+    return render_template('dosage.html')
+
+@analysis.route('/api/dosage/crcl', methods=['POST'])
+def api_crcl():
+    data = request.get_json()
+    age = float(data.get('age', 0))
+    weight = float(data.get('weight', 0))
+    creatinine = float(data.get('creatinine', 0))
+    sex = data.get('sex', 'M')
+
+    if not all([age, weight, creatinine]):
+        return jsonify({'error': 'missing values'}), 400
+
+    crcl = ((140 - age) * weight) / (72 * creatinine)
+    if sex == 'F':
+        crcl *= 0.85
+
+    if crcl >= 90:
+        stage, dose_adj, color = 'Normal (G1)', 'No dose adjustment required', 'green'
+    elif crcl >= 60:
+        stage, dose_adj, color = 'Mild reduction (G2)', 'Dose adjustment may be required', 'yellow'
+    elif crcl >= 30:
+        stage, dose_adj, color = 'Moderate reduction (G3)', 'Reduce dose by 50-75%', 'orange'
+    elif crcl >= 15:
+        stage, dose_adj, color = 'Severe reduction (G4)', 'Reduce dose by 25-50%', 'red'
+    else:
+        stage, dose_adj, color = 'Renal failure (G5)', 'Nephrotoxic drugs contraindicated', 'darkred'
+
+    return jsonify({'crcl': round(crcl, 1), 'stage': stage, 'dose_adj': dose_adj, 'color': color})
+
+@analysis.route('/api/dosage/pediatric', methods=['POST'])
+def api_pediatric():
+    data = request.get_json()
+    adult_dose = float(data.get('adult_dose', 0))
+    age = float(data.get('age', 0))
+    weight = float(data.get('weight', 0))
+    height = float(data.get('height', 0))
+
+    if not adult_dose:
+        return jsonify({'error': 'missing values'}), 400
+
+    import math
+    results = {}
+    if weight:
+        results['clark'] = round(adult_dose * weight / 70, 2)
+    if age:
+        results['young'] = round(adult_dose * age / (age + 12), 2)
+    if weight and height:
+        bsa = math.sqrt((height * weight) / 3600)
+        results['bsa'] = round(adult_dose * bsa / 1.73, 2)
+        results['bsa_value'] = round(bsa, 2)
+
+    return jsonify(results)
+
+@analysis.route('/api/dosage/bsa', methods=['POST'])
+def api_bsa():
+    import math
+    data = request.get_json()
+    weight = float(data.get('weight', 0))
+    height = float(data.get('height', 0))
+    dose_per_m2 = float(data.get('dose_per_m2', 0))
+
+    if not all([weight, height]):
+        return jsonify({'error': 'missing values'}), 400
+
+    bsa = math.sqrt((height * weight) / 3600)
+    total_dose = round(bsa * dose_per_m2, 2) if dose_per_m2 else None
+    bsa_dubois = 0.007184 * (height ** 0.725) * (weight ** 0.425)
+
+    return jsonify({
+        'bsa_mosteller': round(bsa, 3),
+        'bsa_dubois': round(bsa_dubois, 3),
+        'total_dose': total_dose
+    })
+
+# ── Drug Vision ───────────────────────────────
+@analysis.route('/api/drug-vision', methods=['POST'])
+def api_drug_vision():
+    import base64
+    if 'image' not in request.files:
+        return jsonify({'error': 'no image'}), 400
+
+    image_file = request.files['image']
+    image_data = base64.standard_b64encode(image_file.read()).decode('utf-8')
+    media_type = image_file.content_type or 'image/jpeg'
+    api_key = current_app.config.get('ANTHROPIC_API_KEY', '')
+
+    if not api_key:
+        return jsonify({'error': 'no api key'}), 500
+
+    try:
+        headers = {
+            'x-api-key': api_key,
+            'anthropic-version': '2023-06-01',
+            'content-type': 'application/json'
+        }
+        payload = {
+            'model': 'claude-haiku-4-5-20251001',
+            'max_tokens': 300,
+            'messages': [{
+                'role': 'user',
+                'content': [
+                    {'type': 'image', 'source': {'type': 'base64', 'media_type': media_type, 'data': image_data}},
+                    {'type': 'text', 'text': '이 이미지에서 약물/의약품을 식별해주세요.\n약물명만 간단하게 답해주세요.\n만약 약이 아니거나 식별 불가능하면 "알 수 없음" 이라고만 답하세요.'}
+                ]
+            }]
+        }
+        r = http_requests.post('https://api.anthropic.com/v1/messages', headers=headers, json=payload, timeout=15)
+        result = r.json()
+        drug_name = result['content'][0]['text'].strip()
+    except Exception as e:
+        return jsonify({'error': 'vision failed: ' + str(e)}), 500
+
+    if drug_name == '알 수 없음' or not drug_name:
+        return jsonify({'error': 'cannot identify drug', 'raw': drug_name}), 404
+
+    return jsonify({'detected_drug': drug_name})
