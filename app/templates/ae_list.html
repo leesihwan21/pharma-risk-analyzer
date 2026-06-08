@@ -1,34 +1,169 @@
 <!DOCTYPE html>
-<html>
+<html lang="ko">
 <head>
+    <meta charset="UTF-8">
     <title>AE 목록</title>
+    <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body { font-family: 'Segoe UI', sans-serif; background: #0f172a; color: #e2e8f0; padding: 2rem; }
+        h2 { font-size: 1.5rem; font-weight: 600; margin-bottom: 1.5rem; color: #f1f5f9; }
+
+        .summary { display: flex; gap: 1rem; margin-bottom: 1.5rem; flex-wrap: wrap; }
+        .summary-card {
+            background: #1e293b; border-radius: 8px; padding: 1rem 1.5rem;
+            min-width: 120px; text-align: center;
+        }
+        .summary-card .label { font-size: 12px; color: #94a3b8; margin-bottom: 4px; }
+        .summary-card .value { font-size: 1.5rem; font-weight: 700; color: #f1f5f9; }
+        .summary-card.danger .value { color: #f87171; }
+        .summary-card.warning .value { color: #fb923c; }
+        .summary-card.sae .value { color: #a78bfa; }
+        .summary-card.submitted .value { color: #34d399; }
+
+        .toolbar { display: flex; gap: 0.75rem; margin-bottom: 1rem; align-items: center; flex-wrap: wrap; }
+        .toolbar a {
+            background: #1d4ed8; color: white; padding: 8px 16px;
+            border-radius: 6px; text-decoration: none; font-size: 14px;
+        }
+        .toolbar a:hover { background: #2563eb; }
+
+        table { width: 100%; border-collapse: collapse; font-size: 14px; }
+        thead tr { background: #1e293b; }
+        th { padding: 10px 12px; text-align: left; color: #94a3b8; font-weight: 500;
+             border-bottom: 1px solid #334155; white-space: nowrap; }
+        td { padding: 10px 12px; border-bottom: 1px solid #1e293b; vertical-align: middle; }
+        tbody tr:hover { background: #1e293b; }
+
+        .badge {
+            display: inline-block; padding: 3px 8px; border-radius: 4px;
+            font-size: 11px; font-weight: 600; white-space: nowrap;
+        }
+        .badge-overdue  { background: #7f1d1d; color: #fca5a5; }
+        .badge-urgent   { background: #7c2d12; color: #fdba74; }
+        .badge-warning  { background: #713f12; color: #fde68a; }
+        .badge-normal   { background: #14532d; color: #86efac; }
+        .badge-submitted{ background: #1e3a5f; color: #93c5fd; }
+        .badge-sae      { background: #4c1d95; color: #c4b5fd; }
+        .badge-grade-1  { background: #1e3a5f; color: #93c5fd; }
+        .badge-grade-2  { background: #14532d; color: #86efac; }
+        .badge-grade-3  { background: #713f12; color: #fde68a; }
+        .badge-grade-4  { background: #7c2d12; color: #fdba74; }
+        .badge-grade-5  { background: #7f1d1d; color: #fca5a5; }
+
+        .btn-sm {
+            display: inline-block; padding: 4px 10px; border-radius: 4px;
+            font-size: 11px; text-decoration: none; margin-right: 4px;
+        }
+        .btn-pdf  { background: #1e3a5f; color: #93c5fd; }
+        .btn-e2b  { background: #14532d; color: #86efac; }
+        .btn-pdf:hover  { background: #1d4ed8; color: white; }
+        .btn-e2b:hover  { background: #15803d; color: white; }
+
+        .empty { text-align: center; padding: 3rem; color: #475569; }
+    </style>
 </head>
 <body>
 
 <h2>AE Report 목록</h2>
 
-<table border="1">
-    <tr>
-        <th>ID</th>
-        <th>환자코드</th>
-        <th>약물명</th>
-        <th>AE</th>
-        <th>Grade</th>
-        <th>SAE</th>
-    </tr>
+<!-- 요약 카드 -->
+<div class="summary">
+    <div class="summary-card">
+        <div class="label">전체</div>
+        <div class="value">{{ reports | length }}</div>
+    </div>
+    <div class="summary-card sae">
+        <div class="label">SAE</div>
+        <div class="value">{{ reports | selectattr('is_sae') | list | length }}</div>
+    </div>
+    <div class="summary-card danger">
+        <div class="label">기한초과</div>
+        <div class="value">{{ reports | selectattr('deadline_status', 'equalto', 'overdue') | list | length }}</div>
+    </div>
+    <div class="summary-card warning">
+        <div class="label">긴급(3일)</div>
+        <div class="value">{{ reports | selectattr('deadline_status', 'equalto', 'urgent') | list | length }}</div>
+    </div>
+    <div class="summary-card submitted">
+        <div class="label">제출완료</div>
+        <div class="value">{{ reports | selectattr('is_submitted') | list | length }}</div>
+    </div>
+</div>
 
-    {% for report in reports %}
-    <tr>
-        <td>{{ report.id }}</td>
-        <td>{{ report.patient_code }}</td>
-        <td>{{ report.drugname }}</td>
-        <td>{{ report.ae_term }}</td>
-        <td>{{ report.ctcae_grade }}</td>
-        <td>{{ report.is_sae }}</td>
-    </tr>
-    {% endfor %}
+<!-- 툴바 -->
+<div class="toolbar">
+    <a href="/ae_manager">+ AE 등록 (매니저)</a>
+</div>
 
+<!-- 테이블 -->
+{% if reports %}
+<table>
+    <thead>
+        <tr>
+            <th>ID</th>
+            <th>환자코드</th>
+            <th>약물명</th>
+            <th>AE 용어</th>
+            <th>Grade</th>
+            <th>SAE</th>
+            <th>마감일 상태</th>
+            <th>마감일</th>
+            <th>내보내기</th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for report in reports %}
+        <tr>
+            <td>{{ report.id }}</td>
+            <td>{{ report.patient_code }}</td>
+            <td>{{ report.drugname }}</td>
+            <td>{{ report.ae_term }}</td>
+            <td>
+                {% if report.ctcae_grade %}
+                <span class="badge badge-grade-{{ report.ctcae_grade }}">
+                    Grade {{ report.ctcae_grade }}
+                </span>
+                {% else %}-{% endif %}
+            </td>
+            <td>
+                {% if report.is_sae %}
+                <span class="badge badge-sae">SAE</span>
+                {% else %}-{% endif %}
+            </td>
+            <td>
+                {% if report.deadline_status == 'overdue' %}
+                    <span class="badge badge-overdue">⚠ 기한초과</span>
+                {% elif report.deadline_status == 'urgent' %}
+                    <span class="badge badge-urgent">🔴 긴급 (3일)</span>
+                {% elif report.deadline_status == 'warning' %}
+                    <span class="badge badge-warning">🟡 주의 (7일)</span>
+                {% elif report.deadline_status == 'submitted' %}
+                    <span class="badge badge-submitted">✓ 제출완료</span>
+                {% elif report.deadline_status == 'normal' %}
+                    <span class="badge badge-normal">정상</span>
+                {% else %}
+                    <span style="color:#475569">-</span>
+                {% endif %}
+            </td>
+            <td style="color:#94a3b8; font-size:13px;">
+                {% if report.report_deadline %}
+                    {{ report.report_deadline.strftime('%Y-%m-%d') }}
+                    {% if report.days_until_deadline() is not none %}
+                        <br><small style="color:#64748b;">({{ report.days_until_deadline() }}일 남음)</small>
+                    {% endif %}
+                {% else %}-{% endif %}
+            </td>
+            <td>
+                <a href="/api/ae/{{ report.id }}/pdf" class="btn-sm btn-pdf">PDF</a>
+                <a href="/api/ae/{{ report.id }}/e2b" class="btn-sm btn-e2b">E2B</a>
+            </td>
+        </tr>
+        {% endfor %}
+    </tbody>
 </table>
+{% else %}
+<div class="empty">등록된 AE 보고서가 없습니다.</div>
+{% endif %}
 
 </body>
 </html>
