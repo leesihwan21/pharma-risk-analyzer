@@ -1,0 +1,157 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>AE 등록</title>
+</head>
+<body>
+
+<h2>AE Report 등록</h2>
+<a href="/ae/list">← 목록으로</a>
+<br><br>
+
+<form method="POST">
+    <table border="1" cellpadding="6">
+        <tr><th colspan="2">환자 정보</th></tr>
+        <tr>
+            <td>환자코드 *</td>
+            <td><input type="text" name="patient_code" required></td>
+        </tr>
+        <tr>
+            <td>나이</td>
+            <td><input type="number" name="age" step="0.1"></td>
+        </tr>
+        <tr>
+            <td>성별</td>
+            <td>
+                <select name="sex">
+                    <option value="">선택</option>
+                    <option value="M">남성</option>
+                    <option value="F">여성</option>
+                </select>
+            </td>
+        </tr>
+
+        <tr><th colspan="2">약물 정보</th></tr>
+        <tr>
+            <td>약물명 *</td>
+            <td><input type="text" name="drugname" required></td>
+        </tr>
+        <tr>
+            <td>용량</td>
+            <td><input type="text" name="dose"></td>
+        </tr>
+        <tr>
+            <td>투여경로</td>
+            <td>
+                <select name="route">
+                    <option value="">선택</option>
+                    <option value="경구">경구</option>
+                    <option value="정맥">정맥</option>
+                    <option value="근육">근육</option>
+                    <option value="피하">피하</option>
+                    <option value="외용">외용</option>
+                </select>
+            </td>
+        </tr>
+
+        <tr><th colspan="2">이상반응 정보</th></tr>
+        <tr>
+            <td>AE 용어 *</td>
+            <td><input type="text" name="ae_term" required placeholder="MedDRA PT 기준"></td>
+        </tr>
+        <tr>
+            <td>발생일</td>
+            <td><input type="date" name="ae_start_date"></td>
+        </tr>
+        <tr>
+            <td>종료일</td>
+            <td><input type="date" name="ae_end_date"></td>
+        </tr>
+        <tr>
+            <td>CTCAE Grade</td>
+            <td>
+                <select name="ctcae_grade">
+                    <option value="">선택</option>
+                    <option value="1">1 - 경미</option>
+                    <option value="2">2 - 중등도</option>
+                    <option value="3">3 - 중증</option>
+                    <option value="4">4 - 생명위협</option>
+                    <option value="5">5 - 사망</option>
+                </select>
+            </td>
+        </tr>
+        <tr>
+            <td>SAE 여부</td>
+            <td>
+                <select name="is_sae">
+                    <option value="false">아니오</option>
+                    <option value="true">예 (SAE)</option>
+                </select>
+            </td>
+        </tr>
+        <tr>
+            <td>SAE 분류</td>
+            <td>
+                <select name="sae_category">
+                    <option value="">선택</option>
+                    <option value="사망">사망</option>
+                    <option value="입원">입원</option>
+                    <option value="생명위협">생명위협</option>
+                    <option value="영구장애">영구장애</option>
+                    <option value="선천성기형">선천성기형</option>
+                    <option value="기타 중요 의학적 사건">기타 중요 의학적 사건</option>
+                </select>
+            </td>
+        </tr>
+        <tr>
+            <td>인과관계</td>
+            <td>
+                <select name="causality">
+                    <option value="">선택</option>
+                    <option value="Certain">Certain</option>
+                    <option value="Probable">Probable</option>
+                    <option value="Possible">Possible</option>
+                    <option value="Unlikely">Unlikely</option>
+                    <option value="Unclassifiable">Unclassifiable</option>
+                </select>
+            </td>
+        </tr>
+
+        <tr><th colspan="2">처리 및 결과</th></tr>
+        <tr>
+            <td>조치</td>
+            <td>
+                <select name="action_taken">
+                    <option value="">선택</option>
+                    <option value="투여중단">투여중단</option>
+                    <option value="감량">감량</option>
+                    <option value="유지">유지</option>
+                    <option value="해당없음">해당없음</option>
+                </select>
+            </td>
+        </tr>
+        <tr>
+            <td>결과</td>
+            <td>
+                <select name="outcome">
+                    <option value="">선택</option>
+                    <option value="회복">회복</option>
+                    <option value="회복중">회복중</option>
+                    <option value="후유증">후유증</option>
+                    <option value="사망">사망</option>
+                    <option value="지속중">지속중</option>
+                </select>
+            </td>
+        </tr>
+        <tr>
+            <td>비고</td>
+            <td><textarea name="notes" rows="3" cols="40"></textarea></td>
+        </tr>
+    </table>
+    <br>
+    <button type="submit">등록</button>
+    <a href="/ae/list"><button type="button">취소</button></a>
+</form>
+
+</body>
+</html>

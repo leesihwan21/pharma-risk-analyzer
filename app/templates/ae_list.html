@@ -1,0 +1,34 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>AE 목록</title>
+</head>
+<body>
+
+<h2>AE Report 목록</h2>
+
+<table border="1">
+    <tr>
+        <th>ID</th>
+        <th>환자코드</th>
+        <th>약물명</th>
+        <th>AE</th>
+        <th>Grade</th>
+        <th>SAE</th>
+    </tr>
+
+    {% for report in reports %}
+    <tr>
+        <td>{{ report.id }}</td>
+        <td>{{ report.patient_code }}</td>
+        <td>{{ report.drugname }}</td>
+        <td>{{ report.ae_term }}</td>
+        <td>{{ report.ctcae_grade }}</td>
+        <td>{{ report.is_sae }}</td>
+    </tr>
+    {% endfor %}
+
+</table>
+
+</body>
+</html>

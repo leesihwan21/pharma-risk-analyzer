@@ -23,6 +23,7 @@ from app import cache, limiter
 from app import cache
 from datetime import datetime, timedelta, date
 from flask_login import current_user
+from flask_login import LoginManager, login_user, logout_user, login_required, current_user
 from reportlab.lib.pagesizes import A4
 from reportlab.lib import colors
 from reportlab.platypus import SimpleDocTemplate, Table, TableStyle, Paragraph, Spacer
@@ -771,23 +772,77 @@ def register():
         password = data.get('password', '')
 
         if User.query.filter_by(username=username).first():
-            return jsonify({'error': '??? ???? ???? ???????'}), 400
+            return jsonify({'error': '이미 존재하는 사용자입니다.'}), 400
         if User.query.filter_by(email=email).first():
-            return jsonify({'error': '??? ???? ???? ??????????'}), 400
+            return jsonify({'error': '이미 존재하는 이메일입니다.'}), 400
 
         user = User(
             username=username,
             email=email,
+            role='User',
             password_hash=generate_password_hash(password)
         )
         db.session.add(user)
         db.session.commit()
         login_user(user)
-        return jsonify({'message': '??????? ????!', 'username': username})
+        return jsonify({'message': '회원가입 성공!', 'role': user.role, 'username': username})
 
     return render_template('register.html')
 
+@main.route('/my-role')
+@login_required
+def my_role():
+    return jsonify({
+        'username': current_user.username,
+        'role': current_user.role
+    })
 
+@main.route('/admin/users')
+@login_required
+def admin_users():
+    if current_user.role != 'ADMIN':
+        return jsonify ({
+            'error': '관리자 권한이 필요합니다.'
+        }), 403
+    
+    users = User.query.all()
+
+    return jsonify({
+        'users': [
+            { 
+                'id':user.id,
+                'username' : user.username,
+                'email' : user.email,
+                'role' : user.role,
+                'created_at' : user.created_at.strftime('%Y-%m-%d %H:%M')
+            }
+            for user in users
+        ]
+    })
+
+@main.route('/ae/list')
+@login_required
+def ae_list_api():
+    reports = AEReport.query.order_by(
+        AEReport.reported_at.desc()
+    ).all()
+
+    return render_template(
+        'ae_list.html',
+        reports=reports
+    )
+
+@main.route('/make-admin')
+@login_required
+def make_admin():
+    current_user.role = 'ADMIN'
+    db.session.commit()
+
+    return jsonify({
+        'message': '관리자 변경 완료',
+        'role' : current_user.role
+    })
+    
 @main.route('/login', methods=['GET', 'POST'])
 def login():
     if request.method == 'POST':
@@ -1621,6 +1676,7 @@ def api_trend():
     trend = filtered.groupby('quarter').size().reset_index(name='count')
     trend = trend.sort_values('quarter')
     return jsonify({'drug': drugname, 'trend': trend.to_dict(orient='records')})
+
 @main.route('/shap')
 def shap_page():
     return render_template('shap.html')
