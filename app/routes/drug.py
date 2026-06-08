@@ -14,6 +14,8 @@ from reportlab.lib import colors
 from reportlab.platypus import SimpleDocTemplate, Table, TableStyle, Paragraph, Spacer
 from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
 from reportlab.lib.units import cm
+from reportlab.pdfbase import pdfmetrics
+from reportlab.pdfbase.ttfonts import TTFont
 from datetime import datetime
 from app import cache
 from app.models import db, DrugSearch, FavoriteDrug, PredictionLog
@@ -232,6 +234,13 @@ def generate_report(drugname):
     if len(result) == 0:
         return jsonify({'error': '약물을 찾을 수 없어요'}), 404
 
+    font_path = os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))), 'NanumGothic.ttf')
+    try:
+        pdfmetrics.registerFont(TTFont('NanumGothic', font_path))
+        korean_font = 'NanumGothic'
+    except:
+        korean_font = 'Helvetica'
+
     buf = io.BytesIO()
     doc = SimpleDocTemplate(buf, pagesize=A4,
                             rightMargin=2*cm, leftMargin=2*cm,
@@ -289,6 +298,36 @@ def generate_report(drugname):
         ('PADDING', (0,0), (-1,-1), 6),
     ]))
     story.append(t2)
+    story.append(Spacer(1, 0.5*cm))
+
+    # AI 자동 요약 섹션
+    try:
+        top_reac_list = result['pt'].value_counts().head(5).index.tolist()
+        death_cnt = len(result[result['outc_cod']=='DE'])
+        hosp_cnt = len(result[result['outc_cod']=='HO'])
+
+        prompt = f"""반드시 한국어로만 답하세요. 영어를 절대 사용하지 마세요.
+
+다음 FDA FAERS 약물 데이터를 3-4문장으로 한국어 요약해주세요:
+약물명: {drugname}
+총 부작용 보고건수: {len(result)}건
+주요 부작용 TOP5: {', '.join(top_reac_list)}
+사망 보고: {death_cnt}건
+입원 보고: {hosp_cnt}건
+평균 나이: {round(float(age_data.mean()), 1) if len(age_data) > 0 else 'N/A'}세"""
+
+        response = http_requests.post('http://localhost:11434/api/generate',
+            json={'model': 'llama3.2', 'prompt': prompt, 'stream': False}, timeout=60)
+        ai_summary = response.json().get('response', '')
+
+        if ai_summary:
+            ai_style = ParagraphStyle('ai', fontSize=10, spaceAfter=6,
+                                       textColor=colors.HexColor('#374151'),
+                                       fontName=korean_font, leading=14)
+            story.append(Paragraph("AI 자동 요약 (powered by Llama3.2)", header_style))
+            story.append(Paragraph(ai_summary, ai_style))
+    except Exception as e:
+        pass
 
     doc.build(story)
     buf.seek(0)
@@ -488,11 +527,14 @@ def llm_explain():
     safe_prob = data.get('safe_prob', 0)
     risk_prob = data.get('risk_prob', 0)
 
-    prompt = f"""약물 부작용 분석 결과를 한국어로 설명해주세요 (3-4문장):
+    prompt = f"""반드시 한국어로만 답하세요. 다른 언어는 절대 사용하지 마세요.
+
+약물 부작용 분석 결과를 한국어로 3-4문장 설명해주세요:
 약물: {drug_name}
 부작용: {reaction}
 AI 판정: {risk_label}
-안전 확률: {safe_prob}% / 위험 확률: {risk_prob}%"""
+안전 확률: {safe_prob}%
+위험 확률: {risk_prob}%"""
 
     try:
         response = http_requests.post('http://localhost:11434/api/generate',
