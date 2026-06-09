@@ -22,8 +22,8 @@ def create_app():
     cache.init_app(app)
     limiter.init_app(app)
     login_manager.init_app(app)
-    login_manager.login_view = 'main.login'
-    login_manager.login_message = '로그인이 필요해요!'
+    login_manager.login_view = 'auth.login'
+    login_manager.login_message = '로그?�이 ?�요?�요!'
     mail.init_app(app)
 
     from app.routes import main, auth, drug, ae, analysis, vision
@@ -38,48 +38,48 @@ def create_app():
     api = Api(app,
         version='1.0',
         title='Pharma Risk Analyzer API',
-        description='FDA FAERS 기반 약물 부작용 분석 REST API',
+        description='FDA FAERS 기반 ?�물 부?�용 분석 REST API',
         doc='/api/docs',
         prefix='/api/v1'
     )
 
-    # 네임스페이스
-    ns_drug = api.namespace('drugs', description='약물 관련 API')
-    ns_predict = api.namespace('predict', description='AI 예측 API')
+    # ?�임?�페?�스
+    ns_drug = api.namespace('drugs', description='?�물 관??API')
+    ns_predict = api.namespace('predict', description='AI ?�측 API')
 
-    # 모델 정의
+    # 모델 ?�의
     drug_model = api.model('DrugSearch', {
-        'drug': fields.String(description='약물명'),
-        'total_reports': fields.Integer(description='총 보고 건수'),
-        'age_avg': fields.Float(description='평균 나이'),
+        'drug': fields.String(description='?�물�?),
+        'total_reports': fields.Integer(description='�?보고 건수'),
+        'age_avg': fields.Float(description='?�균 ?�이'),
     })
 
     predict_input = api.model('PredictInput', {
-        'drugname': fields.String(required=True, description='약물명', example='METHOTREXATE'),
-        'reaction': fields.String(required=True, description='부작용', example='FATIGUE'),
-        'age': fields.Float(description='나이', example=50),
-        'sex': fields.String(description='성별 (M/F)', example='F'),
+        'drugname': fields.String(required=True, description='?�물�?, example='METHOTREXATE'),
+        'reaction': fields.String(required=True, description='부?�용', example='FATIGUE'),
+        'age': fields.Float(description='?�이', example=50),
+        'sex': fields.String(description='?�별 (M/F)', example='F'),
     })
 
     predict_output = api.model('PredictOutput', {
-        'drug': fields.String(description='약물명'),
-        'reaction': fields.String(description='부작용'),
-        'risk': fields.Integer(description='위험도 (0/1)'),
-        'risk_label': fields.String(description='위험도 라벨'),
-        'probability': fields.Raw(description='확률'),
+        'drug': fields.String(description='?�물�?),
+        'reaction': fields.String(description='부?�용'),
+        'risk': fields.Integer(description='?�험??(0/1)'),
+        'risk_label': fields.String(description='?�험???�벨'),
+        'probability': fields.Raw(description='?�률'),
     })
 
     @ns_drug.route('/search/<string:drugname>')
     class DrugSearchAPI(Resource):
-        @ns_drug.doc('약물 검색')
+        @ns_drug.doc('?�물 검??)
         @ns_drug.marshal_with(drug_model)
         def get(self, drugname):
-            """약물명으로 부작용 데이터 검색"""
+            """?�물명으�?부?�용 ?�이??검??""
             import pandas as pd
             df = pd.read_csv('data/processed/processed_faers.csv')
             result = df[df['drugname'].str.upper() == drugname.upper()]
             if len(result) == 0:
-                api.abort(404, f'약물을 찾을 수 없어요: {drugname}')
+                api.abort(404, f'?�물??찾을 ???�어?? {drugname}')
             age_data = result['age'].dropna()
             return {
                 'drug': drugname.upper(),
@@ -89,11 +89,11 @@ def create_app():
 
     @ns_predict.route('/risk')
     class PredictAPI(Resource):
-        @ns_predict.doc('위험도 예측')
+        @ns_predict.doc('?�험???�측')
         @ns_predict.expect(predict_input)
         @ns_predict.marshal_with(predict_output)
         def post(self):
-            """AI 기반 약물 부작용 위험도 예측"""
+            """AI 기반 ?�물 부?�용 ?�험???�측"""
             import pickle
             data = api.payload
             drugname = data.get('drugname', '').upper()
@@ -107,9 +107,9 @@ def create_app():
             risk_rates = pickle.load(open('ml/risk_rates.pkl', 'rb'))
 
             if drugname not in le_drug.classes_:
-                api.abort(400, f'알 수 없는 약물: {drugname}')
+                api.abort(400, f'?????�는 ?�물: {drugname}')
             if reaction not in le_reac.classes_:
-                api.abort(400, f'알 수 없는 부작용: {reaction}')
+                api.abort(400, f'?????�는 부?�용: {reaction}')
 
             drug_enc = le_drug.transform([drugname])[0]
             reac_enc = le_reac.transform([reaction])[0]
@@ -126,7 +126,7 @@ def create_app():
                 'drug': drugname,
                 'reaction': reaction,
                 'risk': int(pred),
-                'risk_label': '⚠️ 위험' if pred == 1 else '✅ 비위험',
+                'risk_label': '?�️ ?�험' if pred == 1 else '??비위??,
                 'probability': {
                     'safe': round(float(prob[0]) * 100, 1),
                     'risk': round(float(prob[1]) * 100, 1)
