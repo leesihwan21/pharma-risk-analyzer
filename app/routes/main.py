@@ -97,34 +97,52 @@ def dashboard():
  
 @main.route('/korea')
 def korea_dashboard():
-    # 1. 인코딩 지정하여 안전하게 CSV 로드
-    df = pd.read_csv(KOREA_DATA_PATH, encoding='utf-8-sig')
+    # 1. 일단 인코딩 맞춰서 읽어오기
+    df = pd.read_csv(KOREA_DATA_PATH, encoding='utf-8')
     
-    # 2. 컬럼명 내부의 줄바꿈(\r, \n) 및 앞뒤 공백 완벽 제거
-    df.columns = df.columns.str.replace(r'[\r\n]', '', regex=True).str.strip()
+    # 2. ★ [마스터 키] 눈에 안 보이는 유령 문자 무시하고 컬럼명을 강제로 재정의 ★
+    # 파일에 들어있는 순서 그대로 순서대로 매칭됩니다.
+    df.columns = [
+        'rank',             # 순위
+        'sym_2024',         # 연도별증상(2024)
+        'cnt_2024',         # 연도별보고건수(2024)
+        'sym_2023',         # 연도별증상(2023)
+        'cnt_2023',         # 연도별보고건수(2023)
+        'sym_2022',         # 연도별증상(2022)
+        'cnt_2022',         # 연도별보고건수(2022)
+        'sym_2021',         # 연도별증상(2021)
+        'cnt_2021',         # 연도별보고건수(2021)
+        'sym_2020',         # 연도별증상(2020)
+        'cnt_2020',         # 연도별보고건수(2020)
+        'sym_2019',         # 연도별증상(2019)
+        'cnt_2019'          # 연도별보고건수(2019)
+    ]
 
-    # 3. [오타 수정 완료!] 변수명 정상화
-    sym_col  = '연도별증상(2024)'
-    cnt_2024 = '연도별보고건수(2024)' # <- '연0별'을 '연도별'로 고쳤습니다.
-    cnt_2023 = '연도별보고건수(2023)'
+    # 3. Plotly 컴포넌트에 매핑할 변수도 깔끔하게 영어로 매칭
+    sym_col  = 'sym_2024'
+    cnt_2024 = 'cnt_2024'
+    cnt_2023 = 'cnt_2023'
 
+    # 첫 번째 그래프 (2024 Top 10)
     fig1 = px.bar(df.head(10), x=sym_col, y=cnt_2024,
                   title='한국 2024년 Top 10 이상반응',
                   color=cnt_2024, color_continuous_scale='Blues')
     fig1.update_layout(xaxis_tickangle=-45, template='plotly_dark', height=420)
 
+    # 두 번째 그래프 (Top 5 추이)
     years = ['2019', '2020', '2021', '2022', '2023', '2024']
     top5 = df.head(5)[sym_col].tolist()
     fig2 = px.line(title='한국 Top 5 이상반응 연도별 추이')
     for symptom in top5:
         counts = []
         for y in years:
-            col = f'연도별보고건수({y})'
+            col = f'cnt_{y}'  # 동적으로 cnt_2019, cnt_2020 등을 추적
             row = df[df[sym_col] == symptom]
             counts.append(int(row[col].values[0]) if len(row) > 0 and col in df.columns else 0)
         fig2.add_scatter(x=years, y=counts, name=symptom, mode='lines+markers')
     fig2.update_layout(template='plotly_dark', height=420)
 
+    # 세 번째 그래프 (2024 vs 2023 비교)
     fig3 = px.bar(df.head(10), x=sym_col, y=[cnt_2024, cnt_2023],
                   title='2024 vs 2023 Top 10 이상반응 비교',
                   barmode='group', color_discrete_sequence=['#38bdf8', '#a78bfa'])
