@@ -97,17 +97,23 @@ def dashboard():
  
 @main.route('/korea')
 def korea_dashboard():
-    df = pd.read_csv(KOREA_DATA_PATH, encoding='utf-8')
- 
+    # ------------------ [여기서부터 수정] ------------------
+    # 1. encoding을 'utf-8-sig'로 변경하여 BOM 문자(\ufeff) 자동 제거
+    df = pd.read_csv(KOREA_DATA_PATH, encoding='utf-8-sig')
+    
+    # 2. 혹시 모를 컬럼명 앞뒤의 공백/줄바꿈 완벽 제거
+    df.columns = df.columns.str.strip()
+    # ------------------ [여기까지 수정] ------------------
+
     sym_col  = '연도별증상(2024)'
     cnt_2024 = '연도별보고건수(2024)'
     cnt_2023 = '연도별보고건수(2023)'
- 
+
     fig1 = px.bar(df.head(10), x=sym_col, y=cnt_2024,
                   title='한국 2024년 Top 10 이상반응',
                   color=cnt_2024, color_continuous_scale='Blues')
     fig1.update_layout(xaxis_tickangle=-45, template='plotly_dark', height=420)
- 
+
     years = ['2019', '2020', '2021', '2022', '2023', '2024']
     top5 = df.head(5)[sym_col].tolist()
     fig2 = px.line(title='한국 Top 5 이상반응 연도별 추이')
@@ -119,12 +125,12 @@ def korea_dashboard():
             counts.append(int(row[col].values[0]) if len(row) > 0 and col in df.columns else 0)
         fig2.add_scatter(x=years, y=counts, name=symptom, mode='lines+markers')
     fig2.update_layout(template='plotly_dark', height=420)
- 
+
     fig3 = px.bar(df.head(10), x=sym_col, y=[cnt_2024, cnt_2023],
                   title='2024 vs 2023 Top 10 이상반응 비교',
                   barmode='group', color_discrete_sequence=['#38bdf8', '#a78bfa'])
     fig3.update_layout(xaxis_tickangle=-45, template='plotly_dark', height=420)
- 
+
     charts = {
         'chart1': json.dumps(fig1, cls=plotly.utils.PlotlyJSONEncoder),
         'chart2': json.dumps(fig2, cls=plotly.utils.PlotlyJSONEncoder),
