@@ -28,3 +28,4 @@ Werkzeug==3.1.8
 xgboost==3.2.0
 shap==0.52.0
 scikit-learn==1.8.0
+reportlab
