@@ -1,4 +1,4 @@
-﻿import json, os, pandas as pd, plotly, plotly.express as px, pycountry
+import json, os, pandas as pd, plotly, plotly.express as px, pycountry
 from flask import Blueprint, render_template, jsonify
 from app import cache
 main = Blueprint('main', __name__)
@@ -64,7 +64,8 @@ def korea_dashboard():
             counts.append(int(row[col].values[0]) if len(row) > 0 and col in df.columns else 0)
         fig2.add_scatter(x=years, y=counts, name=symptom, mode='lines+markers')
     fig2.update_layout(template='plotly_dark', height=420)
-    fig3 = px.bar(df.head(10), x='sym_2024', y=['cnt_2024','cnt_2023'], title='2024 vs 2023 Top 10 ADR', barmode='group', color_discrete_sequence=['#38bdf8','#a78bfa'])
+    df_melt = df.head(10).melt(id_vars='sym_2024', value_vars=['cnt_2024','cnt_2023'], var_name='year', value_name='count')
+    fig3 = px.bar(df_melt, x='sym_2024', y='count', color='year', title='2024 vs 2023 Top 10 ADR', barmode='group', color_discrete_sequence=['#38bdf8','#a78bfa'])
     fig3.update_layout(xaxis_tickangle=-45, template='plotly_dark', height=420)
     charts = {'chart1': json.dumps(fig1, cls=plotly.utils.PlotlyJSONEncoder), 'chart2': json.dumps(fig2, cls=plotly.utils.PlotlyJSONEncoder), 'chart3': json.dumps(fig3, cls=plotly.utils.PlotlyJSONEncoder)}
     return render_template('korea.html', charts=charts)
