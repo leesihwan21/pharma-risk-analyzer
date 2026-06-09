@@ -1,4 +1,4 @@
-﻿from flask import Flask
+from flask import Flask
 from config import Config
 from app.models import db
 from flask_caching import Cache
@@ -7,7 +7,6 @@ from flask_limiter.util import get_remote_address
 from flask_restx import Api, Resource, fields
 from flask_login import LoginManager
 from flask_mail import Mail
-from flask_restx import Api
 
 cache = Cache()
 limiter = Limiter(key_func=get_remote_address, default_limits=["200 per day", "50 per hour"])
@@ -23,7 +22,7 @@ def create_app():
     limiter.init_app(app)
     login_manager.init_app(app)
     login_manager.login_view = 'auth.login'
-    login_manager.login_message = '濡쒓렇?몄씠 ?꾩슂?댁슂!'
+    login_manager.login_message = '로그인이 필요합니다!'
     mail.init_app(app)
 
     from app.routes import main, auth, drug, ae, analysis, vision
@@ -34,52 +33,52 @@ def create_app():
     app.register_blueprint(analysis)
     app.register_blueprint(vision)
 
-    # Swagger API 臾몄꽌
+    # Swagger API 문서
     api = Api(app,
         version='1.0',
         title='Pharma Risk Analyzer API',
-        description='FDA FAERS 湲곕컲 ?쎈Ъ 遺?묒슜 遺꾩꽍 REST API',
+        description='FDA FAERS 기반 약물 이상반응 분석 REST API',
         doc='/api/docs',
         prefix='/api/v1'
     )
 
-    # ?ㅼ엫?ㅽ럹?댁뒪
-    ns_drug = api.namespace('drugs', description='?쎈Ъ 愿??API')
-    ns_predict = api.namespace('predict', description='AI ?덉륫 API')
+    # 네임스페이스
+    ns_drug = api.namespace('drugs', description='약물 검색 API')
+    ns_predict = api.namespace('predict', description='AI 예측 API')
 
-    # 紐⑤뜽 ?뺤쓽
+    # 모델 정의
     drug_model = api.model('DrugSearch', {
-        'drug': fields.String(description='?쎈Ъ紐?),
-        'total_reports': fields.Integer(description='珥?蹂닿퀬 嫄댁닔'),
-        'age_avg': fields.Float(description='?됯퇏 ?섏씠'),
+        'drug': fields.String(description='Drug Name'),
+        'total_reports': fields.Integer(description='Total Reports'),
+        'age_avg': fields.Float(description='Average Age'),
     })
 
     predict_input = api.model('PredictInput', {
-        'drugname': fields.String(required=True, description='?쎈Ъ紐?, example='METHOTREXATE'),
-        'reaction': fields.String(required=True, description='遺?묒슜', example='FATIGUE'),
-        'age': fields.Float(description='?섏씠', example=50),
-        'sex': fields.String(description='?깅퀎 (M/F)', example='F'),
+        'drugname': fields.String(required=True, description='Drug Name', example='METHOTREXATE'),
+        'reaction': fields.String(required=True, description='Adverse Reaction', example='FATIGUE'),
+        'age': fields.Float(description='Age', example=50),
+        'sex': fields.String(description='Sex (M/F)', example='F'),
     })
 
     predict_output = api.model('PredictOutput', {
-        'drug': fields.String(description='?쎈Ъ紐?),
-        'reaction': fields.String(description='遺?묒슜'),
-        'risk': fields.Integer(description='?꾪뿕??(0/1)'),
-        'risk_label': fields.String(description='?꾪뿕???쇰꺼'),
-        'probability': fields.Raw(description='?뺣쪧'),
+        'drug': fields.String(description='Drug Name'),
+        'reaction': fields.String(description='Adverse Reaction'),
+        'risk': fields.Integer(description='Risk (0/1)'),
+        'risk_label': fields.String(description='Risk Label'),
+        'probability': fields.Raw(description='Probability'),
     })
 
     @ns_drug.route('/search/<string:drugname>')
     class DrugSearchAPI(Resource):
-        @ns_drug.doc('?쎈Ъ 寃??)
+        @ns_drug.doc('drug_search')
         @ns_drug.marshal_with(drug_model)
         def get(self, drugname):
-            """?쎈Ъ紐낆쑝濡?遺?묒슜 ?곗씠??寃??""
+            """Search drug by name"""
             import pandas as pd
             df = pd.read_csv('data/processed/processed_faers.csv')
             result = df[df['drugname'].str.upper() == drugname.upper()]
             if len(result) == 0:
-                api.abort(404, f'?쎈Ъ??李얠쓣 ???놁뼱?? {drugname}')
+                api.abort(404, f'Drug not found: {drugname}')
             age_data = result['age'].dropna()
             return {
                 'drug': drugname.upper(),
@@ -89,11 +88,11 @@ def create_app():
 
     @ns_predict.route('/risk')
     class PredictAPI(Resource):
-        @ns_predict.doc('?꾪뿕???덉륫')
+        @ns_predict.doc('predict_risk')
         @ns_predict.expect(predict_input)
         @ns_predict.marshal_with(predict_output)
         def post(self):
-            """AI 湲곕컲 ?쎈Ъ 遺?묒슜 ?꾪뿕???덉륫"""
+            """AI-based drug adverse event risk prediction"""
             import pickle
             data = api.payload
             drugname = data.get('drugname', '').upper()
@@ -107,9 +106,9 @@ def create_app():
             risk_rates = pickle.load(open('ml/risk_rates.pkl', 'rb'))
 
             if drugname not in le_drug.classes_:
-                api.abort(400, f'?????녿뒗 ?쎈Ъ: {drugname}')
+                api.abort(400, f'Unknown drug: {drugname}')
             if reaction not in le_reac.classes_:
-                api.abort(400, f'?????녿뒗 遺?묒슜: {reaction}')
+                api.abort(400, f'Unknown reaction: {reaction}')
 
             drug_enc = le_drug.transform([drugname])[0]
             reac_enc = le_reac.transform([reaction])[0]
@@ -126,7 +125,7 @@ def create_app():
                 'drug': drugname,
                 'reaction': reaction,
                 'risk': int(pred),
-                'risk_label': '?좑툘 ?꾪뿕' if pred == 1 else '??鍮꾩쐞??,
+                'risk_label': 'High Risk' if pred == 1 else 'Low Risk',
                 'probability': {
                     'safe': round(float(prob[0]) * 100, 1),
                     'risk': round(float(prob[1]) * 100, 1)
