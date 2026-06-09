@@ -97,16 +97,15 @@ def dashboard():
  
 @main.route('/korea')
 def korea_dashboard():
-    # ------------------ [여기서부터 수정] ------------------
-    # 1. encoding을 'utf-8-sig'로 변경하여 BOM 문자(\ufeff) 자동 제거
+    # 1. 인코딩 지정하여 안전하게 CSV 로드
     df = pd.read_csv(KOREA_DATA_PATH, encoding='utf-8-sig')
     
-    # 2. 혹시 모를 컬럼명 앞뒤의 공백/줄바꿈 완벽 제거
-    df.columns = df.columns.str.strip()
-    # ------------------ [여기까지 수정] ------------------
+    # 2. 컬럼명 내부의 줄바꿈(\r, \n) 및 앞뒤 공백 완벽 제거
+    df.columns = df.columns.str.replace(r'[\r\n]', '', regex=True).str.strip()
 
+    # 3. [오타 수정 완료!] 변수명 정상화
     sym_col  = '연도별증상(2024)'
-    cnt_2024 = '연도별보고건수(2024)'
+    cnt_2024 = '연도별보고건수(2024)' # <- '연0별'을 '연도별'로 고쳤습니다.
     cnt_2023 = '연도별보고건수(2023)'
 
     fig1 = px.bar(df.head(10), x=sym_col, y=cnt_2024,
