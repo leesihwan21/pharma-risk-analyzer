@@ -1,19 +1,27 @@
-import json, os, pandas as pd, plotly, plotly.express as px, pycountry
+﻿import json, os, pandas as pd, plotly, plotly.express as px, pycountry
+import plotly.graph_objects as go
 from flask import Blueprint, render_template, jsonify
 from app import cache
+
 main = Blueprint('main', __name__)
 DATA_PATH = os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))), 'data', 'processed', 'processed_faers.csv')
 KOREA_DATA_PATH = os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))), 'data', 'raw', 'korea_adr.csv')
+
+
 def load_df():
     return pd.read_csv(DATA_PATH)
+
 def alpha2_to_alpha3(code):
     try:
         return pycountry.countries.get(alpha_2=code).alpha_3
     except:
         return None
+    
 @main.route('/')
 def index():
     return render_template('index.html')
+
+
 @main.route('/dashboard')
 @cache.cached(timeout=300)
 def dashboard():
@@ -47,6 +55,8 @@ def dashboard():
     fig6.update_layout(template='plotly_dark', height=420, geo=dict(showframe=False, showcoastlines=True, showland=True, landcolor='#1e293b', bgcolor='#0f172a'))
     charts = {'chart1': json.dumps(fig1, cls=plotly.utils.PlotlyJSONEncoder), 'chart2': json.dumps(fig2, cls=plotly.utils.PlotlyJSONEncoder), 'chart3': json.dumps(fig3, cls=plotly.utils.PlotlyJSONEncoder), 'chart4': json.dumps(fig4, cls=plotly.utils.PlotlyJSONEncoder), 'chart5': json.dumps(fig5, cls=plotly.utils.PlotlyJSONEncoder), 'chart6': json.dumps(fig6, cls=plotly.utils.PlotlyJSONEncoder)}
     return render_template('dashboard.html', charts=charts)
+
+
 @main.route('/korea')
 def korea_dashboard():
     df = pd.read_csv(KOREA_DATA_PATH, encoding='utf-8')
@@ -64,8 +74,13 @@ def korea_dashboard():
             counts.append(int(row[col].values[0]) if len(row) > 0 and col in df.columns else 0)
         fig2.add_scatter(x=years, y=counts, name=symptom, mode='lines+markers')
     fig2.update_layout(template='plotly_dark', height=420)
-    df_melt = df.head(10).melt(id_vars='sym_2024', value_vars=['cnt_2024','cnt_2023'], var_name='year', value_name='count')
-    fig3 = px.bar(df_melt, x='sym_2024', y='count', color='year', title='2024 vs 2023 Top 10 ADR', barmode='group', color_discrete_sequence=['#38bdf8','#a78bfa'])
+
+    df10 = df.head(10)
+    fig3 = go.Figure()
+    fig3.add_trace(go.Bar(x=df10['sym_2024'], y=df10['cnt_2024'], name='2024', marker_color='#38bdf8'))
+    fig3.add_trace(go.Bar(x=df10['sym_2024'], y=df10['cnt_2023'], name='2023', marker_color='#a78bfa'))
+    fig3.update_layout(barmode='group', title='2024 vs 2023 Top 10 ADR', xaxis_tickangle=-45, template='plotly_dark', height=420)
+
     fig3.update_layout(xaxis_tickangle=-45, template='plotly_dark', height=420)
     charts = {'chart1': json.dumps(fig1, cls=plotly.utils.PlotlyJSONEncoder), 'chart2': json.dumps(fig2, cls=plotly.utils.PlotlyJSONEncoder), 'chart3': json.dumps(fig3, cls=plotly.utils.PlotlyJSONEncoder)}
     return render_template('korea.html', charts=charts)
