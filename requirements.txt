@@ -27,3 +27,7 @@ anthropic
 PyMySQL==1.2.0
 scipy==1.16.3
 pillow==12.2.0
+
+pycountry
+flask-migrate
+flasgger
