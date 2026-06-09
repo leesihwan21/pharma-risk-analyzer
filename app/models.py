@@ -187,3 +187,24 @@ class AEReport(db.Model):
             'is_submitted': self.is_submitted,
             'notes': self.notes,
         }
+
+class UserActivityLog(db.Model):
+    """사용자 활동 로그"""
+    __tablename__ = 'user_activity_logs'
+
+    id = db.Column(db.Integer, primary_key=True)
+    user_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=True)
+    username = db.Column(db.String(80), nullable=True)
+    action = db.Column(db.String(50), nullable=False)  # register/login/logout
+    ip_address = db.Column(db.String(50), nullable=True)
+    user_agent = db.Column(db.String(200), nullable=True)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+
+    def to_dict(self):
+        return {
+            'id': self.id,
+            'username': self.username,
+            'action': self.action,
+            'ip_address': self.ip_address,
+            'created_at': self.created_at.strftime('%Y-%m-%d %H:%M')
+        }

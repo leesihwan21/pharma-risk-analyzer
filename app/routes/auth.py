@@ -1,8 +1,10 @@
 import os
+
 from flask import Blueprint, render_template, jsonify, request
 from flask_login import login_user, logout_user, login_required, current_user
 from werkzeug.security import generate_password_hash, check_password_hash
 from app.models import db, User
+from app.models import db, User, UserActivityLog
 
 auth = Blueprint('auth', __name__)
 
@@ -28,6 +30,10 @@ def register():
         db.session.add(user)
         db.session.commit()
         login_user(user)
+
+        log = UserActivityLog(user_id=user.id, username=username, action='register', ip_address=request.remote_addr)
+        db.session.add(log)
+        db.session.commit()
         return jsonify({'message': '회원가입 성공!', 'role': user.role, 'username': username})
 
     return render_template('register.html')
@@ -44,6 +50,9 @@ def login():
             return jsonify({'error': '아이디 또는 비밀번호가 틀렸습니다.'}), 401
 
         login_user(user)
+        log  = UserActivityLog(user_id=user.id, username=username, action='login', ip_address=request.remote_addr)
+        db.session.add(log)
+        db.session.commit()
         return jsonify({'message': f'{username}님 로그인!', 'username': username})
 
     return render_template('login.html')
@@ -52,6 +61,9 @@ def login():
 @login_required
 def logout():
     logout_user()
+    log = UserActivityLog(username=current_user.username, action='logout', ip_address=request.remote_addr)
+    db.session.add(log)
+    db.session.commit()
     return jsonify({'message': '로그아웃됐습니다.'})
 
 @auth.route('/api/me')
