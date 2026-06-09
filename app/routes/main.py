@@ -97,43 +97,42 @@ def dashboard():
  
 @main.route('/korea')
 def korea_dashboard():
-    # 1. 인코딩을 명시하여 로드
-    df = pd.read_csv(KOREA_DATA_PATH, encoding='utf-8')
+    # 1. 인코딩 신경 쓰지 않고 안전하게 파일 읽기
+    df = pd.read_csv(KOREA_DATA_PATH)
     
-    # 2. 유령 특수문자 제거 후 깨끗한 한글 컬럼 확보
-    df.columns = df.columns.str.replace(r'[\r\n]', '', regex=True).str.strip()
+    # 2. ★ [핵심] 한글 매칭 실패를 방지하기 위해 컬럼 '순서'대로 이름을 강제 주입 ★
+    # 파일에 존재하는 컬럼 수에 맞춰 앞에서부터 강제로 덮어씌웁니다.
+    new_columns = [
+        'rank',       # 1번째: 순위
+        'sym_2024',   # 2번째: 연도별증상(2024)
+        'cnt_2024',   # 3번째: 연도별보고건수(2024)
+        'sym_2023',   # 4번째: 연도별증상(2023)
+        'cnt_2023',   # 5번째: 연도별보고건수(2023)
+        'sym_2022',   # 6번째: 연도별증상(2022)
+        'cnt_2022',   # 7번째: 연도별보고건수(2022)
+        'sym_2021',   # 8번째: 연도별증상(2021)
+        'cnt_2021',   # 9번째: 연도별보고건수(2021)
+        'sym_2020',   # 10번째: 연도별증상(2020)
+        'cnt_2020',   # 11번째: 연도별보고건수(2020)
+        'sym_2019',   # 12번째: 연도별증상(2019)
+        'cnt_2019'    # 13번째: 연도별보고건수(2019)
+    ]
+    
+    # 만약 파일의 실제 컬럼 수와 우리가 지정한 개수가 다를 경우를 대비한 안전 필터링
+    df.columns = new_columns[:len(df.columns)]
 
-    # 3. [안전 장치] 글자가 포함되어 있으면 영문으로 바꾸는 매핑 딕셔너리
-    rename_dict = {}
-    for col in df.columns:
-        if '순위' in col: rename_dict[col] = 'rank'
-        elif '증상(2024)' in col: rename_dict[col] = 'sym_2024'
-        elif '보고건수(2024)' in col: rename_dict[col] = 'cnt_2024'
-        elif '증상(2023)' in col: rename_dict[col] = 'sym_2023'
-        elif '보고건수(2023)' in col: rename_dict[col] = 'cnt_2023'
-        elif '증상(2022)' in col: rename_dict[col] = 'sym_2022'
-        elif '보고건수(2022)' in col: rename_dict[col] = 'cnt_2022'
-        elif '증상(2021)' in col: rename_dict[col] = 'sym_2021'
-        elif '보고건수(2021)' in col: rename_dict[col] = 'cnt_2021'
-        elif '증상(2020)' in col: rename_dict[col] = 'sym_2020'
-        elif '보고건수(2020)' in col: rename_dict[col] = 'cnt_2020'
-        elif '증상(2019)' in col: rename_dict[col] = 'sym_2019'
-        elif '보고건수(2019)' in col: rename_dict[col] = 'cnt_2019'
-        
-    df = df.rename(columns=rename_dict)
-
-    # 4. 변수 지정
+    # 3. 변수 지정
     sym_col  = 'sym_2024'
     cnt_2024 = 'cnt_2024'
     cnt_2023 = 'cnt_2023'
 
-    # 첫 번째 그래프
+    # 첫 번째 그래프 (2024 Top 10)
     fig1 = px.bar(df.head(10), x=sym_col, y=cnt_2024,
                   title='한국 2024년 Top 10 이상반응',
                   color=cnt_2024, color_continuous_scale='Blues')
     fig1.update_layout(xaxis_tickangle=-45, template='plotly_dark', height=420)
 
-    # 두 번째 그래프
+    # 두 번째 그래프 (Top 5 연도별 추이)
     years = ['2019', '2020', '2021', '2022', '2023', '2024']
     top5 = df.head(5)[sym_col].tolist()
     fig2 = px.line(title='한국 Top 5 이상반응 연도별 추이')
@@ -142,11 +141,15 @@ def korea_dashboard():
         for y in years:
             col = f'cnt_{y}'
             row = df[df[sym_col] == symptom]
-            counts.append(int(row[col].values[0]) if len(row) > 0 and col in df.columns else 0)
+            # 컬럼이 온전히 존재할 때만 데이터를 정수형으로 추출
+            if len(row) > 0 and col in df.columns:
+                counts.append(int(row[col].values[0]))
+            else:
+                counts.append(0)
         fig2.add_scatter(x=years, y=counts, name=symptom, mode='lines+markers')
     fig2.update_layout(template='plotly_dark', height=420)
 
-    # 세 번째 그래프
+    # 세 번째 그래프 (2024 vs 2023 비교)
     fig3 = px.bar(df.head(10), x=sym_col, y=[cnt_2024, cnt_2023],
                   title='2024 vs 2023 Top 10 이상반응 비교',
                   barmode='group', color_discrete_sequence=['#38bdf8', '#a78bfa'])
