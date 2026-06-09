@@ -1,0 +1,122 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>논문 검색 - Pharma Risk Analyzer</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { background: #0f172a; color: #e2e8f0; font-family: Arial, sans-serif; min-height: 100vh; }
+        .nav { background: #1e293b; border-bottom: 1px solid #334155; padding: 14px 24px; display: flex; align-items: center; justify-content: space-between; }
+        .nav-logo { color: #38bdf8; font-size: 1.1rem; font-weight: bold; text-decoration: none; }
+        .nav-btn { padding: 8px 18px; border-radius: 8px; font-size: 0.88rem; font-weight: bold; text-decoration: none; background: #334155; color: #e2e8f0; border: none; cursor: pointer; }
+        .container { max-width: 900px; margin: 0 auto; padding: 32px 20px; }
+        h1 { color: #38bdf8; font-size: 1.6rem; margin-bottom: 8px; }
+        .subtitle { color: #94a3b8; margin-bottom: 32px; font-size: 0.9rem; }
+        .search-box { display: flex; gap: 12px; margin-bottom: 32px; }
+        .search-input { flex: 1; background: #1e293b; border: 1px solid #334155; color: #e2e8f0; padding: 12px 16px; border-radius: 8px; font-size: 1rem; }
+        .search-input:focus { outline: none; border-color: #38bdf8; }
+        .search-btn { background: #38bdf8; color: #0f172a; border: none; padding: 12px 24px; border-radius: 8px; font-weight: bold; cursor: pointer; font-size: 1rem; }
+        .search-btn:hover { background: #0ea5e9; }
+        .search-btn:disabled { background: #334155; color: #64748b; cursor: not-allowed; }
+        .summary-card { background: #1e293b; border: 1px solid #7c3aed; border-radius: 12px; padding: 24px; margin-bottom: 24px; }
+        .summary-card h3 { color: #a78bfa; margin-bottom: 12px; font-size: 1rem; }
+        .summary-text { color: #e2e8f0; line-height: 1.7; font-size: 0.95rem; }
+        .papers-header { color: #94a3b8; font-size: 0.9rem; margin-bottom: 16px; }
+        .paper-card { background: #1e293b; border: 1px solid #334155; border-radius: 10px; padding: 20px; margin-bottom: 16px; transition: border-color 0.2s; }
+        .paper-card:hover { border-color: #38bdf8; }
+        .paper-title { color: #38bdf8; font-size: 0.95rem; font-weight: bold; margin-bottom: 8px; line-height: 1.4; }
+        .paper-meta { color: #94a3b8; font-size: 0.8rem; margin-bottom: 10px; }
+        .paper-abstract { color: #cbd5e1; font-size: 0.85rem; line-height: 1.6; }
+        .paper-link { display: inline-block; margin-top: 10px; color: #38bdf8; font-size: 0.82rem; text-decoration: none; }
+        .paper-link:hover { text-decoration: underline; }
+        .loading { text-align: center; color: #94a3b8; padding: 40px; }
+        .spinner { display: inline-block; width: 24px; height: 24px; border: 3px solid #334155; border-top: 3px solid #38bdf8; border-radius: 50%; animation: spin 0.8s linear infinite; margin-right: 8px; vertical-align: middle; }
+        @keyframes spin { to { transform: rotate(360deg); } }
+        .error { color: #f87171; background: #1e293b; border: 1px solid #ef4444; padding: 16px; border-radius: 8px; }
+        .badge-pubmed { display: inline-block; background: #059669; color: white; font-size: 0.7rem; padding: 2px 8px; border-radius: 10px; margin-left: 6px; }
+        .badge-claude { display: inline-block; background: #7c3aed; color: white; font-size: 0.7rem; padding: 2px 8px; border-radius: 10px; margin-left: 6px; }
+    </style>
+</head>
+<body>
+    <nav class="nav">
+        <a href="/" class="nav-logo">💊 Pharma Risk Analyzer</a>
+        <a href="/" class="nav-btn">← 홈으로</a>
+    </nav>
+
+    <div class="container">
+        <h1>📚 논문 검색 & AI 요약</h1>
+        <p class="subtitle">
+            PubMed <span class="badge-pubmed">PubMed</span> 데이터베이스에서 약물 관련 논문 검색 후
+            Claude AI <span class="badge-claude">Claude AI</span>로 자동 요약합니다.
+        </p>
+
+        <div class="search-box">
+            <input type="text" id="drug-input" class="search-input"
+                placeholder="약물명 입력 (예: methotrexate, aspirin, ibuprofen)"
+                onkeydown="if(event.key==='Enter') searchLiterature()"/>
+            <button class="search-btn" id="search-btn" onclick="searchLiterature()">🔍 검색</button>
+        </div>
+
+        <div id="result"></div>
+    </div>
+
+<script>
+    async function searchLiterature() {
+        const drug = document.getElementById('drug-input').value.trim();
+        if (!drug) return;
+
+        const btn = document.getElementById('search-btn');
+        btn.disabled = true;
+        btn.textContent = '검색 중...';
+
+        document.getElementById('result').innerHTML = `
+            <div class="loading">
+                <div class="spinner"></div>
+                PubMed 논문 검색 및 AI 요약 중... (10~20초 소요)
+            </div>`;
+
+        try {
+            const res = await fetch(`/api/literature/search?drug=${encodeURIComponent(drug)}`);
+            const data = await res.json();
+
+            if (data.error) {
+                document.getElementById('result').innerHTML = `<div class="error">❌ ${data.error}</div>`;
+                return;
+            }
+
+            let html = '';
+
+            // AI 요약
+            if (data.summary) {
+                html += `
+                    <div class="summary-card">
+                        <h3>🤖 Claude AI 요약 <span class="badge-claude">Claude AI</span></h3>
+                        <div class="summary-text">${data.summary.replace(/\n/g, '<br>')}</div>
+                    </div>`;
+            }
+
+            // 논문 목록
+            html += `<div class="papers-header">📄 PubMed 검색 결과: <strong>${data.total_found}</strong>건 중 상위 ${data.papers.length}건</div>`;
+
+            data.papers.forEach((p, i) => {
+                html += `
+                    <div class="paper-card">
+                        <div class="paper-title">[${i+1}] ${p.title}</div>
+                        <div class="paper-meta">📔 ${p.journal} · 📅 ${p.year} · PMID: ${p.pmid}</div>
+                        <div class="paper-abstract">${p.abstract}</div>
+                        <a href="${p.url}" target="_blank" class="paper-link">🔗 PubMed에서 보기 →</a>
+                    </div>`;
+            });
+
+            document.getElementById('result').innerHTML = html;
+        } catch (e) {
+            document.getElementById('result').innerHTML = `<div class="error">❌ 오류: ${e.message}</div>`;
+        } finally {
+            btn.disabled = false;
+            btn.textContent = '🔍 검색';
+        }
+    }
+</script>
+</body>
+</html>
