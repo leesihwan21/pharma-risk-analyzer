@@ -1,10 +1,8 @@
 import os
-
 from flask import Blueprint, render_template, jsonify, request
 from flask_login import login_user, logout_user, login_required, current_user
 from werkzeug.security import generate_password_hash, check_password_hash
-from app.models import db, User
-from app.models import db, User, UserActivityLog
+from app.models import db, User, UserActivityLog, DrugSearch, PredictionLog
 
 auth = Blueprint('auth', __name__)
 
@@ -30,7 +28,6 @@ def register():
         db.session.add(user)
         db.session.commit()
         login_user(user)
-
         log = UserActivityLog(user_id=user.id, username=username, action='register', ip_address=request.remote_addr)
         db.session.add(log)
         db.session.commit()
@@ -50,7 +47,7 @@ def login():
             return jsonify({'error': '아이디 또는 비밀번호가 틀렸습니다.'}), 401
 
         login_user(user)
-        log  = UserActivityLog(user_id=user.id, username=username, action='login', ip_address=request.remote_addr)
+        log = UserActivityLog(user_id=user.id, username=username, action='login', ip_address=request.remote_addr)
         db.session.add(log)
         db.session.commit()
         return jsonify({'message': f'{username}님 로그인!', 'username': username})
@@ -60,16 +57,16 @@ def login():
 @auth.route('/logout')
 @login_required
 def logout():
-    logout_user()
-    log = UserActivityLog(username=current_user.username, action='logout', ip_address=request.remote_addr)
+    log = UserActivityLog(user_id=current_user.id, username=current_user.username, action='logout', ip_address=request.remote_addr)
     db.session.add(log)
     db.session.commit()
+    logout_user()
     return jsonify({'message': '로그아웃됐습니다.'})
 
 @auth.route('/api/me')
 def me():
     if current_user.is_authenticated:
-        return jsonify({'logged_in': True, 'username': current_user.username})
+        return jsonify({'logged_in': True, 'username': current_user.username, 'role': current_user.role})
     return jsonify({'logged_in': False})
 
 @auth.route('/my-role')
@@ -80,32 +77,48 @@ def my_role():
         'role': current_user.role
     })
 
-@auth.route('/admin/users')
+@auth.route('/admin')
+@login_required
+def admin_page():
+    if current_user.role != 'ADMIN':
+        return jsonify({'error': '관리자 권한이 필요합니다.'}), 403
+    return render_template('admin.html')
+
+@auth.route('/api/admin/users')
 @login_required
 def admin_users():
     if current_user.role != 'ADMIN':
         return jsonify({'error': '관리자 권한이 필요합니다.'}), 403
+    users = User.query.order_by(User.created_at.desc()).all()
+    return jsonify({'users': [u.to_dict() for u in users]})
 
-    users = User.query.all()
-    return jsonify({
-        'users': [
-            {
-                'id': user.id,
-                'username': user.username,
-                'email': user.email,
-                'role': user.role,
-                'created_at': user.created_at.strftime('%Y-%m-%d %H:%M')
-            }
-            for user in users
-        ]
-    })
+@auth.route('/api/admin/logs')
+@login_required
+def admin_logs():
+    if current_user.role != 'ADMIN':
+        return jsonify({'error': '관리자 권한이 필요합니다.'}), 403
+    logs = UserActivityLog.query.order_by(UserActivityLog.created_at.desc()).limit(100).all()
+    return jsonify({'logs': [l.to_dict() for l in logs]})
+
+@auth.route('/api/admin/searches')
+@login_required
+def admin_searches():
+    if current_user.role != 'ADMIN':
+        return jsonify({'error': '관리자 권한이 필요합니다.'}), 403
+    searches = DrugSearch.query.order_by(DrugSearch.searched_at.desc()).limit(100).all()
+    return jsonify({'searches': [s.to_dict() for s in searches]})
+
+@auth.route('/api/admin/predictions')
+@login_required
+def admin_predictions():
+    if current_user.role != 'ADMIN':
+        return jsonify({'error': '관리자 권한이 필요합니다.'}), 403
+    predictions = PredictionLog.query.order_by(PredictionLog.predicted_at.desc()).limit(100).all()
+    return jsonify({'predictions': [p.to_dict() for p in predictions]})
 
 @auth.route('/make-admin')
 @login_required
 def make_admin():
     current_user.role = 'ADMIN'
     db.session.commit()
-    return jsonify({
-        'message': '관리자 변경 완료',
-        'role': current_user.role
-    })
+    return jsonify({'message': '관리자 변경 완료', 'role': current_user.role})

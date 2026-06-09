@@ -1,0 +1,214 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>관리자 페이지 - Pharma Risk Analyzer</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { background: #0f172a; color: #e2e8f0; font-family: Arial, sans-serif; min-height: 100vh; }
+        .nav { background: #1e293b; border-bottom: 1px solid #334155; padding: 14px 24px; display: flex; align-items: center; justify-content: space-between; }
+        .nav-logo { color: #38bdf8; font-size: 1.1rem; font-weight: bold; text-decoration: none; }
+        .nav-right { display: flex; gap: 8px; align-items: center; }
+        .nav-btn { padding: 8px 18px; border-radius: 8px; font-size: 0.88rem; font-weight: bold; text-decoration: none; border: none; cursor: pointer; background: #334155; color: #e2e8f0; }
+        .nav-btn:hover { background: #475569; }
+        .container { max-width: 1200px; margin: 0 auto; padding: 32px 20px; }
+        h1 { color: #f59e0b; font-size: 1.6rem; margin-bottom: 8px; }
+        .subtitle { color: #94a3b8; margin-bottom: 32px; font-size: 0.9rem; }
+        .tabs { display: flex; gap: 8px; margin-bottom: 24px; flex-wrap: wrap; }
+        .tab { padding: 10px 20px; border-radius: 8px; cursor: pointer; font-size: 0.9rem; font-weight: bold; border: 1px solid #334155; background: #1e293b; color: #94a3b8; }
+        .tab.active { background: #38bdf8; color: #0f172a; border-color: #38bdf8; }
+        .tab:hover:not(.active) { border-color: #38bdf8; color: #38bdf8; }
+        .stats { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; margin-bottom: 32px; }
+        .stat-card { background: #1e293b; border: 1px solid #334155; border-radius: 12px; padding: 20px; text-align: center; }
+        .stat-card .number { font-size: 2rem; font-weight: bold; color: #38bdf8; }
+        .stat-card .label { color: #94a3b8; font-size: 0.85rem; margin-top: 4px; }
+        .section { display: none; }
+        .section.active { display: block; }
+        table { width: 100%; border-collapse: collapse; background: #1e293b; border-radius: 12px; overflow: hidden; }
+        th { background: #0f172a; color: #94a3b8; padding: 12px 16px; text-align: left; font-size: 0.85rem; }
+        td { padding: 12px 16px; border-top: 1px solid #334155; font-size: 0.9rem; }
+        tr:hover td { background: #263347; }
+        .badge { display: inline-block; padding: 3px 10px; border-radius: 20px; font-size: 0.75rem; font-weight: bold; }
+        .badge-admin { background: #f59e0b; color: #0f172a; }
+        .badge-user { background: #334155; color: #94a3b8; }
+        .badge-login { background: #059669; color: white; }
+        .badge-logout { background: #334155; color: #94a3b8; }
+        .badge-register { background: #7c3aed; color: white; }
+        .badge-risk { background: #ef4444; color: white; }
+        .badge-safe { background: #059669; color: white; }
+        .loading { text-align: center; color: #94a3b8; padding: 40px; }
+        @media (max-width: 768px) { .stats { grid-template-columns: repeat(2, 1fr); } }
+    </style>
+</head>
+<body>
+    <nav class="nav">
+        <a href="/" class="nav-logo">💊 Pharma Risk Analyzer</a>
+        <div class="nav-right">
+            <span style="color:#f59e0b; font-size:0.9rem;">🛡️ 관리자 모드</span>
+            <a href="/" class="nav-btn">← 홈으로</a>
+        </div>
+    </nav>
+
+    <div class="container">
+        <h1>🛡️ 관리자 대시보드</h1>
+        <p class="subtitle">회원 관리 · 활동 로그 · 약물 검색 기록 · AI 예측 기록</p>
+
+        <div class="stats" id="stats">
+            <div class="stat-card"><div class="number" id="stat-users">-</div><div class="label">총 회원수</div></div>
+            <div class="stat-card"><div class="number" id="stat-logs">-</div><div class="label">활동 로그</div></div>
+            <div class="stat-card"><div class="number" id="stat-searches">-</div><div class="label">약물 검색</div></div>
+            <div class="stat-card"><div class="number" id="stat-predictions">-</div><div class="label">AI 예측</div></div>
+        </div>
+
+        <div class="tabs">
+            <div class="tab active" onclick="switchTab('users')">👤 회원 목록</div>
+            <div class="tab" onclick="switchTab('logs')">📋 활동 로그</div>
+            <div class="tab" onclick="switchTab('searches')">🔍 약물 검색</div>
+            <div class="tab" onclick="switchTab('predictions')">🤖 AI 예측</div>
+        </div>
+
+        <!-- 회원 목록 -->
+        <div class="section active" id="section-users">
+            <div class="loading" id="loading-users">로딩 중...</div>
+            <table id="table-users" style="display:none;">
+                <thead>
+                    <tr>
+                        <th>ID</th><th>아이디</th><th>이메일</th><th>권한</th><th>가입일</th>
+                    </tr>
+                </thead>
+                <tbody id="tbody-users"></tbody>
+            </table>
+        </div>
+
+        <!-- 활동 로그 -->
+        <div class="section" id="section-logs">
+            <div class="loading" id="loading-logs">로딩 중...</div>
+            <table id="table-logs" style="display:none;">
+                <thead>
+                    <tr>
+                        <th>ID</th><th>아이디</th><th>활동</th><th>IP</th><th>시간</th>
+                    </tr>
+                </thead>
+                <tbody id="tbody-logs"></tbody>
+            </table>
+        </div>
+
+        <!-- 약물 검색 -->
+        <div class="section" id="section-searches">
+            <div class="loading" id="loading-searches">로딩 중...</div>
+            <table id="table-searches" style="display:none;">
+                <thead>
+                    <tr>
+                        <th>ID</th><th>약물명</th><th>총 보고수</th><th>평균나이</th><th>검색시간</th>
+                    </tr>
+                </thead>
+                <tbody id="tbody-searches"></tbody>
+            </table>
+        </div>
+
+        <!-- AI 예측 -->
+        <div class="section" id="section-predictions">
+            <div class="loading" id="loading-predictions">로딩 중...</div>
+            <table id="table-predictions" style="display:none;">
+                <thead>
+                    <tr>
+                        <th>ID</th><th>약물명</th><th>이상반응</th><th>나이</th><th>성별</th><th>위험도</th><th>예측시간</th>
+                    </tr>
+                </thead>
+                <tbody id="tbody-predictions"></tbody>
+            </table>
+        </div>
+    </div>
+
+<script>
+    function switchTab(tab) {
+        document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+        document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
+        event.target.classList.add('active');
+        document.getElementById('section-' + tab).classList.add('active');
+        loadData(tab);
+    }
+
+    function loadData(tab) {
+        if (tab === 'users') loadUsers();
+        else if (tab === 'logs') loadLogs();
+        else if (tab === 'searches') loadSearches();
+        else if (tab === 'predictions') loadPredictions();
+    }
+
+    function loadUsers() {
+        fetch('/api/admin/users').then(r => r.json()).then(data => {
+            document.getElementById('loading-users').style.display = 'none';
+            document.getElementById('table-users').style.display = 'table';
+            document.getElementById('stat-users').textContent = data.users.length;
+            const tbody = document.getElementById('tbody-users');
+            tbody.innerHTML = data.users.map(u => `
+                <tr>
+                    <td>${u.id}</td>
+                    <td><strong>${u.username}</strong></td>
+                    <td>${u.email}</td>
+                    <td><span class="badge ${u.role === 'ADMIN' ? 'badge-admin' : 'badge-user'}">${u.role}</span></td>
+                    <td>${u.created_at}</td>
+                </tr>`).join('');
+        });
+    }
+
+    function loadLogs() {
+        fetch('/api/admin/logs').then(r => r.json()).then(data => {
+            document.getElementById('loading-logs').style.display = 'none';
+            document.getElementById('table-logs').style.display = 'table';
+            document.getElementById('stat-logs').textContent = data.logs.length;
+            const tbody = document.getElementById('tbody-logs');
+            tbody.innerHTML = data.logs.map(l => `
+                <tr>
+                    <td>${l.id}</td>
+                    <td>${l.username || '-'}</td>
+                    <td><span class="badge badge-${l.action}">${l.action}</span></td>
+                    <td>${l.ip_address || '-'}</td>
+                    <td>${l.created_at}</td>
+                </tr>`).join('');
+        });
+    }
+
+    function loadSearches() {
+        fetch('/api/admin/searches').then(r => r.json()).then(data => {
+            document.getElementById('loading-searches').style.display = 'none';
+            document.getElementById('table-searches').style.display = 'table';
+            document.getElementById('stat-searches').textContent = data.searches.length;
+            const tbody = document.getElementById('tbody-searches');
+            tbody.innerHTML = data.searches.map(s => `
+                <tr>
+                    <td>${s.id}</td>
+                    <td><strong>${s.drugname}</strong></td>
+                    <td>${s.total_reports || '-'}</td>
+                    <td>${s.age_avg || '-'}</td>
+                    <td>${s.searched_at}</td>
+                </tr>`).join('');
+        });
+    }
+
+    function loadPredictions() {
+        fetch('/api/admin/predictions').then(r => r.json()).then(data => {
+            document.getElementById('loading-predictions').style.display = 'none';
+            document.getElementById('table-predictions').style.display = 'table';
+            document.getElementById('stat-predictions').textContent = data.predictions.length;
+            const tbody = document.getElementById('tbody-predictions');
+            tbody.innerHTML = data.predictions.map(p => `
+                <tr>
+                    <td>${p.id}</td>
+                    <td><strong>${p.drugname}</strong></td>
+                    <td>${p.reaction}</td>
+                    <td>${p.age || '-'}</td>
+                    <td>${p.sex || '-'}</td>
+                    <td><span class="badge ${p.risk === 1 ? 'badge-risk' : 'badge-safe'}">${p.risk === 1 ? '고위험' : '저위험'}</span></td>
+                    <td>${p.predicted_at}</td>
+                </tr>`).join('');
+        });
+    }
+
+    // 초기 로드
+    loadUsers();
+</script>
+</body>
+</html>
