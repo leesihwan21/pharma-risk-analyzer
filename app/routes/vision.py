@@ -73,12 +73,12 @@ def stop_camera():
         if camera and camera.isOpened():
             camera.release()
             camera = None
-    return jsonify({'message': '카메라 종료됐습니다'})
+    return jsonify({'message': '카메??종료?�습?�다'})
 
 @vision.route('/api/detect', methods=['POST'])
 def detect_pill():
     if 'image' not in request.files:
-        return jsonify({'error': '이미지 파일이 필요합니다'}), 400
+        return jsonify({'error': '?��?지 ?�일???�요?�니??}), 400
 
     file = request.files['image']
     drug_hint = request.form.get('drugname', '').upper()
@@ -142,7 +142,7 @@ def detect_pill():
 
                         risk_result = {
                             'drug': target_drug, 'reaction': reac,
-                            'risk_label': '⚠️ 고위험' if pred == 1 else '✅ 저위험',
+                            'risk_label': '?�️ 고위?? if pred == 1 else '???�?�험',
                             'safe': round(float(prob[0]) * 100, 1),
                             'risk': round(float(prob[1]) * 100, 1)
                         }
@@ -157,7 +157,7 @@ def detect_pill():
                         db.session.commit()
         except Exception as e:
             db.session.rollback()
-            print(f"단일 약물 위험도 분석 오류: {str(e)}")
+            print(f"?�일 ?�물 ?�험??분석 ?�류: {str(e)}")
 
     if len(detected_drugs) >= 2:
         try:
@@ -187,7 +187,7 @@ def detect_pill():
                     prob_c = model.predict_proba(X)[0]
                     drug_results.append({
                         'reaction': reac,
-                        'risk_label': '⚠️ 고위험' if pred_c == 1 else '✅ 저위험',
+                        'risk_label': '?�️ 고위?? if pred_c == 1 else '???�?�험',
                         'risk_prob': round(float(prob_c[1]) * 100, 1)
                     })
 
@@ -200,7 +200,7 @@ def detect_pill():
             if combo_temp_results:
                 combo_result = combo_temp_results
         except Exception as e:
-            print(f"복합 분석 오류: {str(e)}")
+            print(f"복합 분석 ?�류: {str(e)}")
 
     return jsonify({
         'detections': detections,
