@@ -1,9 +1,10 @@
-﻿# ?뭻 Pharma Risk Analyzer
+# 💊 Pharma Risk Analyzer
 
-### AI 湲곕컲 ?쎈Ъ 遺?묒슜 ?꾪뿕??遺꾩꽍 諛??꾩긽 吏???쒖뒪??> AI-powered Drug Adverse Event Risk Analysis & Clinical Decision Support System
+### AI 기반 약물 이상반응 위험도 분석 및 임상 지원 시스템
+> AI-powered Drug Adverse Event Risk Analysis & Clinical Decision Support System
 
-> **AI-powered Drug Adverse Event Risk Analysis System**  
-> FDA FAERS ?ㅻ뜲?댄꽣 + YOLOv8 ?뚯빟 ?먯? + XGBoost ?꾪뿕???덉륫 + SHAP ?ㅻ챸媛??AI + ?앹빟泥??쎈Ъ 議고쉶 + 蹂듭슜??怨꾩궛湲?
+> **AI-powered Drug Adverse Event Risk Analysis System**
+> FDA FAERS 데이터셋 + YOLOv8 알약 탐지 + XGBoost 위험도 예측 + SHAP 설명가능 AI + 식약처 약물 조회 + 복용량 계산기
 
 [![Python](https://img.shields.io/badge/Python-3.12-blue)](https://python.org)
 [![Flask](https://img.shields.io/badge/Flask-3.1-green)](https://flask.palletsprojects.com)
@@ -14,209 +15,182 @@
 
 ---
 
-## ?뙋 Live Demo
+## 🔗 Live Demo
 
-**諛고룷 URL**: https://pharma-risk-analyzer-production.up.railway.app
-> ?좑툘 臾대즺 ?뚮옖 ?ъ슜 以묒쑝濡?泥??묒냽 ??50珥??뺣룄 濡쒕뵫?????덉뒿?덈떎.  
-> ML/YOLO 湲곕뒫(AI ?덉륫, ?뚯빟 ?먯?, ?뱀틺)? 諛고룷 踰꾩쟾?먯꽌 ?쒖쇅?⑸땲??
+**배포 URL**: https://pharma-risk-analyzer-production.up.railway.app
 
 ---
 
-## ?뱦 ?꾨줈?앺듃 媛쒖슂 | Overview
+## 📦 프로젝트 개요 | Overview
 
-**?쒓뎅??*  
-FDA FAERS(Adverse Event Reporting System) 2024 Q1 ~ 2025 Q1 硫?곗옘???ㅻ뜲?댄꽣瑜?湲곕컲?쇰줈, ?쎈Ъ蹂?遺?묒슜 諛쒖깮 ?⑦꽩??遺꾩꽍?섍퀬 XGBoost 癒몄떊?щ떇?쇰줈 ?꾪뿕?꾨? ?덉륫?섎뒗 ???좏뵆由ъ??댁뀡?낅땲?? SHAP 湲곕컲 ?ㅻ챸媛??AI(XAI)濡??덉륫 洹쇨굅瑜??쒓컖?뷀븯硫? ?앹빟泥??깆븣?앸퀎 API? OpenFDA瑜??듯빐 ?쒓뎅/誘멸뎅 ?쎈Ъ ?뺣낫瑜??듯빀 ?쒓났?⑸땲?? ?꾩긽?쏀븰 怨듭떇 湲곕컲 蹂듭슜??怨꾩궛湲?CrCl, ?뚯븘?⑸웾, BSA)???ы븿?⑸땲??
+**한국어**
+FDA FAERS(Adverse Event Reporting System) 2024 Q1 ~ 2025 Q1 다분기 데이터셋을 기반으로, 약물별 이상반응 발생 패턴을 분석하고 XGBoost 머신러닝으로 위험도를 예측하는 웹 애플리케이션입니다. SHAP 기반 설명가능 AI(XAI)로 예측 근거를 시각화하며, 식약처 낱알식별 API와 OpenFDA를 활용해 한국/미국 약물 정보를 조회합니다. 임상약학 기반 복용량 계산기(CrCl, 소아용량, BSA)도 포함합니다.
 
-**English**  
+**English**
 A web application analyzing drug adverse event patterns and predicting risk levels using XGBoost ML, based on real-world FDA FAERS multi-quarter data (2024 Q1 ~ 2025 Q1). Features SHAP-based explainable AI, quarterly trend analysis, integrated Korean MFDS + OpenFDA drug lookup, drug-drug interaction checker, and clinical pharmacy dosage calculators.
 
 ---
 
-## ?? 二쇱슂 湲곕뒫 | Key Features
+## ✨ 주요 기능 | Key Features
 
-| 湲곕뒫 | ?ㅻ챸 | Feature |
+| 기능 | 설명 | Feature |
 |------|------|---------|
-| ?뱤 ??쒕낫??| FAERS ?곗씠??湲곕컲 遺?묒슜 ?듦퀎 ?쒓컖??(6媛?李⑦듃) | Adverse event statistics dashboard |
-| ?뵇 ?쎈Ъ 寃??| ?쎈Ъ紐??먮룞?꾩꽦 + ?곸꽭 遺?묒슜 遺꾩꽍 | Drug search with autocomplete |
-| ?쨼 AI ?꾪뿕???덉륫 | ?쎈Ъ쨌遺?묒슜쨌?섏씠쨌?깅퀎 ?낅젰 ???꾪뿕??遺꾨쪟 (XGBoost) | XGBoost-based risk prediction |
-| ?뵇 SHAP ?ㅻ챸媛??AI | ?덉륫 洹쇨굅 ?쇱쿂 湲곗뿬???쒓컖??| SHAP-based XAI feature importance |
-| ?뱢 荑쇳꽣蹂??몃젋??| 2024 Q1~2025 Q1 遺꾧린蹂?遺?묒슜 蹂닿퀬 異붿씠 | Quarterly adverse event trend |
-| ?뭻 Drug Lookup | ?쎈Ъ紐?紐⑥뼇/?됱긽?쇰줈 ?앹빟泥?OpenFDA ?듯빀 議고쉶 | Korean MFDS + OpenFDA drug lookup |
-| ??Interaction Checker | FDA FAERS 湲곕컲 ???쎈Ъ ?숈떆 蹂듭슜 ??遺?묒슜 ?⑦꽩 遺꾩꽍 | Drug-drug interaction analysis |
-| ?뭺 蹂듭슜??怨꾩궛湲?| CrCl(?좎옣湲곕뒫) 쨌 ?뚯븘?⑸웾 쨌 BSA ??븫??쨌 湲곕낯 mg/kg 怨꾩궛 | Clinical dosage calculator |
-| ?벝 ?뚯빟 ?대?吏 ?먯? | YOLOv8?쇰줈 ?뚯빟 醫낅쪟 ?먮룞 ?몄떇 ???꾪뿕??遺꾩꽍 | YOLOv8 pill detection |
-| ?벞 ?ㅼ떆媛??뱀틺 ?먯? | ?뱀틺?쇰줈 ?ㅼ떆媛??뚯빟 ?먯? | Real-time webcam pill detection |
-| ?뽳툘 ?쎈Ъ 鍮꾧탳 | ???쎈Ъ??遺?묒슜 ?⑦꽩 ?섎???鍮꾧탳 | Side-by-side drug comparison |
-| ?뵕 遺?묒슜 ?ㅽ듃?뚰겕 | ?쎈Ъ-遺?묒슜 愿怨??ㅽ듃?뚰겕 洹몃옒??| Drug-reaction network graph |
-| ?뱞 PDF 由ы룷??| ?쎈Ъ 遺꾩꽍 寃곌낵 PDF ?먮룞 ?앹꽦 | Automated PDF report generation |
-| ?눖?눟 ?쒓뎅 ?곗씠??| ?앹빟泥??댁긽?щ? ?곕룄蹂??몃젋??遺꾩꽍 | Korean MFDS adverse event trends |
-| ?뵍 ?뚯썝 湲곕뒫 | 濡쒓렇?맞룹쫹寃⑥갼湲걔룰??됯린濡?愿由?| User auth, favorites, history |
-| ?㎦ AE Manager | CTCAE ?먮룞遺꾨쪟쨌SAE ?먯젙쨌15??蹂닿퀬 ??꾨씪?맞텾DF/E2B 異쒕젰 | AE management with CTCAE auto-grading |
-| ?뱻 PRR ?좏샇 ?먯? | FDA/EMA Evans 湲곗? PRR 怨꾩궛 諛??쒓컖??| PRR-based signal detection |
-| ?뾺 ICH E2B XML | 洹쒖젣湲곌? ?쒖텧??ICH E2B(R3) ?뺤떇 XML ?먮룞 ?앹꽦 | ICH E2B(R3) XML export |
-| ?뙋 ?????ㅺ뎅??| ?꾩껜 ?섏씠吏 ?쒓뎅?는룹쁺???ㅼ떆媛??꾪솚 | Korean/English i18n |
+| 📊 대시보드 | FAERS 데이터 기반 이상반응 통계 시각화(6개 차트) | Adverse event statistics dashboard |
+| 🔍 약물 검색 | 약물명 자동완성 + 상세 이상반응 분석 | Drug search with autocomplete |
+| 🎯 AI 위험도 예측 | 약물·이상반응·나이·성별 입력 → 위험도 분류 (XGBoost) | XGBoost-based risk prediction |
+| 🔍 SHAP 설명가능 AI | 예측 근거 특성 기여도 시각화 | SHAP-based XAI feature importance |
+| 📈 분기별 트렌드 | 2024 Q1~2025 Q1 분기별 이상반응 보고 추이 | Quarterly adverse event trend |
+| 💊 Drug Lookup | 약물명 낱알/성분으로 식약처+OpenFDA 정보 조회 | Korean MFDS + OpenFDA drug lookup |
+| ⚡ Interaction Checker | FDA FAERS 기반 두 약물 동시 복용 시 이상반응 패턴 분석 | Drug-drug interaction analysis |
+| 🧮 복용량 계산기 | CrCl(신장기능) · 소아용량 · BSA 체표면적 · 기본 mg/kg 계산 | Clinical dosage calculator |
+| 💊 알약 이미지 탐지 | YOLOv8으로 알약 이미지 자동 판별 및 위험도 분석 | YOLOv8 pill detection |
+| 📸 실시간 웹캠 탐지 | 웹캠으로 실시간 알약 탐지 | Real-time webcam pill detection |
+| 🆚 약물 비교 | 두 약물의 이상반응 패턴 비교 | Side-by-side drug comparison |
+| 🕸 이상반응 네트워크 | 약물-이상반응 연관 네트워크 그래프 | Drug-reaction network graph |
+| 📄 PDF 보고서 | 약물 분석 결과 PDF 자동 생성 | Automated PDF report generation |
+| 🇰🇷 한국 데이터 | 식약처 국내 이상반응 연도별 트렌드 분석 | Korean MFDS adverse event trends |
+| 👤 회원 기능 | 로그인/회원가입/즐겨찾기/기록 | User auth, favorites, history |
+| 📋 AE Manager | CTCAE 자동분류·SAE 판정·15일 보고 체크·PDF/E2B 내보내기 | AE management with CTCAE auto-grading |
+| 📡 PRR 신호 탐지 | FDA/EMA Evans 기준 PRR 계산 및 시각화 | PRR-based signal detection |
+| 📎 ICH E2B XML | 국제기준 준수 ICH E2B(R3) 형식 XML 자동 생성 | ICH E2B(R3) XML export |
+| 🌐 한국어/영어 | 전체 페이지 한국어↔영어 실시간 전환 | Korean/English i18n |
 
 ---
 
-## ?뭺 蹂듭슜??怨꾩궛湲?| Dosage Calculator
+## 🧮 복용량 계산기 | Dosage Calculator
 
-?꾩긽?쏀븰?먯꽌 ?ㅼ젣 ?ъ슜?섎뒗 怨듭떇??湲곕컲?쇰줈 ??怨꾩궛 ?꾧뎄?낅땲??
+임상약학에서 실제 사용하는 공식을 기반으로 용량 계산 제공합니다.
 
-| ??| 怨듭떇 | ?⑸룄 |
+| 구분 | 공식 | 용도 |
 |---|---|---|
-| ?좎옣湲곕뒫 (CrCl) | Cockcroft-Gault | ?щ젅?꾪떚??泥?냼??怨꾩궛 ???좉린???④퀎 ?먯젙 ???⑸웾 議곗젅 媛?대뱶 |
-| ?뚯븘 ?⑸웾 | Clark / Young / BSA | ?깆씤 ?⑸웾 湲곗? ?뚯븘 ?⑸웾 ?곗텧 (3媛吏 怨듭떇 鍮꾧탳) |
-| BSA ??븫??| Mosteller / DuBois | 泥댄몴硫댁쟻 怨꾩궛 ??mg/m짼 湲곗? ??븫??珥??⑸웾 ?곗텧 |
-| 湲곕낯 ?⑸웾 | mg/kg | 泥댁쨷 湲곕컲 ?⑸웾 怨꾩궛 + 理쒕? ?⑸웾 ?곸슜 |
+| 신장기능 (CrCl) | Cockcroft-Gault | 신장대사 약물 용량 조정 및 투석환자 용량 결정 참고 |
+| 소아 용량 | Clark / Young / BSA | 성인 용량 기준 소아 용량 환산 (3가지 공식 비교) |
+| BSA 체표면적 | Mosteller / DuBois | 항암화학 계산 및 mg/m² 기준 용량 환산 |
+| 기본 용량 | mg/kg | 체중 기반 용량 계산 + 최대 용량 적용 |
 
-> ?좑툘 **以묒슂**: 蹂?怨꾩궛湲곕뒗 **援먯쑁쨌?곌뎄쨌?ы듃?대━??紐⑹쟻 ?꾩슜**?낅땲??  
-> ?ㅼ젣 ?쎈Ъ ?ъ빟 寃곗젙? 諛섎뱶??**?섏궗 ?먮뒗 ?쎌궗? 吏곸젒 ?곷떞**?섏꽭??  
-> ?ㅼ젣 ?꾩긽?먯꽌??媛꾧린?? 蹂묒슜?쎈Ъ, ?뚮젅瑜닿린, 蹂묐젰 ???ㅼ뼇???붿냼瑜?醫낇빀?곸쑝濡?怨좊젮?댁빞 ?⑸땲??
+> ⚠️ **중요**: 본 계산기는 **교육·연구·포트폴리오 목적**입니다.
+> 실제 약물 처방 결정은 반드시 **의사 또는 약사에게 직접 문의**하세요.
 
 ---
 
-## ?썱截?湲곗닠 ?ㅽ깮 | Tech Stack
+## 🔧 기술 스택 | Tech Stack
 
 ```
 Backend   : Flask 3.1, SQLAlchemy, Flask-Login, Flask-Limiter, Flask-Caching
 ML/AI     : XGBoost, SHAP (XAI), YOLOv8 (Ultralytics)
-Data      : FDA FAERS 2024 Q1~2025 Q1 (硫?곗옘??480,000??, ?쒓뎅 ?앹빟泥??댁긽?щ? ?곗씠??
-External  : ?앹빟泥??깆븣?앸퀎 OpenAPI, OpenFDA Drug Label API
+Data      : FDA FAERS 2024 Q1~2025 Q1 (다분기 480,000행, 한국 식약처 이상반응 데이터)
+External  : 식약처 낱알식별 OpenAPI, OpenFDA Drug Label API
 Viz       : Plotly, NetworkX (Canvas), Chart.js
-DB        : SQLite (媛쒕컻/諛고룷), PyMySQL 吏??
+DB        : SQLite (개발/배포), PyMySQL 지원
 Report    : ReportLab (PDF), ICH E2B(R3) XML
-Frontend  : Jinja2 Templates, Vanilla JS, 諛섏쓳??CSS
-Deploy    : Render.com (寃쎈웾 踰꾩쟾 諛고룷)
-i18n      : ?????ㅺ뎅??(lang.js, localStorage)
-Test      : pytest (28媛??뚯뒪??
+Frontend  : Jinja2 Templates, Vanilla JS, 커스텀 CSS
+Deploy    : Railway
+i18n      : 한국어/영어(lang.js, localStorage)
+Test      : pytest (28개 테스트)
 ```
 
 ---
 
-## ?뱚 ?꾨줈?앺듃 援ъ“ | Project Structure
+## 📁 프로젝트 구조 | Project Structure
 
 ```
 pharma-risk-analyzer/
-?쒋?? app/
-??  ?쒋?? __init__.py
-??  ?쒋?? models.py
-??  ?쒋?? routes.py
-??  ?붴?? templates/            # HTML ?쒗뵆由?(15媛??섏씠吏)
-??      ?쒋?? index.html
-??      ?쒋?? dashboard.html
-??      ?쒋?? drug_detail.html
-??      ?쒋?? compare.html
-??      ?쒋?? filter.html
-??      ?쒋?? korea.html
-??      ?쒋?? webcam.html
-??      ?쒋?? ae_manager.html
-??      ?쒋?? prr.html
-??      ?쒋?? trend.html        # ??荑쇳꽣蹂??몃젋??
-??      ?쒋?? shap.html         # ??SHAP XAI 遺꾩꽍
-??      ?쒋?? drug_lookup.html  # ???쎈Ъ ?뺣낫 ?듯빀 議고쉶
-??      ?쒋?? interaction.html  # ???쎈Ъ ?곹샇?묒슜 泥댁빱
-??      ?쒋?? dosage.html       # ??蹂듭슜??怨꾩궛湲?
-??      ?쒋?? login.html
-??      ?붴?? register.html
-?쒋?? data/
-??  ?쒋?? raw/
-??  ??  ?쒋?? faers_ascii_2024q1/
-??  ??  ?쒋?? faers_ascii_2024q2/
-??  ??  ?쒋?? faers_ascii_2024q3/
-??  ??  ?쒋?? faers_ascii_2025q1/
-??  ??  ?붴?? korea_adr.csv
-??  ?쒋?? processed/
-??  ??  ?붴?? processed_faers.csv   # 480,000??硫?곗옘???듯빀
-??  ?쒋?? download_faers.py         # 硫?곗옘???먮룞 ?ㅼ슫濡쒕뱶
-??  ?붴?? preprocess.py             # 硫붾え由??⑥쑉???꾩쿂由?
-?쒋?? ml/
-??  ?쒋?? train_model.py
-??  ?쒋?? model.pkl
-??  ?붴?? ...
-?쒋?? notebooks/
-??  ?붴?? faers_eda.ipynb           # ??硫?곗옘??EDA 遺꾩꽍
-?쒋?? config.py
-?쒋?? run.py
-?붴?? README.md
+├── app/
+│   ├── __init__.py
+│   ├── models.py
+│   ├── routes/
+│   │   ├── main.py
+│   │   ├── drug.py
+│   │   ├── ae.py
+│   │   ├── analysis.py
+│   │   ├── auth.py
+│   │   └── vision.py
+│   └── templates/
+├── data/
+│   ├── raw/
+│   │   └── korea_adr.csv
+│   ├── processed/
+│   │   └── processed_faers.csv
+│   ├── download_faers.py
+│   └── preprocess.py
+├── ml/
+│   ├── model.pkl
+│   ├── le_drug.pkl
+│   ├── le_reac.pkl
+│   └── risk_rates.pkl
+├── config.py
+├── run.py
+└── README.md
 ```
 
 ---
 
-## ?숋툘 ?ㅼ튂 諛??ㅽ뻾 | Installation & Run
+## 🚀 설치 및 실행 | Installation & Run
 
 ```bash
-# 1. ??μ냼 ?대줎
+# 1. 저장소 복제
 git clone https://github.com/leesihwan21/pharma-risk-analyzer.git
 cd pharma-risk-analyzer
 
-# 2. 媛?곹솚寃??앹꽦 諛??쒖꽦??
+# 2. 가상환경 생성 및 활성화
 python -m venv venv
 venv\Scripts\activate        # Windows
 
-# 3. ?⑦궎吏 ?ㅼ튂
+# 3. 패키지 설치
 pip install -r requirements.txt
 
-# 4. ?섍꼍蹂???ㅼ젙 (app/.env ?뚯씪 ?앹꽦)
+# 4. 환경변수 설정 (app/.env 파일 생성)
 SECRET_KEY=your-secret-key
-MFDS_API_KEY=your-mfds-api-key      # ?앹빟泥?怨듦났?곗씠?고룷??諛쒓툒
-ANTHROPIC_API_KEY=your-api-key      # ?좏깮?ы빆
+MFDS_API_KEY=your-mfds-api-key
+ANTHROPIC_API_KEY=your-api-key
 
-# 5. 硫?곗옘???곗씠???ㅼ슫濡쒕뱶
+# 5. 다분기 데이터 다운로드
 python data/download_faers.py
 
-# 6. ?곗씠???꾩쿂由?
+# 6. 데이터 전처리
 python data/preprocess.py
 
-# 7. ML 紐⑤뜽 ?숈뒿
+# 7. ML 모델 학습
 python ml/train_model.py
 
-# 8. ???ㅽ뻾
+# 8. 서버 실행
 python run.py
 ```
 
-釉뚮씪?곗??먯꽌 `http://127.0.0.1:5001` ?묒냽
+브라우저에서 `http://127.0.0.1:5001` 접속
 
 ---
 
-## ?쭬 癒몄떊?щ떇 ?뚯씠?꾨씪??| ML Model Specifications
+## 🤖 머신러닝 모델 | ML Model Specifications
 
-- **?뚭퀬由ъ쬁**: XGBoost Classifier
-- **?숈뒿 ?쇱쿂**: `drugname_enc`, `reaction_enc`, `sex_enc`, `age`, `drug_risk_rate`, `reac_risk_rate`, `combo_risk_rate`
-- **?덉륫 ?寃?*: Serious Outcome (?낆썝/?щ쭩/?앸챸?꾪삊 ??1, 湲고? ??0)
-- **寃利??깅뒫**: Accuracy 69.4% (480,000???ㅻ뜲?댄꽣 湲곗?)
-- **?ㅻ챸??*: SHAP TreeExplainer 湲곕컲 ?쇱쿂 湲곗뿬???쒓컖??
-
-### ?뮕 ??XGBoost瑜??좏깮?덈굹?
-
-FDA FAERS ?곗씠?곕뒗 ?쎈Ъ紐끒룸??묒슜紐끒룸굹?는룹꽦蹂???**7媛쒖쓽 ?뺥삎 ?쇱쿂(tabular data)** 濡?援ъ꽦?⑸땲?? ?뺥삎 ?곗씠?곗뿉?쒕뒗 ?λ윭?앸낫??XGBoost/LightGBM 怨꾩뿴???쇰컲?곸쑝濡????믪? ?깅뒫??蹂댁씠硫? ?ㅼ젣 Kaggle ?뺥삎 ?곗씠??寃쎌쭊??뚯뿉?쒕룄 ?뺣룄?곸쑝濡?留롮씠 ?ъ슜?⑸땲??
-
-?λ윭?????XGBoost瑜??좏깮???듭떖 ?댁쑀????媛吏?낅땲??
-
-1. **?ㅻ챸媛?μ꽦 (XAI)**: SHAP TreeExplainer????명솚?깆씠 ?곗뼱???덉륫 洹쇨굅(?쇱쿂 湲곗뿬??瑜?吏곴??곸쑝濡??쒓컖?뷀븷 ???덉뒿?덈떎. "?????쎈Ъ???꾪뿕?쒓?"瑜??ㅻ챸?????덈뒗 寃껋씠 ???꾨줈?앺듃???듭떖 媛뺤젏?낅땲??
+- **알고리즘**: XGBoost Classifier
+- **학습 특성**: `drugname_enc`, `reaction_enc`, `sex_enc`, `age`, `drug_risk_rate`, `reac_risk_rate`, `combo_risk_rate`
+- **예측 목표**: Serious Outcome (사망/입원/장애 등 → 1, 경증 → 0)
+- **검증 성능**: Accuracy 69.4% (480,000행 데이터셋 기준)
+- **설명성**: SHAP TreeExplainer 기반 특성 기여도 시각화
 
 ---
 
-## ?뱤 ?곗씠??異쒖쿂 | Data Sources
+## 📊 데이터 출처 | Data Sources
 
-- **FDA FAERS 2024 Q1 ~ 2025 Q1**: FDA 怨듭떇 ?ъ씠?????ㅼ젣 ?댁긽?щ? ?먮컻??蹂닿퀬 ?곗씠??
-- **?쒓뎅 ?앹빟泥??댁긽?щ?**: ?곕룄蹂?2019~2024) 利앹긽 蹂닿퀬 ?듦퀎
-- **?앹빟泥??깆븣?앸퀎 OpenAPI**: 怨듦났?곗씠?고룷??data.go.kr)
-- **OpenFDA Drug Label API**: FDA 怨듭떇 ?쎈Ъ ?쇰꺼 ?뺣낫
-
----
-
-## ?좑툘 硫댁콉議고빆 | Disclaimer
-
-蹂??꾧뎄??**?곌뎄쨌?ы듃?대━??紐⑹쟻**?쇰줈 ?쒖옉?섏뿀?쇰ŉ, ?ㅼ젣 ?꾩긽???섏궗寃곗젙???ъ슜?댁꽌?????⑸땲??  
-蹂듭슜??怨꾩궛湲곕? ?ы븿??紐⑤뱺 湲곕뒫? 援먯쑁 紐⑹쟻?대ŉ, **?ㅼ젣 ?쎈Ъ ?ъ빟? 諛섎뱶???섏궗 ?먮뒗 ?쎌궗? ?곷떞**?섏꽭??
-
-This tool is built for **research and portfolio purposes only** and should not be used for actual clinical decision-making.  
-All features including the dosage calculator are for educational purposes. **Always consult a doctor or pharmacist for actual medication decisions.**
+- **FDA FAERS 2024 Q1 ~ 2025 Q1**: FDA 공식 웹사이트 실제 이상반응 자발 보고 데이터
+- **한국 식약처 이상반응**: 연도별(2019~2024) 상위 증상 보고 통계
+- **식약처 낱알식별 OpenAPI**: 공공데이터포털(data.go.kr)
+- **OpenFDA Drug Label API**: FDA 공식 약물 성분 정보
 
 ---
 
-## ?뫀 媛쒕컻??| Developer
+## ⚠️ 면책조항 | Disclaimer
 
-**?댁떆??(Sihwan Lee)**  
-?꾩긽?쏀븰 ?앹궗 (?꾩＜??숆탳) | AI 媛쒕컻 援먯쑁 (援?퉬, MBC?꾩뭅?곕? ?섏썝)  
+본 도구는 **교육·포트폴리오 목적**으로 제작되었으며, 실제 임상에서 의사결정용으로 사용하면 안 됩니다.
+복용량 계산기를 포함한 모든 기능은 교육 목적이며, **실제 약물 처방은 반드시 의사 또는 약사에게 문의**하세요.
+
+This tool is built for **research and portfolio purposes only** and should not be used for actual clinical decision-making.
+
+---
+
+## 👨‍💻 개발자 | Developer
+
+**이시환 (Sihwan Lee)**
+임상약학 석사 (아주대학교) | AI 개발자 과정 수료 (국비, MBC아카데미 수원)
 GitHub: [@leesihwan21](https://github.com/leesihwan21)
