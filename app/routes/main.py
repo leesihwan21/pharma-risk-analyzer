@@ -68,7 +68,7 @@ def dashboard():
     age_counts = df['age_group'].value_counts().sort_index().reset_index()
     age_counts.columns = ['age_group', 'count']
     fig5 = px.bar(age_counts, x='age_group', y='count',
-                  title='연령대별 보고 건수',
+                  title='?�령?��?보고 건수',
                   color='count', color_continuous_scale='Purples')
     fig5.update_layout(template='plotly_dark', height=420)
 
@@ -78,7 +78,7 @@ def dashboard():
     country_counts = country_counts.dropna(subset=['iso3'])
     fig6 = px.scatter_geo(
         country_counts, locations='iso3', size='count',
-        hover_name='country', title='국가별 보고 건수',
+        hover_name='country', title='�??�?보고 건수',
         color='count', color_continuous_scale='Reds', projection='natural earth'
     )
     fig6.update_layout(template='plotly_dark', height=420,
@@ -97,31 +97,31 @@ def dashboard():
 
 @main.route('/korea')
 def korea_dashboard():
-    df = pd.read_csv(KOREA_DATA_PATH, encoding='cp949')
+    df = pd.read_csv(KOREA_DATA_PATH, encoding='utf-8')
 
-    sym_col  = '연도별증상(2024)'
-    cnt_2024 = '연도별보고건수(2024)'
-    cnt_2023 = '연도별보고건수(2023)'
+    sym_col  = '?�도별증??2024)'
+    cnt_2024 = '?�도별보고건??2024)'
+    cnt_2023 = '?�도별보고건??2023)'
 
     fig1 = px.bar(df.head(10), x=sym_col, y=cnt_2024,
-                  title='국내 2024년 Top 10 이상사례',
+                  title='�?�� 2024??Top 10 ?�상?��?',
                   color=cnt_2024, color_continuous_scale='Blues')
     fig1.update_layout(xaxis_tickangle=-45, template='plotly_dark', height=420)
 
     years = ['2019', '2020', '2021', '2022', '2023', '2024']
     top5 = df.head(5)[sym_col].tolist()
-    fig2 = px.line(title='국내 Top 5 이상사례 연도별 추이')
+    fig2 = px.line(title='�?�� Top 5 ?�상?��? ?�도�?추이')
     for symptom in top5:
         counts = []
         for y in years:
-            col = f'연도별보고건수({y})'
+            col = f'?�도별보고건??{y})'
             row = df[df[sym_col] == symptom]
             counts.append(int(row[col].values[0]) if len(row) > 0 and col in df.columns else 0)
         fig2.add_scatter(x=years, y=counts, name=symptom, mode='lines+markers')
     fig2.update_layout(template='plotly_dark', height=420)
 
     fig3 = px.bar(df.head(10), x=sym_col, y=[cnt_2024, cnt_2023],
-                  title='2024 vs 2023 Top 10 이상사례 비교',
+                  title='2024 vs 2023 Top 10 ?�상?��? 비교',
                   barmode='group', color_discrete_sequence=['#38bdf8', '#a78bfa'])
     fig3.update_layout(xaxis_tickangle=-45, template='plotly_dark', height=420)
 
