@@ -36,7 +36,7 @@ def load_model():
     return model, le_drug, le_reac
 
 @drug.route('/api/search/<drugname>')
-@cache.cached(timeout=300)
+@cache.cached(timeout=120)
 def search_drug(drugname):
     df = load_df()
     result = df[df['drugname'].str.upper() == drugname.upper()]
@@ -300,7 +300,6 @@ def generate_report(drugname):
     story.append(t2)
     story.append(Spacer(1, 0.5*cm))
 
-    # AI 자동 요약 섹션
     try:
         top_reac_list = result['pt'].value_counts().head(5).index.tolist()
         death_cnt = len(result[result['outc_cod']=='DE'])
@@ -308,13 +307,13 @@ def generate_report(drugname):
 
         prompt = f"""반드시 한국어로만 답하세요. 영어를 절대 사용하지 마세요.
 
-        다음 FDA FAERS 약물 데이터를 3-4문장으로 한국어 요약해주세요:
-        약물명: {drugname}
-        총 부작용 보고건수: {len(result)}건
-        주요 부작용 TOP5: {', '.join(top_reac_list)}
-        사망 보고: {death_cnt}건
-        입원 보고: {hosp_cnt}건
-        평균 나이: {round(float(age_data.mean()), 1) if len(age_data) > 0 else 'N/A'}세"""
+다음 FDA FAERS 약물 데이터를 3-4문장으로 한국어 요약해주세요:
+약물명: {drugname}
+총 부작용 보고건수: {len(result)}건
+주요 부작용 TOP5: {', '.join(top_reac_list)}
+사망 보고: {death_cnt}건
+입원 보고: {hosp_cnt}건
+평균 나이: {round(float(age_data.mean()), 1) if len(age_data) > 0 else 'N/A'}세"""
 
         response = http_requests.post('http://localhost:11434/api/generate',
             json={'model': 'llama3.2', 'prompt': prompt, 'stream': False}, timeout=60)
@@ -543,3 +542,109 @@ AI 판정: {risk_label}
         return jsonify({'explanation': result['response']})
     except Exception as e:
         return jsonify({'error': str(e)}), 500
+
+@drug.route('/api/safety_report/<drugname>')
+def safety_report(drugname):
+    drugname = drugname.upper()
+    df = load_df()
+    result = df[df['drugname'].str.upper() == drugname]
+
+    if len(result) == 0:
+        return jsonify({'error': f'약물을 찾을 수 없어요: {drugname}'}), 404
+
+    # FDA FAERS 통계
+    age_data = result['age'].dropna()
+    top_reac = result['pt'].value_counts().head(5).index.tolist()
+    death_cnt = len(result[result['outc_cod'] == 'DE'])
+    hosp_cnt = len(result[result['outc_cod'] == 'HO'])
+    total = len(result)
+    age_avg = round(float(age_data.mean()), 1) if len(age_data) > 0 else 0
+
+    # PubMed 논문 검색
+    pubmed_abstracts = ''
+    ids = []
+    try:
+        search_url = 'https://eutils.ncbi.nlm.nih.gov/entrez/eutils/esearch.fcgi'
+        search_params = {
+            'db': 'pubmed',
+            'term': f'{drugname} adverse event safety pharmacovigilance',
+            'retmax': 5,
+            'retmode': 'json',
+            'sort': 'relevance'
+        }
+        search_res = http_requests.get(search_url, params=search_params, timeout=10)
+        ids = search_res.json()['esearchresult']['idlist']
+
+        if ids:
+            fetch_url = 'https://eutils.ncbi.nlm.nih.gov/entrez/eutils/efetch.fcgi'
+            fetch_params = {
+                'db': 'pubmed',
+                'id': ','.join(ids),
+                'rettype': 'abstract',
+                'retmode': 'text'
+            }
+            fetch_res = http_requests.get(fetch_url, params=fetch_params, timeout=10)
+            pubmed_abstracts = fetch_res.text[:6000]
+    except:
+        pubmed_abstracts = '논문 검색 실패'
+
+    # Ollama llama3.2로 안전성 리포트 생성
+    prompt = f"""반드시 한국어로만 작성하세요. 다른 언어 절대 금지.
+
+당신은 임상약물감시(Pharmacovigilance) 전문가입니다.
+아래 FDA FAERS 실제 데이터와 PubMed 논문을 분석하여 상세한 약물 안전성 리포트를 작성하세요.
+각 섹션을 3~4문장씩 구체적인 수치와 함께 작성하세요.
+
+[FDA FAERS 실제 데이터]
+- 약물명: {drugname}
+- 총 부작용 보고: {total}건
+- 주요 부작용 TOP5: {', '.join(top_reac)}
+- 사망 보고: {death_cnt}건 (전체의 {round(death_cnt/total*100,1) if total > 0 else 0}%)
+- 입원 보고: {hosp_cnt}건 (전체의 {round(hosp_cnt/total*100,1) if total > 0 else 0}%)
+- 평균 환자 나이: {age_avg}세
+
+[PubMed 관련 논문 초록]
+{pubmed_abstracts}
+
+아래 형식으로 각 섹션을 작성하세요:
+
+## 1. 약물 개요
+(작용기전, 주요 적응증 설명)
+
+## 2. FDA FAERS 부작용 분석
+(위 통계 수치를 구체적으로 인용하며 분석)
+
+## 3. PubMed 논문 기반 안전성 근거
+(논문에서 확인된 안전성 관련 내용)
+
+## 4. 고위험군 및 주의사항
+(특별히 주의가 필요한 환자군, 모니터링 항목)
+
+## 5. 임상적 권고사항
+(의료진을 위한 실질적 권고사항)
+
+## 6. 결론
+(종합적 안전성 평가)"""
+
+    try:
+        response = http_requests.post(
+            'http://localhost:11434/api/generate',
+            json={'model': 'llama3.2', 'prompt': prompt, 'stream': False},
+            timeout=120
+        )
+        report_text = response.json().get('response', '리포트 생성 실패')
+    except Exception as e:
+        report_text = f'Ollama 연결 실패: {str(e)}'
+
+    return jsonify({
+        'drug': drugname,
+        'stats': {
+            'total_reports': total,
+            'age_avg': age_avg,
+            'death_cnt': death_cnt,
+            'hosp_cnt': hosp_cnt,
+            'top_reactions': top_reac
+        },
+        'pubmed_count': len(ids),
+        'report': report_text
+    })

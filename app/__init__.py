@@ -1,4 +1,4 @@
-﻿from flask import Flask
+from flask import Flask
 from config import Config
 from app.models import db
 from flask_caching import Cache
@@ -22,10 +22,11 @@ def create_app():
     limiter.init_app(app)
     login_manager.init_app(app)
     login_manager.login_view = 'auth.login'
-    login_manager.login_message = '濡쒓렇?몄씠 ?꾩슂?⑸땲??'
+    login_manager.login_message = '로그인이 필요합니다.'
     mail.init_app(app)
 
     from app.routes import main, auth, drug, ae, analysis, vision, literature
+    from app.routes.rag import rag
     app.register_blueprint(main)
     app.register_blueprint(auth)
     app.register_blueprint(drug)
@@ -33,21 +34,22 @@ def create_app():
     app.register_blueprint(analysis)
     app.register_blueprint(vision)
     app.register_blueprint(literature)
+    app.register_blueprint(rag)
 
-    # Swagger API 臾몄꽌
+    # Swagger API 문서
     api = Api(app,
         version='1.0',
         title='Pharma Risk Analyzer API',
-        description='FDA FAERS 湲곕컲 ?쎈Ъ ?댁긽諛섏쓳 遺꾩꽍 REST API',
+        description='FDA FAERS 기반 약물 이상반응 분석 REST API',
         doc='/api/docs',
         prefix='/api/v1'
     )
 
-    # ?ㅼ엫?ㅽ럹?댁뒪
-    ns_drug = api.namespace('drugs', description='?쎈Ъ 寃??API')
-    ns_predict = api.namespace('predict', description='AI ?덉륫 API')
+    # 네임스페이스
+    ns_drug = api.namespace('drugs', description='약물 검색 API')
+    ns_predict = api.namespace('predict', description='AI 예측 API')
 
-    # 紐⑤뜽 ?뺤쓽
+    # 모델 정의
     drug_model = api.model('DrugSearch', {
         'drug': fields.String(description='Drug Name'),
         'total_reports': fields.Integer(description='Total Reports'),

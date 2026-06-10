@@ -19,11 +19,11 @@
     .page-header h1 { font-size: 1.9rem; color: #38bdf8; margin-bottom: 8px; }
     .page-header p { color: #64748b; font-size: 0.95rem; }
 
-    .tabs { display: flex; gap: 8px; margin-bottom: 24px; }
+    .tabs { display: flex; gap: 8px; margin-bottom: 24px; flex-wrap: wrap; }
     .tab-btn { padding: 10px 24px; border-radius: 8px; font-size: 0.92rem; font-weight: bold; cursor: pointer; border: 1px solid #334155; color: #94a3b8; background: transparent; }
     .tab-btn.active { background: #38bdf8; color: #0f172a; border-color: #38bdf8; }
+    .tab-btn.report-tab.active { background: #10b981; border-color: #10b981; color: #fff; }
 
-    /* 탭 1: 약물명 검색 */
     .search-bar { display: flex; gap: 10px; margin-bottom: 32px; }
     .search-bar input { flex: 1; padding: 13px 18px; background: #1e293b; border: 1px solid #334155; border-radius: 10px; color: #e2e8f0; font-size: 1rem; outline: none; }
     .search-bar input:focus { border-color: #38bdf8; }
@@ -31,7 +31,6 @@
     .search-bar button { padding: 13px 32px; background: #38bdf8; color: #0f172a; border: none; border-radius: 10px; font-size: 1rem; font-weight: bold; cursor: pointer; }
     .search-bar button:hover { background: #0ea5e9; }
 
-    /* 탭 2: 이미지 + 모양/색상 검색 */
     .upload-area { border: 2px dashed #334155; border-radius: 14px; padding: 24px; text-align: center; margin-bottom: 20px; cursor: pointer; transition: border-color 0.2s; }
     .upload-area:hover { border-color: #38bdf8; }
     .upload-icon { font-size: 2rem; margin-bottom: 8px; }
@@ -48,7 +47,36 @@
     .search-btn { width: 100%; padding: 14px; background: #38bdf8; color: #0f172a; border: none; border-radius: 10px; font-size: 1rem; font-weight: bold; cursor: pointer; margin-bottom: 32px; }
     .search-btn:hover { background: #0ea5e9; }
 
-    /* 결과 카드 */
+    /* 안전성 리포트 탭 */
+    .report-search-bar { display: flex; gap: 10px; margin-bottom: 24px; }
+    .report-search-bar input { flex: 1; padding: 13px 18px; background: #1e293b; border: 1px solid #334155; border-radius: 10px; color: #e2e8f0; font-size: 1rem; outline: none; }
+    .report-search-bar input:focus { border-color: #10b981; }
+    .report-search-bar input::placeholder { color: #475569; }
+    .report-search-bar button { padding: 13px 32px; background: #10b981; color: #fff; border: none; border-radius: 10px; font-size: 1rem; font-weight: bold; cursor: pointer; }
+    .report-search-bar button:hover { background: #059669; }
+
+    .report-card { background: #1e293b; border: 1px solid #334155; border-radius: 14px; padding: 28px; margin-bottom: 20px; display: none; }
+    .report-card.visible { display: block; }
+    .report-title { font-size: 1.2rem; color: #10b981; font-weight: bold; margin-bottom: 20px; display: flex; align-items: center; gap: 10px; }
+    .stats-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; margin-bottom: 24px; }
+    .stat-box { background: #0f172a; border: 1px solid #334155; border-radius: 10px; padding: 16px; text-align: center; }
+    .stat-box .stat-num { font-size: 1.5rem; font-weight: bold; color: #38bdf8; }
+    .stat-box .stat-num.danger { color: #f87171; }
+    .stat-box .stat-num.warning { color: #fbbf24; }
+    .stat-box .stat-label { font-size: 0.78rem; color: #64748b; margin-top: 4px; }
+
+    .reactions-list { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 24px; }
+    .reaction-tag { padding: 5px 14px; background: rgba(56,189,248,0.1); border: 1px solid #38bdf8; border-radius: 20px; font-size: 0.82rem; color: #38bdf8; }
+
+    .pubmed-badge { display: inline-flex; align-items: center; gap: 6px; padding: 5px 14px; background: rgba(16,185,129,0.1); border: 1px solid #10b981; border-radius: 20px; font-size: 0.82rem; color: #10b981; margin-bottom: 20px; }
+
+    .report-text { background: #0f172a; border: 1px solid #334155; border-radius: 10px; padding: 20px; line-height: 1.8; font-size: 0.95rem; color: #e2e8f0; white-space: pre-wrap; }
+
+    .report-loading { text-align: center; padding: 48px; color: #64748b; display: none; }
+    .report-loading .spinner { width: 40px; height: 40px; border: 3px solid #334155; border-top-color: #10b981; border-radius: 50%; animation: spin 0.8s linear infinite; margin: 0 auto 16px; }
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    /* 공통 */
     .card { background: #1e293b; border: 1px solid #334155; border-radius: 14px; padding: 28px; margin-bottom: 20px; }
     .card-header { display: flex; align-items: center; gap: 10px; margin-bottom: 20px; }
     .card-header h2 { font-size: 1.05rem; color: #94a3b8; }
@@ -63,7 +91,6 @@
 
     .drug-img { width: 120px; height: 60px; object-fit: contain; border-radius: 8px; background: #334155; padding: 8px; margin-bottom: 16px; }
 
-    /* 검색 결과 목록 */
     .result-list { display: grid; gap: 12px; }
     .result-item { background: #0f172a; border: 1px solid #334155; border-radius: 10px; padding: 16px; display: flex; gap: 16px; align-items: center; cursor: pointer; transition: border-color 0.2s; }
     .result-item:hover { border-color: #38bdf8; }
@@ -100,28 +127,29 @@
 <div class="container">
   <div class="page-header">
     <h1>💊 Drug Lookup</h1>
-    <p>약물명 검색 또는 약 사진 업로드 후 모양/색상으로 식약처 정보 조회</p>
+    <p>약품명 검색 또는 약 외형·색상으로 약품 정보 조회 · AI 안전성 리포트 생성</p>
   </div>
 
   <!-- 탭 -->
   <div class="tabs">
-    <button class="tab-btn active" onclick="switchTab('name')">약물명 검색</button>
+    <button class="tab-btn active" onclick="switchTab('name')">약품명 검색</button>
     <button class="tab-btn" onclick="switchTab('image')">이미지 + 모양/색상 검색</button>
+    <button class="tab-btn report-tab" onclick="switchTab('report')">🧬 AI 안전성 리포트</button>
   </div>
 
-  <!-- 탭 1: 약물명 검색 -->
+  <!-- 탭1: 약품명 검색 -->
   <div id="tab-name">
     <div class="search-bar">
-      <input type="text" id="drugInput" placeholder="약물명 입력 (예: 타이레놀, ASPIRIN)">
+      <input type="text" id="drugInput" placeholder="약품명 입력 (예: 타이레놀, ASPIRIN)">
       <button onclick="lookupByName()">조회</button>
     </div>
   </div>
 
-  <!-- 탭 2: 이미지 + 모양/색상 -->
+  <!-- 탭2: 이미지 + 모양/색상 -->
   <div id="tab-image" style="display:none;">
     <div class="upload-area" id="uploadArea" onclick="document.getElementById('fileInput').click()">
       <div class="upload-icon">📷</div>
-      <div class="upload-text">약 사진을 드래그하거나 <span>클릭해서 업로드</span> (선택사항)</div>
+      <div class="upload-text">약 사진을 여기에 드래그하거나 <span>클릭해서 업로드</span> (선택사항)</div>
       <img id="previewImg" src="" alt="preview">
     </div>
     <input type="file" id="fileInput" accept="image/*">
@@ -134,12 +162,12 @@
           <option value="원형">원형</option>
           <option value="타원형">타원형</option>
           <option value="장방형">장방형</option>
+          <option value="반원형">반원형</option>
           <option value="삼각형">삼각형</option>
           <option value="사각형">사각형</option>
           <option value="마름모형">마름모형</option>
           <option value="오각형">오각형</option>
           <option value="육각형">육각형</option>
-          <option value="팔각형">팔각형</option>
           <option value="기타">기타</option>
         </select>
       </div>
@@ -153,6 +181,7 @@
           <option value="분홍">분홍</option>
           <option value="빨강">빨강</option>
           <option value="갈색">갈색</option>
+          <option value="연두">연두</option>
           <option value="초록">초록</option>
           <option value="청록">청록</option>
           <option value="파랑">파랑</option>
@@ -161,7 +190,6 @@
           <option value="보라">보라</option>
           <option value="회색">회색</option>
           <option value="검정">검정</option>
-          <option value="투명">투명</option>
         </select>
       </div>
       <div class="filter-group">
@@ -173,10 +201,65 @@
         <input type="text" id="printBack" placeholder="예: 500" style="width:100%; padding:12px 16px; background:#1e293b; border:1px solid #334155; border-radius:10px; color:#e2e8f0; font-size:0.95rem; outline:none;">
       </div>
     </div>
-    <button class="search-btn" onclick="lookupByShape()">식약처 검색</button>
+    <button class="search-btn" onclick="lookupByShape()">약품 검색</button>
   </div>
 
-  <div id="loading" class="loading">⏳ 조회 중...</div>
+  <!-- 탭3: AI 안전성 리포트 -->
+  <div id="tab-report" style="display:none;">
+    <div class="report-search-bar">
+      <input type="text" id="reportDrugInput" placeholder="약물명 입력 (예: METHOTREXATE, ASPIRIN)">
+      <button onclick="generateSafetyReport()">🧬 리포트 생성</button>
+    </div>
+
+    <!-- 로딩 -->
+    <div class="report-loading" id="reportLoading">
+      <div class="spinner"></div>
+      <p>FDA FAERS 데이터 + PubMed 논문 분석 중...</p>
+      <p style="font-size:0.82rem; margin-top:8px; color:#475569;">AI가 안전성 리포트를 작성하고 있습니다 (약 30~60초)</p>
+    </div>
+
+    <!-- 결과 -->
+    <div class="report-card" id="reportCard">
+      <div class="report-title">
+        🧬 <span id="reportDrugName"></span> 약물 안전성 종합 리포트
+      </div>
+
+      <!-- 통계 -->
+      <div class="stats-grid">
+        <div class="stat-box">
+          <div class="stat-num" id="rTotalReports">-</div>
+          <div class="stat-label">총 부작용 보고</div>
+        </div>
+        <div class="stat-box">
+          <div class="stat-num" id="rAgeAvg">-</div>
+          <div class="stat-label">평균 나이</div>
+        </div>
+        <div class="stat-box">
+          <div class="stat-num danger" id="rDeathCnt">-</div>
+          <div class="stat-label">사망 보고</div>
+        </div>
+        <div class="stat-box">
+          <div class="stat-num warning" id="rHospCnt">-</div>
+          <div class="stat-label">입원 보고</div>
+        </div>
+      </div>
+
+      <!-- 주요 부작용 태그 -->
+      <p style="font-size:0.82rem; color:#64748b; margin-bottom:10px;">주요 부작용 TOP 5</p>
+      <div class="reactions-list" id="rReactions"></div>
+
+      <!-- PubMed 논문 수 -->
+      <div class="pubmed-badge" id="rPubmedBadge">
+        📄 PubMed 논문 <span id="rPubmedCount">0</span>편 참조
+      </div>
+
+      <!-- AI 리포트 본문 -->
+      <p style="font-size:0.82rem; color:#64748b; margin-bottom:10px;">🤖 AI 안전성 분석 (powered by Llama3.2 + FDA FAERS + PubMed)</p>
+      <div class="report-text" id="rReportText"></div>
+    </div>
+  </div>
+
+  <div id="loading" class="loading">🔍 조회 중...</div>
   <div id="error-msg" class="error"></div>
 
   <!-- 검색 결과 목록 -->
@@ -189,18 +272,18 @@
     <button class="back-btn" onclick="backToList()">← 목록으로</button>
     <div id="kr-card" class="card">
       <div class="card-header">
-        <h2>한국 식약처 정보</h2>
-        <span class="source-badge badge-kr">식약처 낱알식별</span>
+        <h2>국내 약품 정보</h2>
+        <span class="source-badge badge-kr">식품의약품안전처</span>
       </div>
       <img id="krImg" class="drug-img" src="" alt="약 이미지" style="display:none;">
       <div class="info-grid">
-        <div class="info-item"><label>약물명</label><p id="krName"></p></div>
+        <div class="info-item"><label>약품명</label><p id="krName"></p></div>
         <div class="info-item"><label>제조사</label><p id="krCompany"></p></div>
         <div class="info-item"><label>모양</label><p id="krShape"></p></div>
         <div class="info-item"><label>색상</label><p id="krColor"></p></div>
-        <div class="info-item"><label>구분</label><p id="krEtc"></p></div>
+        <div class="info-item"><label>전문/일반</label><p id="krEtc"></p></div>
         <div class="info-item"><label>분류</label><p id="krClass"></p></div>
-        <div class="info-item full"><label>설명</label><p id="krChart"></p></div>
+        <div class="info-item full"><label>성분</label><p id="krChart"></p></div>
       </div>
     </div>
 
@@ -225,10 +308,16 @@
 let lastResults = [];
 
 function switchTab(tab) {
-  document.querySelectorAll('.tab-btn').forEach((b, i) => b.classList.toggle('active', (i === 0) === (tab === 'name')));
+  document.querySelectorAll('.tab-btn').forEach((b, i) => {
+    b.classList.remove('active');
+    if ((i === 0 && tab === 'name') || (i === 1 && tab === 'image') || (i === 2 && tab === 'report')) {
+      b.classList.add('active');
+    }
+  });
   document.getElementById('tab-name').style.display = tab === 'name' ? 'block' : 'none';
   document.getElementById('tab-image').style.display = tab === 'image' ? 'block' : 'none';
-  clearResults();
+  document.getElementById('tab-report').style.display = tab === 'report' ? 'block' : 'none';
+  if (tab !== 'report') clearResults();
 }
 
 function clearResults() {
@@ -237,7 +326,54 @@ function clearResults() {
   document.getElementById('error-msg').style.display = 'none';
 }
 
-// 이미지 미리보기
+// 안전성 리포트 생성
+async function generateSafetyReport() {
+  const drug = document.getElementById('reportDrugInput').value.trim().toUpperCase();
+  if (!drug) { alert('약물명을 입력하세요'); return; }
+
+  document.getElementById('reportLoading').style.display = 'block';
+  document.getElementById('reportCard').classList.remove('visible');
+
+  try {
+    const res = await fetch('/api/safety_report/' + encodeURIComponent(drug));
+    const data = await res.json();
+
+    if (!res.ok) { alert(data.error || '오류 발생'); return; }
+
+    // 약물명
+    document.getElementById('reportDrugName').textContent = data.drug;
+
+    // 통계
+    document.getElementById('rTotalReports').textContent = data.stats.total_reports.toLocaleString() + '건';
+    document.getElementById('rAgeAvg').textContent = data.stats.age_avg + '세';
+    document.getElementById('rDeathCnt').textContent = data.stats.death_cnt.toLocaleString() + '건';
+    document.getElementById('rHospCnt').textContent = data.stats.hosp_cnt.toLocaleString() + '건';
+
+    // 주요 부작용 태그
+    const reactionsEl = document.getElementById('rReactions');
+    reactionsEl.innerHTML = '';
+    data.stats.top_reactions.forEach(r => {
+      const span = document.createElement('span');
+      span.className = 'reaction-tag';
+      span.textContent = r;
+      reactionsEl.appendChild(span);
+    });
+
+    // PubMed
+    document.getElementById('rPubmedCount').textContent = data.pubmed_count;
+
+    // AI 리포트 본문
+    document.getElementById('rReportText').textContent = data.report;
+
+    document.getElementById('reportCard').classList.add('visible');
+  } catch(e) {
+    alert('서버 오류: ' + e.message);
+  } finally {
+    document.getElementById('reportLoading').style.display = 'none';
+  }
+}
+
+// 이미지 업로드
 document.getElementById('fileInput').addEventListener('change', function(e) {
   const file = e.target.files[0];
   if (!file) return;
@@ -282,12 +418,7 @@ async function lookupByShape() {
   const color = document.getElementById('colorSelect').value;
   const front = document.getElementById('printFront').value.trim();
   const back = document.getElementById('printBack').value.trim();
-
-  if (!shape && !color && !front && !back) {
-    showError('모양 또는 색상을 선택해주세요');
-    return;
-  }
-
+  if (!shape && !color && !front && !back) { showError('모양 또는 색상을 선택하세요'); return; }
   showLoading();
   try {
     let url = '/api/drug-shape?';
@@ -295,7 +426,6 @@ async function lookupByShape() {
     if (color) url += 'color=' + encodeURIComponent(color) + '&';
     if (front) url += 'front=' + encodeURIComponent(front) + '&';
     if (back) url += 'back=' + encodeURIComponent(back) + '&';
-
     const res = await fetch(url);
     const data = await res.json();
     if (!res.ok) { showError(data.error || 'Error'); return; }
@@ -308,14 +438,12 @@ function showResultList(items) {
   lastResults = items;
   const container = document.getElementById('result-list');
   container.innerHTML = '';
-
   if (!items || items.length === 0) {
     container.innerHTML = '<div class="not-found">검색 결과가 없습니다.</div>';
     document.getElementById('result-area').style.display = 'block';
     return;
   }
-
-  items.forEach((item, i) => {
+  items.forEach((item) => {
     const div = document.createElement('div');
     div.className = 'result-item';
     div.innerHTML =
@@ -325,7 +453,6 @@ function showResultList(items) {
     div.onclick = () => showDetailFromItem(item);
     container.appendChild(div);
   });
-
   document.getElementById('result-area').style.display = 'block';
   document.getElementById('detail-area').style.display = 'none';
 }
@@ -342,8 +469,6 @@ function showDetailFromItem(item) {
   if (item.img_url) { document.getElementById('krImg').src = item.img_url; document.getElementById('krImg').style.display = 'block'; }
   document.getElementById('fda-card').style.display = 'none';
   document.getElementById('detail-area').style.display = 'block';
-
-  // OpenFDA도 조회
   fetchFDA(item.name);
 }
 
@@ -403,6 +528,7 @@ function showError(msg) { const e = document.getElementById('error-msg'); e.text
 
 document.addEventListener('DOMContentLoaded', () => {
   document.getElementById('drugInput').addEventListener('keydown', e => { if (e.key === 'Enter') lookupByName(); });
+  document.getElementById('reportDrugInput').addEventListener('keydown', e => { if (e.key === 'Enter') generateSafetyReport(); });
 });
 </script>
 </body>

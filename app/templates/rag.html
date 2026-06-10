@@ -1,0 +1,129 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <title>RAG Q&A | Pharma Risk Analyzer</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body { font-family: Arial, sans-serif; background: #0f172a; color: #e2e8f0; min-height: 100vh; }
+    .nav { background: #1e293b; border-bottom: 1px solid #334155; padding: 14px 24px; display: flex; align-items: center; justify-content: space-between; }
+    .nav-logo { color: #38bdf8; font-size: 1.1rem; font-weight: bold; text-decoration: none; }
+    .nav-links { display: flex; gap: 8px; flex-wrap: wrap; }
+    .nav-btn { padding: 8px 18px; border-radius: 8px; font-size: 0.88rem; font-weight: bold; text-decoration: none; color: #94a3b8; border: 1px solid #334155; }
+    .nav-btn:hover { border-color: #38bdf8; color: #38bdf8; }
+    .nav-btn.active { background: #a855f7; color: #fff; border-color: #a855f7; }
+    .container { max-width: 800px; margin: 48px auto; padding: 0 24px; }
+    h1 { font-size: 1.9rem; color: #a855f7; margin-bottom: 8px; }
+    .subtitle { color: #64748b; font-size: 0.95rem; margin-bottom: 32px; }
+    .chat-box { background: #1e293b; border: 1px solid #334155; border-radius: 14px; padding: 24px; min-height: 400px; max-height: 500px; overflow-y: auto; margin-bottom: 20px; display: flex; flex-direction: column; gap: 16px; }
+    .msg { padding: 14px 18px; border-radius: 10px; max-width: 85%; line-height: 1.6; font-size: 0.93rem; }
+    .msg.user { background: #a855f7; color: #fff; align-self: flex-end; }
+    .msg.bot { background: #0f172a; border: 1px solid #334155; color: #e2e8f0; align-self: flex-start; }
+    .msg.bot .sources { margin-top: 10px; font-size: 0.78rem; color: #64748b; border-top: 1px solid #334155; padding-top: 8px; }
+    .input-area { display: flex; gap: 10px; }
+    .input-area input { flex: 1; padding: 13px 18px; background: #1e293b; border: 1px solid #334155; border-radius: 10px; color: #e2e8f0; font-size: 1rem; outline: none; }
+    .input-area input:focus { border-color: #a855f7; }
+    .input-area button { padding: 13px 28px; background: #a855f7; color: #fff; border: none; border-radius: 10px; font-size: 1rem; font-weight: bold; cursor: pointer; }
+    .input-area button:hover { background: #9333ea; }
+    .examples { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 20px; }
+    .example-btn { padding: 7px 14px; background: rgba(168,85,247,0.1); border: 1px solid #a855f7; border-radius: 20px; font-size: 0.82rem; color: #a855f7; cursor: pointer; }
+    .example-btn:hover { background: rgba(168,85,247,0.2); }
+    .loading-msg { color: #64748b; font-size: 0.88rem; font-style: italic; }
+  </style>
+</head>
+<body>
+<nav class="nav">
+  <a href="/" class="nav-logo">💊 Pharma Risk Analyzer</a>
+  <div class="nav-links">
+    <a href="/dashboard" class="nav-btn">Dashboard</a>
+    <a href="/filter" class="nav-btn">Search</a>
+    <a href="/drug-lookup" class="nav-btn">Drug Lookup</a>
+    <a href="/prr" class="nav-btn">PRR</a>
+    <a href="/ae_manager" class="nav-btn">AE Manager</a>
+    <a href="/rag" class="nav-btn active">RAG Q&A</a>
+  </div>
+</nav>
+
+<div class="container">
+  <h1>🔬 RAG 약물 Q&A</h1>
+  <p class="subtitle">PubMed 논문 기반 AI 질의응답 · FAISS 벡터DB 검색</p>
+
+  <div class="examples">
+    <button class="example-btn" onclick="setQuestion('methotrexate의 주요 부작용은?')">methotrexate 부작용</button>
+    <button class="example-btn" onclick="setQuestion('aspirin과 warfarin 병용 시 위험성은?')">aspirin+warfarin 병용</button>
+    <button class="example-btn" onclick="setQuestion('ibuprofen 고령 환자 주의사항은?')">ibuprofen 고령 환자</button>
+    <button class="example-btn" onclick="setQuestion('adalimumab 면역 관련 부작용은?')">adalimumab 면역 부작용</button>
+  </div>
+
+  <div class="chat-box" id="chatBox">
+    <div class="msg bot">안녕하세요! PubMed 논문 기반 RAG Q&A입니다. 약물 안전성에 관한 질문을 해보세요. (현재 DB: methotrexate, aspirin, warfarin, ibuprofen, adalimumab)</div>
+  </div>
+
+  <div class="input-area">
+    <input type="text" id="questionInput" placeholder="약물 안전성에 대해 질문하세요...">
+    <button onclick="sendQuestion()">전송</button>
+  </div>
+</div>
+
+<script>
+function setQuestion(q) {
+  document.getElementById('questionInput').value = q;
+}
+
+async function sendQuestion() {
+  const input = document.getElementById('questionInput');
+  const question = input.value.trim();
+  if (!question) return;
+
+  addMsg(question, 'user');
+  input.value = '';
+
+  const loadingEl = addMsg('논문 검색 중...', 'bot loading-msg');
+
+  try {
+    const res = await fetch('/api/rag/query', {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({question})
+    });
+    const data = await res.json();
+    loadingEl.remove();
+
+    if (data.error) {
+      addMsg('오류: ' + data.error, 'bot');
+      return;
+    }
+
+    const botEl = document.createElement('div');
+    botEl.className = 'msg bot';
+    botEl.innerHTML = `
+      <div>${data.answer.replace(/\n/g, '<br>')}</div>
+      <div class="sources">
+        📄 참조 논문 청크 ${data.sources.length}개 검색됨<br>
+        ${data.sources[0] ? data.sources[0].substring(0, 150) + '...' : ''}
+      </div>
+    `;
+    document.getElementById('chatBox').appendChild(botEl);
+    document.getElementById('chatBox').scrollTop = 99999;
+  } catch(e) {
+    loadingEl.remove();
+    addMsg('서버 오류: ' + e.message, 'bot');
+  }
+}
+
+function addMsg(text, cls) {
+  const el = document.createElement('div');
+  el.className = 'msg ' + cls;
+  el.textContent = text;
+  const box = document.getElementById('chatBox');
+  box.appendChild(el);
+  box.scrollTop = 99999;
+  return el;
+}
+
+document.getElementById('questionInput').addEventListener('keydown', e => {
+  if (e.key === 'Enter') sendQuestion();
+});
+</script>
+</body>
+</html>
