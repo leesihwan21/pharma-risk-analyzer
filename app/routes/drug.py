@@ -648,3 +648,118 @@ def safety_report(drugname):
         'pubmed_count': len(ids),
         'report': report_text
     })
+
+@drug.route('/api/safety_report_pdf/<drugname>')
+def safety_report_pdf(drugname):
+    drugname = drugname.upper()
+    df = load_df()
+    result = df[df['drugname'].str.upper() == drugname]
+
+    if len(result) == 0:
+        return jsonify({'error': '약물을 찾을 수 없어요'}), 404
+
+    age_data = result['age'].dropna()
+    top_reac = result['pt'].value_counts().head(5).index.tolist()
+    death_cnt = len(result[result['outc_cod'] == 'DE'])
+    hosp_cnt = len(result[result['outc_cod'] == 'HO'])
+    total = len(result)
+    age_avg = round(float(age_data.mean()), 1) if len(age_data) > 0 else 0
+
+    # PubMed 논문 검색
+    pubmed_abstracts = ''
+    ids = []
+    try:
+        search_url = 'https://eutils.ncbi.nlm.nih.gov/entrez/eutils/esearch.fcgi'
+        search_params = {'db': 'pubmed', 'term': f'{drugname} adverse event safety', 'retmax': 5, 'retmode': 'json', 'sort': 'relevance'}
+        search_res = http_requests.get(search_url, params=search_params, timeout=10)
+        ids = search_res.json()['esearchresult']['idlist']
+        if ids:
+            fetch_url = 'https://eutils.ncbi.nlm.nih.gov/entrez/eutils/efetch.fcgi'
+            fetch_params = {'db': 'pubmed', 'id': ','.join(ids), 'rettype': 'abstract', 'retmode': 'text'}
+            fetch_res = http_requests.get(fetch_url, params=fetch_params, timeout=10)
+            pubmed_abstracts = fetch_res.text[:2000]
+    except:
+        pubmed_abstracts = '논문 검색 실패'
+
+    # AI 리포트 생성
+    prompt = f"""반드시 한국어로만 작성하세요.
+[FDA FAERS 데이터]
+약물: {drugname} | 보고건수: {total}건 | 주요부작용: {', '.join(top_reac)}
+사망: {death_cnt}건({round(death_cnt/total*100,1) if total>0 else 0}%) | 입원: {hosp_cnt}건 | 평균나이: {age_avg}세
+[PubMed 논문]
+{pubmed_abstracts}
+위 데이터를 바탕으로 아래 6개 섹션을 각 2문장씩 한국어로 작성:
+1. 약물 개요
+2. 주요 부작용 분석
+3. 논문 기반 안전성 근거
+4. 고위험군
+5. 임상적 권고사항
+6. 결론"""
+
+    try:
+        response = http_requests.post(
+            'http://localhost:11434/api/generate',
+            json={'model': 'llama3.2', 'prompt': prompt, 'stream': False},
+            timeout=120
+        )
+        report_text = response.json().get('response', '리포트 생성 실패')
+    except Exception as e:
+        report_text = f'Ollama 연결 실패: {str(e)}'
+
+    # PDF 생성
+    font_path = os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))), 'NanumGothic.ttf')
+    try:
+        pdfmetrics.registerFont(TTFont('NanumGothic', font_path))
+        korean_font = 'NanumGothic'
+    except:
+        korean_font = 'Helvetica'
+
+    buf = io.BytesIO()
+    doc = SimpleDocTemplate(buf, pagesize=A4, rightMargin=2*cm, leftMargin=2*cm, topMargin=2*cm, bottomMargin=2*cm)
+
+    title_style = ParagraphStyle('title', fontSize=16, spaceAfter=10, textColor=colors.HexColor('#10b981'), fontName=korean_font)
+    sub_style = ParagraphStyle('sub', fontSize=10, spaceAfter=6, textColor=colors.HexColor('#374151'), fontName=korean_font)
+    header_style = ParagraphStyle('header', fontSize=12, spaceAfter=6, textColor=colors.HexColor('#10b981'), fontName=korean_font)
+    body_style = ParagraphStyle('body', fontSize=10, spaceAfter=6, textColor=colors.HexColor('#374151'), fontName=korean_font, leading=16)
+
+    story = []
+    story.append(Paragraph(f"AI 약물 안전성 종합 리포트", title_style))
+    story.append(Paragraph(f"Drug: {drugname}", sub_style))
+    story.append(Paragraph(f"Generated: {datetime.now().strftime('%Y-%m-%d %H:%M')} | PubMed 논문 {len(ids)}편 참조", sub_style))
+    story.append(Spacer(1, 0.5*cm))
+
+    # 통계 테이블
+    story.append(Paragraph("FDA FAERS 통계", header_style))
+    stats_data = [
+        ['항목', '수치'],
+        ['총 보고건수', f'{total:,}건'],
+        ['평균 나이', f'{age_avg}세'],
+        ['사망 보고', f'{death_cnt:,}건 ({round(death_cnt/total*100,1) if total>0 else 0}%)'],
+        ['입원 보고', f'{hosp_cnt:,}건'],
+        ['주요 부작용 TOP5', ', '.join(top_reac)],
+    ]
+    t = Table(stats_data, colWidths=[6*cm, 11*cm])
+    t.setStyle(TableStyle([
+        ('BACKGROUND', (0,0), (-1,0), colors.HexColor('#10b981')),
+        ('TEXTCOLOR', (0,0), (-1,0), colors.white),
+        ('FONTNAME', (0,0), (-1,0), 'Helvetica-Bold'),
+        ('FONTSIZE', (0,0), (-1,-1), 9),
+        ('GRID', (0,0), (-1,-1), 0.5, colors.HexColor('#e5e7eb')),
+        ('ROWBACKGROUNDS', (0,1), (-1,-1), [colors.white, colors.HexColor('#f0fdf4')]),
+        ('PADDING', (0,0), (-1,-1), 6),
+        ('FONTNAME', (0,1), (-1,-1), korean_font),
+    ]))
+    story.append(t)
+    story.append(Spacer(1, 0.5*cm))
+
+    # AI 리포트 본문
+    story.append(Paragraph("AI 안전성 분석 (powered by Llama3.2 + FDA FAERS + PubMed)", header_style))
+    for line in report_text.split('\n'):
+        if line.strip():
+            story.append(Paragraph(line, body_style))
+
+    doc.build(story)
+    buf.seek(0)
+    return send_file(buf, as_attachment=True,
+                     download_name=f'{drugname}_safety_report.pdf',
+                     mimetype='application/pdf')

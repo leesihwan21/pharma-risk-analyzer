@@ -1,9 +1,9 @@
 import os
 import requests as http_requests
 from flask import Blueprint, jsonify, request, render_template
-from langchain_text_splitters import RecursiveCharacterTextSplitter
 from langchain_community.vectorstores import FAISS
 from langchain_community.embeddings import HuggingFaceEmbeddings
+from app.models import db, RagHistory
 
 rag = Blueprint('rag', __name__)
 
@@ -31,8 +31,8 @@ def rag_query():
         return jsonify({'error': '질문을 입력하세요'}), 400
 
     try:
-        db = load_vectordb()
-        docs = db.similarity_search(question, k=3)
+        vdb = load_vectordb()
+        docs = vdb.similarity_search(question, k=3)
         context = '\n\n'.join([doc.page_content for doc in docs])
     except Exception as e:
         return jsonify({'error': f'벡터DB 로드 실패: {str(e)}'}), 500
@@ -57,8 +57,24 @@ def rag_query():
     except Exception as e:
         answer = f'Ollama 오류: {str(e)}'
 
+    try:
+        log = RagHistory(
+            question=question,
+            answer=answer,
+            sources=docs[0].page_content[:200] if docs else ''
+        )
+        db.session.add(log)
+        db.session.commit()
+    except:
+        db.session.rollback()
+
     return jsonify({
         'question': question,
         'answer': answer,
         'sources': [doc.page_content[:200] for doc in docs]
     })
+
+@rag.route('/api/rag/history')
+def rag_history():
+    logs = RagHistory.query.order_by(RagHistory.asked_at.desc()).limit(20).all()
+    return jsonify({'history': [l.to_dict() for l in logs]})

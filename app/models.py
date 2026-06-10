@@ -208,3 +208,22 @@ class UserActivityLog(db.Model):
             'ip_address': self.ip_address,
             'created_at': self.created_at.strftime('%Y-%m-%d %H:%M')
         }
+
+class RagHistory(db.Model):
+    """RAG 질의 기록"""
+    __tablename__ = 'rag_histories'
+
+    id = db.Column(db.Integer, primary_key=True)
+    question = db.Column(db.Text, nullable=False)
+    answer = db.Column(db.Text, nullable=False)
+    sources = db.Column(db.Text, nullable=True) # JSON 문자열로 저장
+    asked_at = db.Column(db.DateTime, default=datetime.utcnow)
+
+    def to_dict(self):
+        return {
+            'id': self.id,
+            'question': self.question,
+            'answer': self.answer,
+            'sources': self.sources,
+            'asked_at': self.asked_at.strftime('%Y-%m-%d %H:%M')    
+        }

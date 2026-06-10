@@ -82,3 +82,6 @@ desktop.ini
 # Jupyter Notebooks 체크?�인??# ===========================
 .ipynb_checkpoints/
 notebooks/.ipynb_checkpoints/
+
+rag_db/
+build_rag.py

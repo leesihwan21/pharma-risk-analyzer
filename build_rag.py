@@ -6,7 +6,14 @@ from langchain_community.vectorstores import FAISS
 from langchain_community.embeddings import HuggingFaceEmbeddings
 
 # 검색할 약물 목록
-DRUGS = ['methotrexate', 'aspirin', 'warfarin', 'ibuprofen', 'adalimumab']
+DRUGS = [
+    'methotrexate', 'cyclophosphamide', 'doxorubicin', 'paclitaxel', 'carboplatin',
+    'adalimumab', 'infliximab', 'rituximab', 'etanercept', 'tocilizumab',
+    'warfarin', 'aspirin', 'clopidogrel', 'atorvastatin', 'lisinopril',
+    'ibuprofen', 'naproxen', 'diclofenac', 'celecoxib', 'indomethacin',
+    'amoxicillin', 'ciprofloxacin', 'azithromycin', 'vancomycin', 'metronidazole',
+    'omeprazole', 'metformin', 'levothyroxine', 'prednisone', 'gabapentin'
+]
 
 def fetch_pubmed(drug, max_results=5):
     print(f"  PubMed 검색 중: {drug}")

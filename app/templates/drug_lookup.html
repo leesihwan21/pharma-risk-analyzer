@@ -13,24 +13,20 @@
     .nav-btn { padding: 8px 18px; border-radius: 8px; font-size: 0.88rem; font-weight: bold; text-decoration: none; color: #94a3b8; border: 1px solid #334155; }
     .nav-btn:hover { border-color: #38bdf8; color: #38bdf8; }
     .nav-btn.active { background: #38bdf8; color: #0f172a; border-color: #38bdf8; }
-
     .container { max-width: 900px; margin: 48px auto; padding: 0 24px; }
     .page-header { margin-bottom: 32px; }
     .page-header h1 { font-size: 1.9rem; color: #38bdf8; margin-bottom: 8px; }
     .page-header p { color: #64748b; font-size: 0.95rem; }
-
     .tabs { display: flex; gap: 8px; margin-bottom: 24px; flex-wrap: wrap; }
     .tab-btn { padding: 10px 24px; border-radius: 8px; font-size: 0.92rem; font-weight: bold; cursor: pointer; border: 1px solid #334155; color: #94a3b8; background: transparent; }
     .tab-btn.active { background: #38bdf8; color: #0f172a; border-color: #38bdf8; }
     .tab-btn.report-tab.active { background: #10b981; border-color: #10b981; color: #fff; }
-
     .search-bar { display: flex; gap: 10px; margin-bottom: 32px; }
     .search-bar input { flex: 1; padding: 13px 18px; background: #1e293b; border: 1px solid #334155; border-radius: 10px; color: #e2e8f0; font-size: 1rem; outline: none; }
     .search-bar input:focus { border-color: #38bdf8; }
     .search-bar input::placeholder { color: #475569; }
     .search-bar button { padding: 13px 32px; background: #38bdf8; color: #0f172a; border: none; border-radius: 10px; font-size: 1rem; font-weight: bold; cursor: pointer; }
     .search-bar button:hover { background: #0ea5e9; }
-
     .upload-area { border: 2px dashed #334155; border-radius: 14px; padding: 24px; text-align: center; margin-bottom: 20px; cursor: pointer; transition: border-color 0.2s; }
     .upload-area:hover { border-color: #38bdf8; }
     .upload-icon { font-size: 2rem; margin-bottom: 8px; }
@@ -38,23 +34,18 @@
     .upload-text span { color: #38bdf8; }
     #fileInput { display: none; }
     #previewImg { max-width: 180px; max-height: 180px; border-radius: 10px; margin-top: 12px; display: none; }
-
     .filter-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 20px; }
     .filter-group label { font-size: 0.78rem; color: #64748b; text-transform: uppercase; letter-spacing: 0.05em; display: block; margin-bottom: 6px; }
     .filter-group select { width: 100%; padding: 12px 16px; background: #1e293b; border: 1px solid #334155; border-radius: 10px; color: #e2e8f0; font-size: 0.95rem; outline: none; }
     .filter-group select:focus { border-color: #38bdf8; }
-
     .search-btn { width: 100%; padding: 14px; background: #38bdf8; color: #0f172a; border: none; border-radius: 10px; font-size: 1rem; font-weight: bold; cursor: pointer; margin-bottom: 32px; }
     .search-btn:hover { background: #0ea5e9; }
-
-    /* 안전성 리포트 탭 */
     .report-search-bar { display: flex; gap: 10px; margin-bottom: 24px; }
     .report-search-bar input { flex: 1; padding: 13px 18px; background: #1e293b; border: 1px solid #334155; border-radius: 10px; color: #e2e8f0; font-size: 1rem; outline: none; }
     .report-search-bar input:focus { border-color: #10b981; }
     .report-search-bar input::placeholder { color: #475569; }
     .report-search-bar button { padding: 13px 32px; background: #10b981; color: #fff; border: none; border-radius: 10px; font-size: 1rem; font-weight: bold; cursor: pointer; }
     .report-search-bar button:hover { background: #059669; }
-
     .report-card { background: #1e293b; border: 1px solid #334155; border-radius: 14px; padding: 28px; margin-bottom: 20px; display: none; }
     .report-card.visible { display: block; }
     .report-title { font-size: 1.2rem; color: #10b981; font-weight: bold; margin-bottom: 20px; display: flex; align-items: center; gap: 10px; }
@@ -64,46 +55,37 @@
     .stat-box .stat-num.danger { color: #f87171; }
     .stat-box .stat-num.warning { color: #fbbf24; }
     .stat-box .stat-label { font-size: 0.78rem; color: #64748b; margin-top: 4px; }
-
     .reactions-list { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 24px; }
     .reaction-tag { padding: 5px 14px; background: rgba(56,189,248,0.1); border: 1px solid #38bdf8; border-radius: 20px; font-size: 0.82rem; color: #38bdf8; }
-
     .pubmed-badge { display: inline-flex; align-items: center; gap: 6px; padding: 5px 14px; background: rgba(16,185,129,0.1); border: 1px solid #10b981; border-radius: 20px; font-size: 0.82rem; color: #10b981; margin-bottom: 20px; }
-
     .report-text { background: #0f172a; border: 1px solid #334155; border-radius: 10px; padding: 20px; line-height: 1.8; font-size: 0.95rem; color: #e2e8f0; white-space: pre-wrap; }
-
+    .pdf-btn { padding: 10px 24px; background: #10b981; color: #fff; border: none; border-radius: 8px; font-size: 0.92rem; font-weight: bold; cursor: pointer; margin-top: 16px; }
+    .pdf-btn:hover { background: #059669; }
     .report-loading { text-align: center; padding: 48px; color: #64748b; display: none; }
     .report-loading .spinner { width: 40px; height: 40px; border: 3px solid #334155; border-top-color: #10b981; border-radius: 50%; animation: spin 0.8s linear infinite; margin: 0 auto 16px; }
     @keyframes spin { to { transform: rotate(360deg); } }
-
-    /* 공통 */
     .card { background: #1e293b; border: 1px solid #334155; border-radius: 14px; padding: 28px; margin-bottom: 20px; }
     .card-header { display: flex; align-items: center; gap: 10px; margin-bottom: 20px; }
     .card-header h2 { font-size: 1.05rem; color: #94a3b8; }
     .source-badge { padding: 3px 10px; border-radius: 20px; font-size: 0.75rem; font-weight: bold; }
     .badge-kr { background: rgba(56,189,248,0.15); color: #38bdf8; border: 1px solid #38bdf8; }
     .badge-fda { background: rgba(248,113,113,0.15); color: #f87171; border: 1px solid #f87171; }
-
     .info-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
     .info-item label { font-size: 0.78rem; color: #64748b; text-transform: uppercase; letter-spacing: 0.05em; display: block; margin-bottom: 4px; }
     .info-item p { font-size: 0.95rem; color: #e2e8f0; line-height: 1.5; }
     .info-item.full { grid-column: 1 / -1; }
-
     .drug-img { width: 120px; height: 60px; object-fit: contain; border-radius: 8px; background: #334155; padding: 8px; margin-bottom: 16px; }
-
     .result-list { display: grid; gap: 12px; }
     .result-item { background: #0f172a; border: 1px solid #334155; border-radius: 10px; padding: 16px; display: flex; gap: 16px; align-items: center; cursor: pointer; transition: border-color 0.2s; }
     .result-item:hover { border-color: #38bdf8; }
     .result-item img { width: 80px; height: 40px; object-fit: contain; background: #1e293b; border-radius: 6px; padding: 4px; flex-shrink: 0; }
     .result-item-info h3 { font-size: 0.95rem; color: #e2e8f0; margin-bottom: 4px; }
     .result-item-info p { font-size: 0.82rem; color: #64748b; }
-
     .not-found { padding: 20px; background: #1e293b; border: 1px solid #334155; border-radius: 10px; color: #64748b; text-align: center; }
     .error { padding: 16px; background: #1e293b; border: 1px solid #f87171; border-radius: 10px; color: #f87171; margin-bottom: 20px; display: none; }
     .loading { text-align: center; padding: 40px; color: #64748b; display: none; }
     #result-area { display: none; }
     #detail-area { display: none; }
-
     .back-btn { padding: 8px 20px; background: transparent; border: 1px solid #334155; color: #94a3b8; border-radius: 8px; cursor: pointer; margin-bottom: 16px; font-size: 0.88rem; }
     .back-btn:hover { border-color: #38bdf8; color: #38bdf8; }
   </style>
@@ -121,6 +103,7 @@
     <a href="/shap" class="nav-btn">SHAP</a>
     <a href="/drug-lookup" class="nav-btn active">Drug Lookup</a>
     <a href="/ae_manager" class="nav-btn">AE Manager</a>
+    <a href="/rag" class="nav-btn">RAG Q&A</a>
   </div>
 </nav>
 
@@ -130,7 +113,6 @@
     <p>약품명 검색 또는 약 외형·색상으로 약품 정보 조회 · AI 안전성 리포트 생성</p>
   </div>
 
-  <!-- 탭 -->
   <div class="tabs">
     <button class="tab-btn active" onclick="switchTab('name')">약품명 검색</button>
     <button class="tab-btn" onclick="switchTab('image')">이미지 + 모양/색상 검색</button>
@@ -153,7 +135,6 @@
       <img id="previewImg" src="" alt="preview">
     </div>
     <input type="file" id="fileInput" accept="image/*">
-
     <div class="filter-grid">
       <div class="filter-group">
         <label>모양</label>
@@ -211,20 +192,16 @@
       <button onclick="generateSafetyReport()">🧬 리포트 생성</button>
     </div>
 
-    <!-- 로딩 -->
     <div class="report-loading" id="reportLoading">
       <div class="spinner"></div>
       <p>FDA FAERS 데이터 + PubMed 논문 분석 중...</p>
       <p style="font-size:0.82rem; margin-top:8px; color:#475569;">AI가 안전성 리포트를 작성하고 있습니다 (약 30~60초)</p>
     </div>
 
-    <!-- 결과 -->
     <div class="report-card" id="reportCard">
       <div class="report-title">
         🧬 <span id="reportDrugName"></span> 약물 안전성 종합 리포트
       </div>
-
-      <!-- 통계 -->
       <div class="stats-grid">
         <div class="stat-box">
           <div class="stat-num" id="rTotalReports">-</div>
@@ -243,31 +220,26 @@
           <div class="stat-label">입원 보고</div>
         </div>
       </div>
-
-      <!-- 주요 부작용 태그 -->
       <p style="font-size:0.82rem; color:#64748b; margin-bottom:10px;">주요 부작용 TOP 5</p>
       <div class="reactions-list" id="rReactions"></div>
-
-      <!-- PubMed 논문 수 -->
-      <div class="pubmed-badge" id="rPubmedBadge">
+      <div class="pubmed-badge">
         📄 PubMed 논문 <span id="rPubmedCount">0</span>편 참조
       </div>
-
-      <!-- AI 리포트 본문 -->
       <p style="font-size:0.82rem; color:#64748b; margin-bottom:10px;">🤖 AI 안전성 분석 (powered by Llama3.2 + FDA FAERS + PubMed)</p>
       <div class="report-text" id="rReportText"></div>
+      <div style="text-align: right; margin-top: 16px;">
+        <button class="pdf-btn" id="pdfBtn" style="display:none;" onclick="downloadReportPDF()">📄 PDF 다운로드</button>
+      </div>
     </div>
   </div>
 
   <div id="loading" class="loading">🔍 조회 중...</div>
   <div id="error-msg" class="error"></div>
 
-  <!-- 검색 결과 목록 -->
   <div id="result-area">
     <div id="result-list" class="result-list"></div>
   </div>
 
-  <!-- 상세 정보 -->
   <div id="detail-area">
     <button class="back-btn" onclick="backToList()">← 목록으로</button>
     <div id="kr-card" class="card">
@@ -286,7 +258,6 @@
         <div class="info-item full"><label>성분</label><p id="krChart"></p></div>
       </div>
     </div>
-
     <div id="fda-card" class="card" style="display:none;">
       <div class="card-header">
         <h2>FDA 정보</h2>
@@ -306,6 +277,7 @@
 
 <script>
 let lastResults = [];
+let currentReportDrug = '';
 
 function switchTab(tab) {
   document.querySelectorAll('.tab-btn').forEach((b, i) => {
@@ -326,30 +298,26 @@ function clearResults() {
   document.getElementById('error-msg').style.display = 'none';
 }
 
-// 안전성 리포트 생성
 async function generateSafetyReport() {
   const drug = document.getElementById('reportDrugInput').value.trim().toUpperCase();
   if (!drug) { alert('약물명을 입력하세요'); return; }
+  currentReportDrug = drug;
 
   document.getElementById('reportLoading').style.display = 'block';
   document.getElementById('reportCard').classList.remove('visible');
+  document.getElementById('pdfBtn').style.display = 'none';
 
   try {
     const res = await fetch('/api/safety_report/' + encodeURIComponent(drug));
     const data = await res.json();
-
     if (!res.ok) { alert(data.error || '오류 발생'); return; }
 
-    // 약물명
     document.getElementById('reportDrugName').textContent = data.drug;
-
-    // 통계
     document.getElementById('rTotalReports').textContent = data.stats.total_reports.toLocaleString() + '건';
     document.getElementById('rAgeAvg').textContent = data.stats.age_avg + '세';
     document.getElementById('rDeathCnt').textContent = data.stats.death_cnt.toLocaleString() + '건';
     document.getElementById('rHospCnt').textContent = data.stats.hosp_cnt.toLocaleString() + '건';
 
-    // 주요 부작용 태그
     const reactionsEl = document.getElementById('rReactions');
     reactionsEl.innerHTML = '';
     data.stats.top_reactions.forEach(r => {
@@ -359,12 +327,9 @@ async function generateSafetyReport() {
       reactionsEl.appendChild(span);
     });
 
-    // PubMed
     document.getElementById('rPubmedCount').textContent = data.pubmed_count;
-
-    // AI 리포트 본문
     document.getElementById('rReportText').textContent = data.report;
-
+    document.getElementById('pdfBtn').style.display = 'inline-block';
     document.getElementById('reportCard').classList.add('visible');
   } catch(e) {
     alert('서버 오류: ' + e.message);
@@ -373,7 +338,12 @@ async function generateSafetyReport() {
   }
 }
 
-// 이미지 업로드
+function downloadReportPDF() {
+  const drug = currentReportDrug || document.getElementById('reportDrugName').textContent;
+  if (!drug) return;
+  window.location.href = '/api/safety_report_pdf/' + drug;
+}
+
 document.getElementById('fileInput').addEventListener('change', function(e) {
   const file = e.target.files[0];
   if (!file) return;
