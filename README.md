@@ -54,7 +54,7 @@ FDA FAERS(Adverse Event Reporting System) 2024 Q1 ~ 2025 Q1 다분기 데이터(
 ### 🔬 RAG & AI 문헌 분석
 | 기능 | 설명 |
 |------|------|
-| RAG 약물 Q&A | PubMed 30개 약물 1,689 청크 → FAISS 벡터DB → llama3.2 근거 기반 답변 |
+| RAG 약물 Q&A | PubMed 30개 약물 1,689 청크 → FAISS 벡터DB → llama3.2 근거 기반 답변 + 히스토리 DB 저장 |
 | AI 안전성 리포트 | FDA FAERS + PubMed 5편 통합 → 6개 섹션 자동 생성 + PDF 다운로드 |
 | 논문 검색 | PubMed API 논문 검색 + Claude AI 한국어 요약 |
 
@@ -144,16 +144,16 @@ Test       : pytest (28개 유닛테스트)
 pharma-risk-analyzer/
 ├── app/
 │   ├── __init__.py
-│   ├── models.py          # User, AEReport, AuditTrail, ElectronicSignature 등
+│   ├── models.py          # User, AEReport, AuditTrail, ElectronicSignature, RagHistory 등
 │   └── routes/
 │       ├── main.py
 │       ├── drug.py        # Drug Lookup + AI 안전성 리포트 + PDF
 │       ├── ae.py          # AE Manager + ICH E2B(R3) + 21 CFR Part 11
 │       ├── analysis.py    # PRR + EBGM + MedDRA SOC + SHAP
 │       ├── auth.py
-│       ├── vision.py
+│       ├── vision.py      # YOLOv8 알약 탐지 + 실시간 웹캠 + 이미지 업로드
 │       ├── literature.py
-│       └── rag.py         # RAG Q&A (FAISS + LangChain)
+│       └── rag.py         # RAG Q&A (FAISS + LangChain + 히스토리 DB)
 ├── data/
 │   ├── processed/
 │   │   └── processed_faers.csv
