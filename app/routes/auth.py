@@ -1,8 +1,11 @@
 import os
-from flask import Blueprint, render_template, jsonify, request
+import secrets
+from datetime import datetime, timedelta
+from flask import Blueprint, render_template, jsonify, request, url_for
 from flask_login import login_user, logout_user, login_required, current_user
 from werkzeug.security import generate_password_hash, check_password_hash
-from app.models import db, User, UserActivityLog, DrugSearch, PredictionLog
+from flask_mail import Mail, Message
+from app.models import db, User, UserActivityLog, DrugSearch, PredictionLog, PasswordResetToken
 
 auth = Blueprint('auth', __name__)
 
@@ -122,3 +125,67 @@ def make_admin():
     current_user.role = 'ADMIN'
     db.session.commit()
     return jsonify({'message': '관리자 변경 완료', 'role': current_user.role})
+
+
+@auth.route('/forgot-password', methods=['GET', 'POST'])
+def forgot_password():
+    if request.method == 'GET':
+        return render_template('forgot_password.html')
+    data = request.get_json()
+    email = data.get('email', '').strip()
+    user = User.query.filter_by(email=email).first()
+    if not user:
+        return jsonify({'error': '등록된 이메일이 없어요'}), 404
+    # 기존 토큰 무효화
+    PasswordResetToken.query.filter_by(user_id=user.id, used=False).update({'used': True})
+    db.session.commit()
+    # 새 토큰 생성
+    token = secrets.token_urlsafe(32)
+    reset_token = PasswordResetToken(
+        user_id=user.id,
+        token=token,
+        expires_at=datetime.utcnow() + timedelta(hours=1)
+    )
+    db.session.add(reset_token)
+    db.session.commit()
+    # 이메일 발송
+    try:
+        from flask import current_app
+        mail = Mail(current_app)
+        reset_url = url_for('auth.reset_password', token=token, _external=True)
+        msg = Message(
+            subject='[Pharma Risk Analyzer] 비밀번호 재설정',
+            sender=current_app.config['MAIL_USERNAME'],
+            recipients=[email]
+        )
+        msg.body = f'''안녕하세요, {user.username}님!
+
+비밀번호 재설정 링크입니다:
+{reset_url}
+
+이 링크는 1시간 후 만료됩니다.
+본인이 요청하지 않은 경우 이 메일을 무시하세요.
+
+Pharma Risk Analyzer
+'''
+        mail.send(msg)
+        return jsonify({'message': '이메일을 발송했어요! 메일함을 확인해주세요.'})
+    except Exception as e:
+        return jsonify({'error': f'이메일 발송 실패: {str(e)}'}), 500
+
+@auth.route('/reset-password/<token>', methods=['GET', 'POST'])
+def reset_password(token):
+    reset_token = PasswordResetToken.query.filter_by(token=token, used=False).first()
+    if not reset_token or reset_token.expires_at < datetime.utcnow():
+        return render_template('reset_password.html', error='링크가 만료됐거나 유효하지 않아요')
+    if request.method == 'GET':
+        return render_template('reset_password.html', token=token)
+    data = request.get_json()
+    password = data.get('password', '')
+    if len(password) < 6:
+        return jsonify({'error': '비밀번호는 6자 이상이어야 해요'}), 400
+    user = User.query.get(reset_token.user_id)
+    user.password_hash = generate_password_hash(password)
+    reset_token.used = True
+    db.session.commit()
+    return jsonify({'message': '비밀번호가 변경됐어요! 로그인해주세요.'})
