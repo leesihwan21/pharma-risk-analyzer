@@ -460,3 +460,85 @@ def api_drug_vision():
         return jsonify({'error': 'cannot identify drug', 'raw': drug_name}), 404
 
     return jsonify({'detected_drug': drug_name})
+
+@analysis.route('/api/ebgm/<drugname>')
+@cache.cached(timeout=600)
+def calculate_ebgm(drugname):
+    df = load_df()
+    drugname = drugname.upper()
+    drug_reports = df[df['drugname'].str.upper() == drugname]
+    if len(drug_reports) == 0:
+        return jsonify({'error': f'약물을 찾을 수 없어요: {drugname}'}), 404
+
+    total_reports = len(df)
+    total_drug = len(drug_reports)
+    top_reactions = drug_reports['pt'].value_counts().head(20).index.tolist()
+
+    results = []
+    for reac in top_reactions:
+        # 2x2 분할표
+        a = len(drug_reports[drug_reports['pt'] == reac])          # 약물+반응
+        b = total_drug - a                                           # 약물+반응없음
+        c = len(df[(df['drugname'].str.upper() != drugname) & (df['pt'] == reac)])  # 타약물+반응
+        d = total_reports - a - b - c                               # 타약물+반응없음
+
+        if a == 0 or (a + b) == 0 or (a + c) == 0:
+            continue
+
+        # 기대값 (Expected)
+        E = (a + b) * (a + c) / total_reports
+        if E == 0:
+            continue
+
+        # ROR (Reporting Odds Ratio) - EBGM 근사
+        if b == 0 or c == 0:
+            continue
+        ror = (a * d) / (b * c) if (b * c) > 0 else 0
+
+        # EBGM 계산 (베이지안 보정)
+        # 사전분포 파라미터 (FDA MGPS 기준)
+        alpha1, beta1 = 0.5, 0.5   # 신호 성분
+        alpha2, beta2 = 2.0, 10.0  # 배경 성분
+        w = 0.1  # 혼합 가중치
+
+        # 사후 기대값 계산
+        ebgm = (alpha1 + a) / (beta1 + E) * w + (alpha2 + a) / (beta2 + E) * (1 - w)
+
+        # EBGM 95% 신뢰구간 (근사)
+        try:
+            se_log = math.sqrt(1/a + 1/E)
+            ebgm_lower = math.exp(math.log(max(ebgm, 0.001)) - 1.96 * se_log)
+            ebgm_upper = math.exp(math.log(max(ebgm, 0.001)) + 1.96 * se_log)
+        except (ValueError, ZeroDivisionError):
+            ebgm_lower = ebgm_upper = ebgm
+
+        # 신호 기준: EB05 (하한 95%) >= 2
+        eb05 = ebgm_lower
+        is_signal = eb05 >= 2 and a >= 3
+
+        results.append({
+            'reaction': reac,
+            'drug_count': int(a),
+            'expected': round(E, 2),
+            'ror': round(ror, 2),
+            'ebgm': round(ebgm, 3),
+            'eb05': round(ebgm_lower, 3),
+            'eb95': round(ebgm_upper, 3),
+            'is_signal': is_signal,
+            'signal_level': (
+                '강한 신호' if eb05 >= 5 and a >= 3 else
+                '신호' if eb05 >= 2 and a >= 3 else
+                '비신호'
+            )
+        })
+
+    results.sort(key=lambda x: x['ebgm'], reverse=True)
+    signal_count = sum(1 for r in results if r['is_signal'])
+
+    return jsonify({
+        'drugname': drugname,
+        'total_reports': int(total_drug),
+        'signal_count': signal_count,
+        'results': results,
+        'method': 'EBGM (Empirical Bayes Geometric Mean) - FDA MGPS 근사'
+    })

@@ -1,9 +1,9 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="ko">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>PRR Signal Detection - Pharma Risk Analyzer</title>
+    <title>PRR / EBGM Signal Detection - Pharma Risk Analyzer</title>
     <script src="https://cdn.plot.ly/plotly-latest.min.js"></script>
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
@@ -17,10 +17,18 @@
         .info-bar { background: #1e293b; padding: 14px 24px; border-bottom: 1px solid #334155; display: flex; flex-wrap: wrap; gap: 12px; align-items: center; }
         .info-badge { background: #0f172a; border: 1px solid #334155; padding: 6px 14px; border-radius: 8px; font-size: 0.82rem; }
         .badge-red { color: #f87171; } .badge-yellow { color: #fde68a; } .badge-gray { color: #94a3b8; }
+
+        /* 메서드 탭 */
+        .method-tabs { display: flex; gap: 8px; padding: 16px 24px; border-bottom: 1px solid #334155; background: #1e293b; }
+        .method-tab { padding: 9px 24px; border-radius: 8px; cursor: pointer; font-size: 0.92rem; font-weight: bold; border: 1px solid #334155; color: #94a3b8; background: transparent; }
+        .method-tab.active-prr { background: #38bdf8; color: #0f172a; border-color: #38bdf8; }
+        .method-tab.active-ebgm { background: #a855f7; color: #fff; border-color: #a855f7; }
+
         .search-bar { background: #1e293b; padding: 16px 24px; border-bottom: 1px solid #334155; display: flex; flex-wrap: wrap; gap: 10px; align-items: center; }
         .search-bar input { background: #0f172a; border: 1px solid #334155; color: #e2e8f0; padding: 10px 14px; border-radius: 8px; font-size: 0.95rem; flex: 1 1 200px; min-width: 0; }
         .btn { border: none; padding: 10px 20px; border-radius: 8px; cursor: pointer; font-weight: bold; font-size: 0.9rem; white-space: nowrap; }
         .btn-blue { background: #38bdf8; color: #0f172a; }
+        .btn-purple { background: #a855f7; color: #fff; }
         .summary-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; padding: 20px 24px 0; }
         .summary-card { background: #1e293b; border-radius: 10px; padding: 16px; border: 1px solid #334155; text-align: center; }
         .summary-card .val { font-size: 1.8rem; font-weight: bold; }
@@ -43,8 +51,9 @@
         .empty-state { text-align: center; padding: 60px 20px; color: #475569; }
         .empty-state .icon { font-size: 3rem; margin-bottom: 12px; }
         .filter-tabs { display: flex; gap: 8px; padding: 16px 24px 0; flex-wrap: wrap; }
-        .filter-tab { padding: 7px 16px; border-radius: 20px; cursor: pointer; font-size: 0.85rem; border: 1px solid #334155; color: #94a3b8; background: transparent; transition: all 0.2s; }
+        .filter-tab { padding: 7px 16px; border-radius: 20px; cursor: pointer; font-size: 0.85rem; border: 1px solid #334155; color: #94a3b8; background: transparent; }
         .filter-tab.active { background: #38bdf8; color: #0f172a; border-color: #38bdf8; font-weight: bold; }
+        .ebgm-info { background: rgba(168,85,247,0.1); border: 1px solid #a855f7; border-radius: 10px; padding: 12px 20px; margin: 16px 24px 0; font-size: 0.85rem; color: #d8b4fe; }
         @media (max-width: 768px) { .summary-grid { grid-template-columns: repeat(2, 1fr); padding: 14px 16px 0; } .chart-section { padding: 14px 16px 0; } .table-wrap { padding: 12px 16px 16px; } }
         @media (max-width: 480px) { .header { padding: 12px 14px; } .info-bar { padding: 12px 14px; } .summary-grid { grid-template-columns: repeat(2, 1fr); } }
     </style>
@@ -52,110 +61,167 @@
 <body>
 {% include 'nav.html' %}
 <div class="header">
-    <h1 data-ko="📡 PRR 신호 탐지" data-en="📡 PRR Signal Detection">📡 PRR 신호 탐지</h1>
+    <h1>📡 PRR / EBGM 신호 탐지</h1>
     <div class="header-right">
         <button id="lang-btn" class="lang-btn" onclick="toggleLang()">🇺🇸 EN</button>
-        <a href="/dashboard" data-ko="← 대시보드로" data-en="← Dashboard">← 대시보드로</a>
+        <a href="/dashboard">← 대시보드로</a>
     </div>
 </div>
-<div class="info-bar">
-    <div class="info-badge"><span class="badge-red">🔴 <span data-ko="강한 신호" data-en="Strong Signal">강한 신호</span></span>: PRR ≥ 5, n ≥ 3</div>
-    <div class="info-badge"><span class="badge-yellow">🟡 <span data-ko="신호" data-en="Signal">신호</span></span>: PRR ≥ 2, n ≥ 3</div>
-    <div class="info-badge"><span class="badge-gray">⚪ <span data-ko="비신호" data-en="No Signal">비신호</span></span>: PRR &lt; 2</div>
-    <div class="info-badge" style="color:#94a3b8;">Evans <span data-ko="기준 (FDA/EMA 사용)" data-en="Criteria (FDA/EMA)">기준 (FDA/EMA 사용)</span></div>
+
+<!-- 신호 기준 정보 -->
+<div class="info-bar" id="info-bar-prr">
+    <div class="info-badge"><span class="badge-red">🔴 강한 신호</span>: PRR ≥ 5, n ≥ 3</div>
+    <div class="info-badge"><span class="badge-yellow">🟡 신호</span>: PRR ≥ 2, n ≥ 3</div>
+    <div class="info-badge"><span class="badge-gray">⚪ 비신호</span>: PRR &lt; 2</div>
+    <div class="info-badge" style="color:#94a3b8;">Evans 기준 (FDA/EMA 사용)</div>
 </div>
+<div class="info-bar" id="info-bar-ebgm" style="display:none;">
+    <div class="info-badge"><span class="badge-red">🔴 강한 신호</span>: EB05 ≥ 5, n ≥ 3</div>
+    <div class="info-badge"><span class="badge-yellow">🟡 신호</span>: EB05 ≥ 2, n ≥ 3</div>
+    <div class="info-badge"><span class="badge-gray">⚪ 비신호</span>: EB05 &lt; 2</div>
+    <div class="info-badge" style="color:#d8b4fe;">FDA MGPS 베이지안 알고리즘</div>
+</div>
+
+<!-- 메서드 탭 -->
+<div class="method-tabs">
+    <button class="method-tab active-prr" id="tab-prr" onclick="switchMethod('prr')">📊 PRR (Evans 기준)</button>
+    <button class="method-tab" id="tab-ebgm" onclick="switchMethod('ebgm')">🔬 EBGM (베이지안 · 실무 수준)</button>
+</div>
+
 <div class="search-bar">
-    <input type="text" id="drug-input" data-ko="약물명 입력 (예: METHOTREXATE)" data-en="Enter drug name (e.g. METHOTREXATE)" placeholder="약물명 입력 (예: METHOTREXATE)" onkeydown="if(event.key==='Enter') calculatePRR()"/>
-    <button class="btn btn-blue" onclick="calculatePRR()" data-ko="🔍 PRR 계산" data-en="🔍 Calculate PRR">🔍 PRR 계산</button>
+    <input type="text" id="drug-input" placeholder="약물명 입력 (예: METHOTREXATE)" onkeydown="if(event.key==='Enter') runAnalysis()"/>
+    <button class="btn btn-blue" id="calc-btn" onclick="runAnalysis()">🔍 PRR 계산</button>
     <span id="status" style="color:#94a3b8; font-size:0.88rem;"></span>
 </div>
+
 <div id="summary-section" style="display:none;">
     <div class="summary-grid">
-        <div class="summary-card"><div class="val" id="s-drug" style="color:#38bdf8;">-</div><div class="lbl" data-ko="분석 약물" data-en="Drug">분석 약물</div></div>
-        <div class="summary-card"><div class="val" id="s-total" style="color:#38bdf8;">-</div><div class="lbl" data-ko="총 보고 건수" data-en="Total Reports">총 보고 건수</div></div>
-        <div class="summary-card"><div class="val" id="s-signal" style="color:#fde68a;">-</div><div class="lbl" data-ko="🟡 신호 감지" data-en="🟡 Signals">🟡 신호 감지</div></div>
-        <div class="summary-card"><div class="val" id="s-strong" style="color:#f87171;">-</div><div class="lbl" data-ko="🔴 강한 신호" data-en="🔴 Strong Signals">🔴 강한 신호</div></div>
+        <div class="summary-card"><div class="val" id="s-drug" style="color:#38bdf8;">-</div><div class="lbl">분석 약물</div></div>
+        <div class="summary-card"><div class="val" id="s-total" style="color:#38bdf8;">-</div><div class="lbl">총 보고 건수</div></div>
+        <div class="summary-card"><div class="val" id="s-signal" style="color:#fde68a;">-</div><div class="lbl">🟡 신호 감지</div></div>
+        <div class="summary-card"><div class="val" id="s-strong" style="color:#f87171;">-</div><div class="lbl">🔴 강한 신호</div></div>
     </div>
+
+    <!-- EBGM 설명 -->
+    <div class="ebgm-info" id="ebgm-info" style="display:none;">
+        🔬 <strong>EBGM (Empirical Bayes Geometric Mean)</strong> — FDA MGPS 알고리즘 근사 구현.
+        소표본에서 PRR보다 안정적인 신호 탐지. <strong>EB05</strong> (95% 신뢰하한) ≥ 2 를 신호 기준으로 사용.
+    </div>
+
     <div class="filter-tabs">
-        <button class="filter-tab active" onclick="filterResults('all', this)" data-ko="전체" data-en="All">전체</button>
-        <button class="filter-tab" onclick="filterResults('signal', this)" data-ko="🟡 신호 이상" data-en="🟡 Signal+">🟡 신호 이상</button>
-        <button class="filter-tab" onclick="filterResults('strong', this)" data-ko="🔴 강한 신호만" data-en="🔴 Strong Only">🔴 강한 신호만</button>
+        <button class="filter-tab active" onclick="filterResults('all', this)">전체</button>
+        <button class="filter-tab" onclick="filterResults('signal', this)">🟡 신호 이상</button>
+        <button class="filter-tab" onclick="filterResults('strong', this)">🔴 강한 신호만</button>
     </div>
     <div class="chart-section"><div class="chart-card"><div id="prr-chart"></div></div></div>
     <div class="table-wrap">
         <table>
-            <thead>
-                <tr>
-                    <th data-ko="부작용" data-en="Adverse Reaction">부작용</th>
-                    <th data-ko="약물 건수" data-en="Drug Count">약물 건수</th>
-                    <th data-ko="약물 비율" data-en="Drug %">약물 비율</th>
-                    <th data-ko="기타 비율" data-en="Other %">기타 비율</th>
-                    <th>PRR</th>
-                    <th>95% CI</th>
-                    <th data-ko="PRR 시각화" data-en="PRR Bar">PRR 시각화</th>
-                    <th data-ko="신호" data-en="Signal">신호</th>
-                </tr>
-            </thead>
+            <thead id="table-head"></thead>
             <tbody id="prr-tbody"></tbody>
         </table>
     </div>
 </div>
+
 <div id="empty-state" class="empty-state">
     <div class="icon">📡</div>
-    <div style="font-size:1.1rem; color:#64748b; margin-bottom:8px;" data-ko="약물명을 입력하고 PRR을 계산해보세요" data-en="Enter a drug name to calculate PRR">약물명을 입력하고 PRR을 계산해보세요</div>
-    <div style="font-size:0.85rem; color:#475569;" data-ko="PRR은 FDA와 EMA에서 실제로 사용하는 약물 부작용 신호 탐지 지표예요." data-en="PRR is a pharmacovigilance signal detection metric used by FDA and EMA.">PRR은 FDA와 EMA에서 실제로 사용하는 약물 부작용 신호 탐지 지표예요.</div>
+    <div style="font-size:1.1rem; color:#64748b; margin-bottom:8px;">약물명을 입력하고 신호를 탐지해보세요</div>
+    <div style="font-size:0.85rem; color:#475569;">PRR은 Evans 기준, EBGM은 FDA MGPS 베이지안 알고리즘을 사용합니다.</div>
 </div>
+
 <script src="/static/lang.js"></script>
 <script>
     let allResults = [];
+    let currentMethod = 'prr';
+
+    function switchMethod(method) {
+        currentMethod = method;
+        document.getElementById('tab-prr').className = 'method-tab' + (method === 'prr' ? ' active-prr' : '');
+        document.getElementById('tab-ebgm').className = 'method-tab' + (method === 'ebgm' ? ' active-ebgm' : '');
+        document.getElementById('info-bar-prr').style.display = method === 'prr' ? 'flex' : 'none';
+        document.getElementById('info-bar-ebgm').style.display = method === 'ebgm' ? 'flex' : 'none';
+        document.getElementById('calc-btn').textContent = method === 'prr' ? '🔍 PRR 계산' : '🔬 EBGM 계산';
+        document.getElementById('calc-btn').className = 'btn ' + (method === 'prr' ? 'btn-blue' : 'btn-purple');
+        document.getElementById('ebgm-info').style.display = method === 'ebgm' ? 'block' : 'none';
+        document.getElementById('summary-section').style.display = 'none';
+        document.getElementById('empty-state').style.display = 'block';
+        document.getElementById('status').innerHTML = '';
+        allResults = [];
+    }
+
+    function runAnalysis() {
+        if (currentMethod === 'prr') calculatePRR();
+        else calculateEBGM();
+    }
 
     function calculatePRR() {
         const drug = document.getElementById('drug-input').value.trim();
-        const lang = getLang();
-        if (!drug) { alert(lang === 'ko' ? '약물명을 입력해주세요!' : 'Please enter a drug name!'); return; }
-        document.getElementById('status').innerHTML = `<div class="spinner"></div>${lang === 'ko' ? '계산 중...' : 'Calculating...'}`;
+        if (!drug) { alert('약물명을 입력해주세요!'); return; }
+        document.getElementById('status').innerHTML = '<div class="spinner"></div>PRR 계산 중...';
         document.getElementById('summary-section').style.display = 'none';
         document.getElementById('empty-state').style.display = 'none';
         fetch(`/api/prr/${drug}`)
         .then(res => res.json())
         .then(data => {
             if (data.error) { document.getElementById('status').innerHTML = `<span style="color:#f87171">❌ ${data.error}</span>`; document.getElementById('empty-state').style.display = 'block'; return; }
-            document.getElementById('status').innerHTML = `✅ <strong style="color:#34d399">${data.drugname}</strong> ${lang === 'ko' ? '분석 완료' : 'analysis complete'}`;
+            document.getElementById('status').innerHTML = `✅ <strong style="color:#34d399">${data.drugname}</strong> PRR 분석 완료`;
             document.getElementById('summary-section').style.display = 'block';
             document.getElementById('s-drug').textContent = data.drugname;
             document.getElementById('s-total').textContent = data.total_reports.toLocaleString();
             document.getElementById('s-signal').textContent = data.signal_count;
             document.getElementById('s-strong').textContent = data.strong_signal_count;
             allResults = data.results;
-            renderTable(allResults, lang);
-            renderChart(allResults.slice(0, 15), data.drugname, lang);
+            renderPRRTable(allResults);
+            renderPRRChart(allResults.slice(0, 15), data.drugname);
+        });
+    }
+
+    function calculateEBGM() {
+        const drug = document.getElementById('drug-input').value.trim();
+        if (!drug) { alert('약물명을 입력해주세요!'); return; }
+        document.getElementById('status').innerHTML = '<div class="spinner"></div>EBGM 계산 중...';
+        document.getElementById('summary-section').style.display = 'none';
+        document.getElementById('empty-state').style.display = 'none';
+        fetch(`/api/ebgm/${drug}`)
+        .then(res => res.json())
+        .then(data => {
+            if (data.error) { document.getElementById('status').innerHTML = `<span style="color:#f87171">❌ ${data.error}</span>`; document.getElementById('empty-state').style.display = 'block'; return; }
+            document.getElementById('status').innerHTML = `✅ <strong style="color:#d8b4fe">${data.drugname}</strong> EBGM 분석 완료`;
+            document.getElementById('summary-section').style.display = 'block';
+            document.getElementById('ebgm-info').style.display = 'block';
+            document.getElementById('s-drug').textContent = data.drugname;
+            document.getElementById('s-total').textContent = data.total_reports.toLocaleString();
+            document.getElementById('s-signal').textContent = data.signal_count;
+            document.getElementById('s-strong').textContent = data.results.filter(r => r.eb05 >= 5 && r.drug_count >= 3).length;
+            allResults = data.results;
+            renderEBGMTable(allResults);
+            renderEBGMChart(allResults.slice(0, 15), data.drugname);
         });
     }
 
     function filterResults(type, btn) {
-        const lang = getLang();
         document.querySelectorAll('.filter-tab').forEach(t => t.classList.remove('active'));
         btn.classList.add('active');
         let filtered;
-        if (type === 'strong') filtered = allResults.filter(r => r.prr >= 5 && r.drug_count >= 3);
+        if (type === 'strong') filtered = allResults.filter(r => r.is_signal && (r.prr >= 5 || r.eb05 >= 5));
         else if (type === 'signal') filtered = allResults.filter(r => r.is_signal);
         else filtered = allResults;
-        renderTable(filtered, lang);
+        if (currentMethod === 'prr') renderPRRTable(filtered);
+        else renderEBGMTable(filtered);
     }
 
-    function renderTable(results, lang) {
-        lang = lang || getLang();
+    function renderPRRTable(results) {
+        document.getElementById('table-head').innerHTML = `<tr>
+            <th>부작용</th><th>약물 건수</th><th>약물 비율</th><th>기타 비율</th>
+            <th>PRR</th><th>95% CI</th><th>PRR 시각화</th><th>신호</th>
+        </tr>`;
         const tbody = document.getElementById('prr-tbody');
-        if (results.length === 0) { tbody.innerHTML = `<tr><td colspan="8" style="text-align:center; padding:30px; color:#475569;">${lang === 'ko' ? '해당 조건의 결과가 없어요' : 'No results for this filter'}</td></tr>`; return; }
+        if (results.length === 0) { tbody.innerHTML = '<tr><td colspan="8" style="text-align:center; padding:30px; color:#475569;">결과가 없어요</td></tr>'; return; }
         const maxPRR = Math.max(...results.map(r => r.prr));
-        const signalLabels = lang === 'ko'
-            ? { strong: '🔴 강한 신호', signal: '🟡 신호', none: '⚪ 비신호' }
-            : { strong: '🔴 Strong', signal: '🟡 Signal', none: '⚪ None' };
         tbody.innerHTML = results.map(r => {
             const barWidth = Math.min(100, (r.prr / Math.max(maxPRR, 5)) * 100);
             const barColor = r.prr >= 5 ? '#f87171' : r.prr >= 2 ? '#fde68a' : '#64748b';
             const signalCls = r.prr >= 5 && r.drug_count >= 3 ? 'badge-signal-strong' : r.is_signal ? 'badge-signal' : 'badge-no-signal';
-            const signalLabel = r.prr >= 5 && r.drug_count >= 3 ? signalLabels.strong : r.is_signal ? signalLabels.signal : signalLabels.none;
+            const signalLabel = r.prr >= 5 && r.drug_count >= 3 ? '🔴 강한 신호' : r.is_signal ? '🟡 신호' : '⚪ 비신호';
             return `<tr>
                 <td><strong>${r.reaction}</strong></td>
                 <td style="color:#38bdf8;">${r.drug_count.toLocaleString()}</td>
@@ -169,24 +235,61 @@
         }).join('');
     }
 
-    function renderChart(results, drugname, lang) {
-        lang = lang || getLang();
+    function renderEBGMTable(results) {
+        document.getElementById('table-head').innerHTML = `<tr>
+            <th>부작용</th><th>약물 건수</th><th>기대값 (E)</th>
+            <th>EBGM</th><th>EB05 (하한)</th><th>EB95 (상한)</th><th>ROR</th><th>신호 (EB05 기준)</th>
+        </tr>`;
+        const tbody = document.getElementById('prr-tbody');
+        if (results.length === 0) { tbody.innerHTML = '<tr><td colspan="8" style="text-align:center; padding:30px; color:#475569;">결과가 없어요</td></tr>'; return; }
+        tbody.innerHTML = results.map(r => {
+            const signalCls = r.eb05 >= 5 && r.drug_count >= 3 ? 'badge-signal-strong' : r.is_signal ? 'badge-signal' : 'badge-no-signal';
+            const signalLabel = r.eb05 >= 5 && r.drug_count >= 3 ? '🔴 강한 신호' : r.is_signal ? '🟡 신호' : '⚪ 비신호';
+            return `<tr>
+                <td><strong>${r.reaction}</strong></td>
+                <td style="color:#38bdf8;">${r.drug_count.toLocaleString()}</td>
+                <td style="color:#94a3b8;">${r.expected}</td>
+                <td><strong style="color:${r.ebgm >= 5 ? '#f87171' : r.ebgm >= 2 ? '#fde68a' : '#e2e8f0'}">${r.ebgm}</strong></td>
+                <td style="color:${r.eb05 >= 2 ? '#fde68a' : '#94a3b8'}; font-weight:bold;">${r.eb05}</td>
+                <td style="color:#94a3b8;">${r.eb95}</td>
+                <td style="color:#94a3b8;">${r.ror}</td>
+                <td><span class="badge ${signalCls}">${signalLabel}</span></td>
+            </tr>`;
+        }).join('');
+    }
+
+    function renderPRRChart(results, drugname) {
         const signals = results.filter(r => r.is_signal);
         const nonSignals = results.filter(r => !r.is_signal);
-        const title = lang === 'ko' ? `${drugname} - PRR 신호 탐지 (Top 15 부작용)` : `${drugname} - PRR Signal Detection (Top 15)`;
         Plotly.newPlot('prr-chart', [
-            { name: lang === 'ko' ? '🟡 신호' : '🟡 Signal', x: signals.map(r => r.prr), y: signals.map(r => r.reaction), type: 'bar', orientation: 'h', marker: { color: '#fde68a' }, text: signals.map(r => `PRR: ${r.prr}`), textposition: 'outside' },
-            { name: lang === 'ko' ? '⚪ 비신호' : '⚪ No Signal', x: nonSignals.map(r => r.prr), y: nonSignals.map(r => r.reaction), type: 'bar', orientation: 'h', marker: { color: '#334155' }, text: nonSignals.map(r => `PRR: ${r.prr}`), textposition: 'outside' }
+            { name: '🟡 신호', x: signals.map(r => r.prr), y: signals.map(r => r.reaction), type: 'bar', orientation: 'h', marker: { color: '#fde68a' } },
+            { name: '⚪ 비신호', x: nonSignals.map(r => r.prr), y: nonSignals.map(r => r.reaction), type: 'bar', orientation: 'h', marker: { color: '#334155' } }
         ], {
-            title, paper_bgcolor: '#1e293b', plot_bgcolor: '#1e293b',
-            font: { color: '#e2e8f0', size: 11 },
+            title: `${drugname} - PRR 신호 탐지 (Top 15)`,
+            paper_bgcolor: '#1e293b', plot_bgcolor: '#1e293b', font: { color: '#e2e8f0', size: 11 },
             height: Math.max(400, results.length * 30 + 100),
             margin: { t: 50, b: 50, l: 200, r: 100 },
-            xaxis: { title: 'PRR', gridcolor: '#334155', zerolinecolor: '#334155' },
+            xaxis: { title: 'PRR', gridcolor: '#334155' },
+            yaxis: { gridcolor: '#334155' }, barmode: 'overlay', showlegend: true,
+        });
+    }
+
+    function renderEBGMChart(results, drugname) {
+        const signals = results.filter(r => r.is_signal);
+        const nonSignals = results.filter(r => !r.is_signal);
+        Plotly.newPlot('prr-chart', [
+            { name: '🟡 신호 (EB05≥2)', x: signals.map(r => r.ebgm), y: signals.map(r => r.reaction), type: 'bar', orientation: 'h', marker: { color: '#a855f7' },
+              error_x: { type: 'data', symmetric: false, array: signals.map(r => r.eb95 - r.ebgm), arrayminus: signals.map(r => r.ebgm - r.eb05), color: '#d8b4fe', thickness: 2 } },
+            { name: '⚪ 비신호', x: nonSignals.map(r => r.ebgm), y: nonSignals.map(r => r.reaction), type: 'bar', orientation: 'h', marker: { color: '#334155' } }
+        ], {
+            title: `${drugname} - EBGM 신호 탐지 (베이지안 · Top 15)`,
+            paper_bgcolor: '#1e293b', plot_bgcolor: '#1e293b', font: { color: '#e2e8f0', size: 11 },
+            height: Math.max(400, results.length * 30 + 100),
+            margin: { t: 50, b: 50, l: 200, r: 100 },
+            xaxis: { title: 'EBGM', gridcolor: '#334155' },
             yaxis: { gridcolor: '#334155' }, barmode: 'overlay', showlegend: true,
         });
     }
 </script>
 </body>
 </html>
-
