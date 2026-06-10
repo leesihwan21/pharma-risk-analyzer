@@ -227,3 +227,35 @@ class RagHistory(db.Model):
             'sources': self.sources,
             'asked_at': self.asked_at.strftime('%Y-%m-%d %H:%M')    
         }
+    
+class AuditTrail(db.Model):
+    """21 CFR Part 11 Audit Trail - 데이터 변경 이력"""
+    __tablename__ = 'audit_trail'
+
+    id = db.Column(db.Integer, primary_key=True)
+    user_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=True)
+    username = db.Column(db.String(80), nullable=True)
+    action = db.Column(db.String(50), nullable=False)  # create/update/delete
+    table_name = db.Column(db.String(50), nullable=False)
+    record_id = db.Column(db.Integer, nullable=False)
+    old_value = db.Column(db.Text, nullable=True)
+    new_value = db.Column(db.Text, nullable=True)
+    ip_address = db.Column(db.String(50), nullable=True) # 변경 전 값
+    reason = db.Column(db.String(200), nullable=True)  # 변경 후 값
+    timestamp = db.Column(db.DateTime, default=datetime.utcnow)
+
+    def to_dict(self):
+        return {
+            'id': self.id,
+            'username': self.username,
+            'action': self.action,
+            'table_name': self.table_name,
+            'record_id': self.record_id,
+            'old_value': self.old_value,
+            'new_value': self.new_value,
+            'ip_address': self.ip_address,
+            'reason': self.reason,
+            'timestamp': self.timestamp.strftime('%Y-%m-%d %H:%M:%S')
+        }
+    
+    

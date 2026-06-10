@@ -1,8 +1,8 @@
 import io
 import os
 import math
-from datetime import datetime, timedelta
 
+from datetime import datetime, timedelta
 from flask import Blueprint, render_template, jsonify, request, send_file
 from flask_login import login_required, current_user
 from reportlab.lib.pagesizes import A4
@@ -10,7 +10,7 @@ from reportlab.lib import colors
 from reportlab.platypus import SimpleDocTemplate, Table, TableStyle, Paragraph, Spacer
 from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
 from reportlab.lib.units import cm
-from app.models import db, AEReport
+from app.models import db, AEReport, AuditTrail
 
 ae = Blueprint('ae', __name__)
 
@@ -25,6 +25,29 @@ CTCAE_KEYWORDS = {
 
 SAE_KEYWORDS = ['사망', '입원', '생명위협', '영구장애', '선천성이상', 'death', 'hospitali',
                 'life-threatening', 'disability', 'congenital']
+
+def log_audit(action, table_name, record_id=None, old_value=None, new_value=None, reason=None):
+    """21 CFR Part 11 Audit Trail 자동 기록"""
+    try:
+        from flask import request as req
+        from flask_login import current_user
+        username = current_user.username if current_user.is_authenticated else 'anonymous'
+        user_id = current_user.id if current_user.is_authenticated else None
+        trail = AuditTrail(
+            user_id=user_id,
+            username=username,
+            action=action,
+            table_name=table_name,
+            record_id=record_id,
+            old_value=str(old_value) if old_value else None,
+            new_value=str(new_value) if new_value else None,
+            ip_address=req.remote_addr,
+            reason=reason
+        )
+        db.session.add(trail)
+        db.session.commit()
+    except:
+        pass  # 감사 기록 실패해도 본 작업에는 영향 없도록
 
 def auto_ctcae_grade(ae_term: str) -> int:
     term_lower = ae_term.lower()
@@ -141,6 +164,7 @@ def ae_create():
     try:
         db.session.add(report)
         db.session.commit()
+        log_audit('CREATE', 'ae_reports', record_id=report.id, new_value=report.to_dict())
         return jsonify({
             'message': 'AE 보고서가 등록됐습니다',
             'id': report.id,
@@ -172,6 +196,7 @@ def ae_update(ae_id):
 
     try:
         db.session.commit()
+        log_audit('UPDATE', 'ae_reports', record_id=ae_id, reason=data.get('reason', ''))
         return jsonify({'message': '수정됐습니다', 'report': report.to_dict()})
     except Exception as e:
         db.session.rollback()
@@ -193,6 +218,7 @@ def ae_delete(ae_id):
     report = AEReport.query.get_or_404(ae_id)
     try:
         db.session.delete(report)
+        log_audit('DELETE', 'ae_reports', record_id=ae_id, old_value=report.to_dict())
         db.session.commit()
         return jsonify({'message': f'AE #{ae_id} 삭제됐습니다'})
     except Exception as e:
@@ -390,3 +416,8 @@ def ae_e2b(ae_id):
     return send_file(buf, as_attachment=True,
                      download_name=f'E2B_AE-{report.id:06d}_{report.patient_code}.xml',
                      mimetype='application/xml')
+
+@ae.route('/api/audit-trail')
+def get_audit_trail():
+    logs = AuditTrail.query.order_by(AuditTrail.timestamp.desc()).limit(50).all()
+    return jsonify({'logs':[l.to_dict() for l in logs]})
