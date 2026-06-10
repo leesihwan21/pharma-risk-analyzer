@@ -172,29 +172,48 @@
     Plotly.newPlot('chart6', JSON.parse('{{ charts.chart6 | safe }}'));
 
     function detectPill() {
-        const fileInput = document.getElementById('pill-image');
-        const drugHint = document.getElementById('pill-drug-hint').value;
-        const lang = getLang();
-        if (!fileInput.files[0]) { alert(lang === 'ko' ? '이미지를 선택해주세요!' : 'Please select an image!'); return; }
-        document.getElementById('detect-result').innerHTML = `<span><div class="spinner"></div>${lang === 'ko' ? '탐지 중...' : 'Detecting...'}</span>`;
-        const formData = new FormData();
-        formData.append('image', fileInput.files[0]);
-        formData.append('drugname', drugHint);
-        fetch('/api/detect', { method: 'POST', body: formData }).then(res => res.json()).then(data => {
-            if (data.error) { document.getElementById('detect-result').innerHTML = `<span style="color:#f87171">❌ ${data.error}</span>`; return; }
-            let html = '';
-            if (data.detections.length === 0) {
-                html += `<span style="color:#f87171">❌ ${lang === 'ko' ? '알약을 찾을 수 없어요' : 'No pills detected'}</span>`;
-            } else {
-                html += `✅ ${lang === 'ko' ? '알약' : 'Pill'} <strong style="color:#38bdf8">${data.detections.length}</strong>${lang === 'ko' ? '개 탐지' : ' detected'} (${lang === 'ko' ? '최고 신뢰도' : 'Confidence'}: <strong>${data.detections[0].confidence}%</strong>)<br>`;
-            }
-            if (data.risk_result) {
-                const r = data.risk_result;
-                const color = r.risk_label.includes('위험') && !r.risk_label.includes('비') ? '#f87171' : '#34d399';
-                html += `<br>🤖 <strong style="color:#38bdf8">${r.drug}</strong> → <strong style="color:${color}">${r.risk_label}</strong> | ${lang === 'ko' ? '안전' : 'Safe'} ${r.safe}% / ${lang === 'ko' ? '위험' : 'Risk'} ${r.risk}%`;
-            }
-            document.getElementById('detect-result').innerHTML = html;
-            document.getElementById('detect-image').innerHTML = `<img src="data:image/jpeg;base64,${data.image}" style="max-width:100%;border-radius:8px;margin-top:8px;"/>`;
+    const fileInput = document.getElementById('pill-image');
+    const drugHint = document.getElementById('pill-drug-hint').value;
+    const lang = getLang();
+    if (!fileInput.files[0]) { alert(lang === 'ko' ? '이미지를 선택해주세요!' : 'Please select an image!'); return; }
+    document.getElementById('detect-result').innerHTML = `<span><div class="spinner"></div>${lang === 'ko' ? '탐지 중... 식약처 검색 중...' : 'Detecting...'}</span>`;
+
+    const formData = new FormData();
+    formData.append('image', fileInput.files[0]);
+    formData.append('drugname', drugHint);  // ← 이 줄 추가
+
+    // detect_and_lookup API 호출 (식약처 연동)
+    fetch('/api/detect_and_lookup', { method: 'POST', body: formData })
+    .then(res => res.json()).then(data => {
+        if (data.error) { document.getElementById('detect-result').innerHTML = `<span style="color:#f87171">❌ ${data.error}</span>`; return; }
+
+        let html = '';
+        if (data.detections.length === 0) {
+            html += `<span style="color:#f87171">❌ ${lang === 'ko' ? '알약을 찾을 수 없어요' : 'No pills detected'}</span>`;
+        } else {
+            html += `✅ ${lang === 'ko' ? '알약' : 'Pill'} <strong style="color:#38bdf8">${data.detections.length}</strong>${lang === 'ko' ? '개 탐지' : ' detected'} (${lang === 'ko' ? '최고 신뢰도' : 'Confidence'}: <strong>${data.detections[0].confidence}%</strong>)<br>`;
+        }
+
+        // 식약처 결과
+        if (data.mfds_results && data.mfds_results.length > 0) {
+            html += `<br><strong style="color:#10b981;">🏥 식약처 낙알식별 결과:</strong><br>`;
+            html += '<div style="display:flex;flex-wrap:wrap;gap:8px;margin-top:8px;">';
+            data.mfds_results.forEach(r => {
+                html += `<div style="background:#0f172a;border:1px solid #10b981;border-radius:8px;padding:10px 14px;font-size:0.85rem;min-width:180px;">
+                    <div style="color:#10b981;font-size:0.75rem;margin-bottom:4px;">탐지: ${r.detected_as}</div>
+                    ${r.img_url ? `<img src="${r.img_url}" style="width:80px;height:40px;object-fit:contain;background:#1e293b;border-radius:4px;display:block;margin-bottom:6px;" onerror="this.style.display='none'">` : ''}
+                    <div style="color:#e2e8f0;font-weight:bold;">${r.name}</div>
+                    <div style="color:#64748b;font-size:0.78rem;">${r.company}</div>
+                    <div style="color:#64748b;font-size:0.78rem;">${r.shape} · ${r.color}</div>
+                </div>`;
+            });
+            html += '</div>';
+        } else if (data.detections.length > 0) {
+            html += `<br><span style="color:#64748b;font-size:0.85rem;">식약처 낙알식별 결과 없음 — Drug Lookup에서 직접 검색해보세요</span>`;
+        }
+
+        document.getElementById('detect-result').innerHTML = html;
+        document.getElementById('detect-image').innerHTML = `<img src="data:image/jpeg;base64,${data.image}" style="max-width:100%;border-radius:8px;margin-top:8px;"/>`;
         });
     }
 

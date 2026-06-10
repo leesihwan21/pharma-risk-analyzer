@@ -3,13 +3,12 @@ import os
 import base64
 import pickle
 import threading
- 
 import cv2
 import numpy as np
+
 from PIL import Image
 from ultralytics import YOLO
- 
-from flask import Blueprint, render_template, jsonify, request, Response
+from flask import Blueprint, render_template, jsonify, request, Response, current_app
 from app import cache
 from app.models import db, PredictionLog
  
@@ -208,3 +207,67 @@ def detect_pill():
         'risk_result': risk_result,
         'combo_result': combo_result
     })
+
+@vision.route('/api/detect_and_lookup', methods=['POST'])
+def detect_and_lookup():
+    from flask import current_app
+    import requests as http_requests
+    if 'image' not in request.files:
+        return jsonify({'error': 'Image file required'}), 400
+
+    file = request.files['image']
+    img_bytes = file.read()
+    img = Image.open(io.BytesIO(img_bytes))
+
+    # YOLOv8 탐지
+    yolo = load_yolo()
+    results = yolo(img)
+
+    detections = []
+    for r in results:
+        for box in r.boxes:
+            conf = float(box.conf[0])
+            cls = int(box.cls[0])
+            label = yolo.names[cls].upper()
+            detections.append({'label': label, 'confidence': round(conf * 100, 1)})
+
+    # 결과 이미지
+    result_img = results[0].plot()
+    result_img = cv2.cvtColor(result_img, cv2.COLOR_BGR2RGB)
+    pil_img = Image.fromarray(result_img)
+    buf = io.BytesIO()
+    pil_img.save(buf, format='JPEG')
+    img_b64 = base64.b64encode(buf.getvalue()).decode('utf-8')
+
+    # 내부 drug-lookup API 호출로 식약처 검색
+    drug_hint = request.form.get('drugname', '').strip()
+    mfds_results = []
+
+    search_terms = []
+    if drug_hint:
+        search_terms.append(drug_hint)
+    else:
+        for det in detections[:3]:
+            if det['label'].upper() != 'PILL':
+                search_terms.append(det['label'])
+
+    for term in search_terms:
+        try:
+            lookup_res = http_requests.get(
+                f'http://localhost:5001/api/drug-lookup?name={term}',
+                timeout=10
+            )
+            data = lookup_res.json()
+            if data.get('korean'):
+                k = data['korean']
+                mfds_results.append({
+                    'detected_as': term,
+                    'name': k.get('name', '-'),
+                    'company': k.get('company', '-'),
+                    'shape': k.get('shape', '-'),
+                    'color': k.get('color', '-'),
+                    'img_url': k.get('img_url', ''),
+                    'class_name': k.get('class_name', '-'),
+                })
+        except:
+            pass
