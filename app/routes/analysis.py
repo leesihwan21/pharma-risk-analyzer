@@ -542,3 +542,112 @@ def calculate_ebgm(drugname):
         'results': results,
         'method': 'EBGM (Empirical Bayes Geometric Mean) - FDA MGPS 근사'
     })
+
+# MedDRA SOC 매핑 딕셔너리 (상위 빈출 PT 기준)
+MEDDRA_SOC_MAP = {
+    # General disorders
+    'FATIGUE': 'General disorders', 'MALAISE': 'General disorders',
+    'PYREXIA': 'General disorders', 'PAIN': 'General disorders',
+    'SWELLING': 'General disorders', 'OEDEMA': 'General disorders',
+    'GENERAL PHYSICAL HEALTH DETERIORATION': 'General disorders',
+    'ASTHENIA': 'General disorders', 'CHILLS': 'General disorders',
+
+    # Gastrointestinal disorders
+    'NAUSEA': 'Gastrointestinal disorders', 'VOMITING': 'Gastrointestinal disorders',
+    'DIARRHOEA': 'Gastrointestinal disorders', 'ABDOMINAL DISCOMFORT': 'Gastrointestinal disorders',
+    'ABDOMINAL PAIN': 'Gastrointestinal disorders', 'CONSTIPATION': 'Gastrointestinal disorders',
+    'DYSPEPSIA': 'Gastrointestinal disorders', 'STOMATITIS': 'Gastrointestinal disorders',
+
+    # Musculoskeletal disorders
+    'ARTHRALGIA': 'Musculoskeletal disorders', 'ARTHROPATHY': 'Musculoskeletal disorders',
+    'JOINT SWELLING': 'Musculoskeletal disorders', 'MOBILITY DECREASED': 'Musculoskeletal disorders',
+    'MYALGIA': 'Musculoskeletal disorders', 'BACK PAIN': 'Musculoskeletal disorders',
+    'BONE PAIN': 'Musculoskeletal disorders',
+
+    # Nervous system disorders
+    'HEADACHE': 'Nervous system disorders', 'DIZZINESS': 'Nervous system disorders',
+    'PARAESTHESIA': 'Nervous system disorders', 'NEUROPATHY PERIPHERAL': 'Nervous system disorders',
+    'TREMOR': 'Nervous system disorders', 'SOMNOLENCE': 'Nervous system disorders',
+
+    # Respiratory disorders
+    'DYSPNOEA': 'Respiratory disorders', 'COUGH': 'Respiratory disorders',
+    'PNEUMONIA': 'Respiratory disorders', 'PULMONARY EMBOLISM': 'Respiratory disorders',
+    'RHINORRHOEA': 'Respiratory disorders',
+
+    # Skin disorders
+    'RASH': 'Skin disorders', 'PRURITUS': 'Skin disorders',
+    'ALOPECIA': 'Skin disorders', 'URTICARIA': 'Skin disorders',
+    'ERYTHEMA': 'Skin disorders', 'DERMATITIS': 'Skin disorders',
+
+    # Investigations (lab)
+    'HEPATIC ENZYME INCREASED': 'Investigations',
+    'BLOOD CHOLESTEROL INCREASED': 'Investigations',
+    'WEIGHT INCREASED': 'Investigations', 'WEIGHT DECREASED': 'Investigations',
+    'ALANINE AMINOTRANSFERASE INCREASED': 'Investigations',
+    'BLOOD CREATININE INCREASED': 'Investigations',
+
+    # Immune system disorders
+    'DRUG HYPERSENSITIVITY': 'Immune system disorders',
+    'HYPERSENSITIVITY': 'Immune system disorders',
+    'ANAPHYLACTIC REACTION': 'Immune system disorders',
+
+    # Vascular disorders
+    'HYPERTENSION': 'Vascular disorders', 'HYPOTENSION': 'Vascular disorders',
+    'FLUSHING': 'Vascular disorders', 'DEEP VEIN THROMBOSIS': 'Vascular disorders',
+
+    # Infections
+    'URINARY TRACT INFECTION': 'Infections and infestations',
+    'NASOPHARYNGITIS': 'Infections and infestations',
+    'UPPER RESPIRATORY TRACT INFECTION': 'Infections and infestations',
+    'PNEUMONIA': 'Infections and infestations',
+
+    # Musculoskeletal (disease)
+    'RHEUMATOID ARTHRITIS': 'Musculoskeletal disorders',
+    'SYSTEMIC LUPUS ERYTHEMATOSUS': 'Immune system disorders',
+
+    # Social/admin
+    'OFF LABEL USE': 'Social circumstances',
+    'DRUG INEFFECTIVE': 'General disorders',
+    'DRUG INTOLERANCE': 'General disorders',
+    'CONDITION AGGRAVATED': 'General disorders',
+    'PRODUCT USE IN UNAPPROVED INDICATION': 'Social circumstances',
+    'INFUSION RELATED REACTION': 'General disorders',
+}
+
+@analysis.route('/api/soc/<drugname>')
+@cache.cached(timeout=600)
+def soc_analysis(drugname):
+    df = load_df()
+    drugname = drugname.upper()
+    result = df[df['drugname'].str.upper() == drugname]
+
+    if len(result) == 0:
+        return jsonify({'error': f'약물을 찾을 수 없어요: {drugname}'}), 404
+
+    top_reac = result['pt'].value_counts().head(50)
+    soc_counts = {}
+    mapped_reactions = []
+
+    for reac, cnt in top_reac.items():
+        soc = MEDDRA_SOC_MAP.get(reac.upper(), 'Other')
+        soc_counts[soc] = soc_counts.get(soc, 0) + cnt
+        mapped_reactions.append({
+            'pt': reac,
+            'count': int(cnt),
+            'pct': round(cnt / len(result) * 100, 2),
+            'soc': soc
+        })
+
+    soc_summary = sorted([
+        {'soc': k, 'count': v, 'pct': round(v / len(result) * 100, 1)}
+        for k, v in soc_counts.items()
+    ], key=lambda x: x['count'], reverse=True)
+
+    return jsonify({
+        'drugname': drugname,
+        'total_reports': len(result),
+        'soc_summary': soc_summary,
+        'reactions': mapped_reactions,
+        'mapped_count': sum(1 for r in mapped_reactions if r['soc'] != 'Other'),
+        'note': 'MedDRA SOC 매핑 (빈출 PT 기준 수동 매핑, 포트폴리오용)'
+    })
