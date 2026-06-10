@@ -21,14 +21,14 @@
         .lang-btn { background: #1e293b; border: 1px solid #334155; color: #e2e8f0; padding: 6px 12px; border-radius: 8px; cursor: pointer; font-size: 0.82rem; font-weight: bold; }
         .lang-btn:hover { border-color: #38bdf8; color: #38bdf8; }
         .main { flex: 1; display: flex; align-items: center; justify-content: center; padding: 40px 20px; }
-        .container { max-width: 960px; width: 100%; text-align: center; }
+        .container { max-width: 1040px; width: 100%; text-align: center; }
         .badge { display: inline-block; background: #1e293b; border: 1px solid #334155; color: #94a3b8; font-size: 0.75rem; padding: 4px 12px; border-radius: 20px; margin-bottom: 20px; letter-spacing: 0.05em; }
         h1 { font-size: 2.8rem; color: #38bdf8; margin-bottom: 12px; line-height: 1.2; }
         .subtitle { color: #64748b; font-size: 1rem; margin-bottom: 40px; line-height: 1.6; }
         .btn-main { display: inline-block; background: #38bdf8; color: #0f172a; padding: 14px 36px; border-radius: 10px; text-decoration: none; font-weight: bold; font-size: 1rem; transition: background 0.2s; }
         .btn-main:hover { background: #0ea5e9; }
         .features { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; margin-top: 48px; }
-        .feature-card { background: #1e293b; border: 1px solid #334155; border-radius: 10px; padding: 20px 12px; font-size: 0.85rem; color: #94a3b8; line-height: 1.5; text-decoration: none; display: block; transition: border-color 0.2s, background 0.2s, transform 0.15s; }
+        .feature-card { background: #1e293b; border: 1px solid #334155; border-radius: 10px; padding: 20px 14px; font-size: 0.82rem; color: #94a3b8; line-height: 1.6; text-decoration: none; display: block; transition: border-color 0.2s, background 0.2s, transform 0.15s; text-align: left; }
         .feature-card:hover { border-color: #38bdf8; background: #263347; transform: translateY(-3px); }
         .feature-card.highlight { border-color: #059669; }
         .feature-card.highlight:hover { border-color: #34d399; background: #0f2620; }
@@ -36,109 +36,160 @@
         .feature-card.highlight-blue:hover { border-color: #38bdf8; background: #0f1f3a; }
         .feature-card.highlight-purple { border-color: #7c3aed; }
         .feature-card.highlight-purple:hover { border-color: #a78bfa; background: #1a0f2e; }
+        .feature-card.highlight-teal { border-color: #0d9488; }
+        .feature-card.highlight-teal:hover { border-color: #2dd4bf; background: #0f2320; }
         .feature-card .icon { font-size: 1.6rem; display: block; margin-bottom: 8px; }
-        .feature-card strong { color: #e2e8f0; display: block; margin-bottom: 4px; font-size: 0.95rem; }
+        .feature-card strong { color: #e2e8f0; display: block; margin-bottom: 6px; font-size: 0.95rem; }
+        .feature-card .desc { color: #64748b; font-size: 0.80rem; line-height: 1.5; }
         .new-badge { display: inline-block; background: #059669; color: white; font-size: 0.68rem; padding: 2px 7px; border-radius: 10px; margin-left: 4px; vertical-align: middle; font-weight: bold; }
         .new-badge.purple { background: #7c3aed; }
+        .new-badge.teal { background: #0d9488; }
+        .section-title { color: #475569; font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.1em; margin: 32px 0 12px; text-align: left; padding-left: 4px; }
         @media (max-width: 780px) { h1 { font-size: 2rem; } .features { grid-template-columns: repeat(3, 1fr); } }
         @media (max-width: 500px) { h1 { font-size: 1.7rem; } .features { grid-template-columns: repeat(2, 1fr); } .btn-main { width: 100%; text-align: center; } }
     </style>
 </head>
 <body>
-
     <nav class="nav">
-        <a href="/" class="nav-logo">&#x1F48A; Pharma Risk Analyzer</a>
+        <a href="/" class="nav-logo">💊 Pharma Risk Analyzer</a>
         <div class="nav-right">
-            <button id="lang-btn" class="lang-btn" onclick="toggleLang()">&#x1F1FA;&#x1F1F8; EN</button>
+            <button id="lang-btn" class="lang-btn" onclick="toggleLang()">🇺🇸 EN</button>
             <div id="nav-auth" style="display:flex; gap:8px; align-items:center;"></div>
         </div>
     </nav>
 
     <div class="main">
         <div class="container">
-            <div class="badge">FDA FAERS 2024 Q1~2025 Q1 · YOLOv8 · XGBoost · SHAP · AE Manager · PRR</div>
-            <h1>&#x1F48A; Pharma Risk<br>Analyzer</h1>
+            <div class="badge">FDA FAERS 2024 Q1~2025 Q1 · XGBoost · SHAP · RAG · EBGM · ICH E2B(R3) · 21 CFR Part 11</div>
+            <h1>💊 Pharma Risk<br>Analyzer</h1>
             <p class="subtitle">
-                <span data-ko="약물 부작용 AI 위험도 분석 시스템" data-en="AI-powered Drug Adverse Event Risk Analysis System">약물 부작용 AI 위험도 분석 시스템</span><br>
-                <span data-ko="실제 FDA 데이터 기반 · 머신러닝 예측 · SHAP 설명가능 AI · 식약처 약물 조회 · AE 관리 · PRR 신호 탐지" data-en="Real FDA Data · ML Prediction · SHAP XAI · Drug Lookup · AE Management · PRR Signal Detection">실제 FDA 데이터 기반 · 머신러닝 예측 · SHAP 설명가능 AI · 식약처 약물 조회 · AE 관리 · PRR 신호 탐지</span>
+                약물 이상반응 AI 위험도 분석 시스템<br>
+                <span style="font-size:0.88rem;">실제 FDA FAERS 데이터 · ML 예측 · SHAP XAI · PubMed RAG · AE 관리 · PRR/EBGM 신호 탐지 · ICH E2B(R3) · 21 CFR Part 11 전자서명</span>
             </p>
-            <a href="/dashboard" class="btn-main" data-ko="대시보드 보기 →" data-en="Go to Dashboard →">대시보드 보기 →</a>
+            <a href="/dashboard" class="btn-main">📊 대시보드 바로가기 →</a>
 
+            <!-- 분석 & 예측 -->
+            <div class="section-title">📊 분석 & 예측</div>
             <div class="features">
                 <a href="/dashboard" class="feature-card">
-                    <span class="icon">&#x1F4CA;</span>
-                    <strong data-ko="대시보드" data-en="Dashboard">대시보드</strong>
-                    <span data-ko="FAERS 통계 시각화" data-en="FAERS Statistics Visualization">FAERS 통계 시각화</span>
+                    <span class="icon">📊</span>
+                    <strong>Dashboard</strong>
+                    <span class="desc">FDA FAERS 480,000건 데이터 기반 약물별 이상반응 통계를 6개 차트로 시각화. 부작용 분포, 나이/성별, 결과 코드 분석.</span>
                 </a>
                 <a href="/dashboard" class="feature-card">
-                    <span class="icon">&#x1F916;</span>
-                    <strong data-ko="AI 예측" data-en="AI Prediction">AI 예측</strong>
-                    <span data-ko="위험도 자동 분류" data-en="Automated Risk Classification">위험도 자동 분류</span>
+                    <span class="icon">🤖</span>
+                    <strong>AI 위험도 예측</strong>
+                    <span class="desc">약물명·이상반응·나이·성별 입력 시 XGBoost 머신러닝으로 고위험/저위험 자동 판정. 입원·사망 가능성 확률 제공.</span>
                 </a>
                 <a href="/shap" class="feature-card highlight-purple">
-                    <span class="icon">&#x1F50D;</span>
+                    <span class="icon">🔍</span>
                     <strong>SHAP XAI <span class="new-badge purple">NEW</span></strong>
-                    <span data-ko="예측 근거 시각화" data-en="Explainable AI Visualization">예측 근거 시각화</span>
+                    <span class="desc">AI 예측 결과의 근거를 설명 가능한 AI(XAI)로 시각화. 어떤 요인이 위험도에 기여했는지 SHAP 값으로 확인.</span>
                 </a>
                 <a href="/trend" class="feature-card highlight-purple">
-                    <span class="icon">&#x1F4C8;</span>
-                    <strong><span data-ko="쿼터별 트렌드" data-en="Quarter Trend">쿼터별 트렌드</span> <span class="new-badge purple">NEW</span></strong>
-                    <span data-ko="2024 Q1~2025 Q1 추이" data-en="2024 Q1~2025 Q1 Trend">2024 Q1~2025 Q1 추이</span>
+                    <span class="icon">📈</span>
+                    <strong>분기별 트렌드 <span class="new-badge purple">NEW</span></strong>
+                    <span class="desc">2024 Q1~2025 Q1 다분기 데이터로 약물별 이상반응 보고 추이 분석. 시계열 차트로 계절성·증가 패턴 확인.</span>
                 </a>
+            </div>
+
+            <!-- 약물 검색 & 정보 -->
+            <div class="section-title">💊 약물 검색 & 정보</div>
+            <div class="features">
                 <a href="/drug-lookup" class="feature-card highlight-purple">
-                    <span class="icon">&#x1F48A;</span>
+                    <span class="icon">💊</span>
                     <strong>Drug Lookup <span class="new-badge purple">NEW</span></strong>
-                    <span data-ko="식약처 + OpenFDA 조회" data-en="MFDS + OpenFDA Lookup">식약처 + OpenFDA 조회</span>
+                    <span class="desc">약품명 또는 모양·색상으로 식약처 낙알식별 + OpenFDA 정보 조회. AI 안전성 리포트(PubMed+FAERS) PDF 다운로드.</span>
                 </a>
                 <a href="/interaction" class="feature-card highlight-purple">
-                    <span class="icon">&#x26A1;</span>
+                    <span class="icon">⚡</span>
                     <strong>Interaction Checker <span class="new-badge purple">NEW</span></strong>
-                    <span data-ko="약물-약물 상호작용 분석" data-en="Drug-Drug Interaction Analysis">약물-약물 상호작용 분석</span>
-                </a>
-                <a href="/dosage" class="feature-card highlight-blue">
-                    <span class="icon">&#x1F489;</span>
-                    <strong>Dosage Calculator <span class="new-badge">NEW</span></strong>
-                    <span data-ko="CrCl · 소아용량 · BSA 계산" data-en="CrCl · Pediatric · BSA Calculator">CrCl · 소아용량 · BSA 계산</span>
-                </a>
-                <a href="/webcam" class="feature-card">
-                    <span class="icon">&#x1F4F8;</span>
-                    <strong data-ko="알약 탐지" data-en="Pill Detection">알약 탐지</strong>
-                    <span data-ko="YOLOv8 이미지 인식" data-en="YOLOv8 Image Recognition">YOLOv8 이미지 인식</span>
+                    <span class="desc">두 약물 병용 시 FDA FAERS 기반 이상반응 위험 분석. 약물별 주요 부작용 및 고위험 조합 자동 탐지.</span>
                 </a>
                 <a href="/compare" class="feature-card">
-                    <span class="icon">&#x2696;&#xFE0F;</span>
-                    <strong data-ko="약물 비교" data-en="Drug Comparison">약물 비교</strong>
-                    <span data-ko="나란히 비교 분석" data-en="Side-by-Side Analysis">나란히 비교 분석</span>
+                    <span class="icon">⚖️</span>
+                    <strong>Drug Comparison</strong>
+                    <span class="desc">두 약물의 이상반응 프로필을 나란히 비교. 총 보고건수·사망·입원 통계 + AI 안전성 리포트 동시 생성.</span>
                 </a>
                 <a href="/filter" class="feature-card">
-                    <span class="icon">&#x1F50E;</span>
-                    <strong data-ko="데이터 필터" data-en="Data Filter">데이터 필터</strong>
-                    <span data-ko="조건별 데이터 조회" data-en="Conditional Data Query">조건별 데이터 조회</span>
+                    <span class="icon">🔎</span>
+                    <strong>Data Filter</strong>
+                    <span class="desc">약물명·성별·나이·결과·국가 조건으로 FAERS 데이터 필터링. 맞춤형 이상반응 통계 즉시 조회.</span>
                 </a>
-                <a href="/korea" class="feature-card">
-                    <span class="icon">&#x1F1F0;&#x1F1F7;</span>
-                    <strong data-ko="한국 데이터" data-en="Korea Data">한국 데이터</strong>
-                    <span data-ko="식약처 이상사례" data-en="MFDS Adverse Events">식약처 이상사례</span>
-                </a>
-                <a href="/prr" class="feature-card highlight-blue">
-                    <span class="icon">&#x1F4E1;</span>
-                    <strong><span data-ko="PRR 신호 탐지" data-en="PRR Signal Detection">PRR 신호 탐지</span> <span class="new-badge">NEW</span></strong>
-                    <span data-ko="FDA/EMA 기준 신호 탐지" data-en="FDA/EMA Evans Criteria">FDA/EMA 기준 신호 탐지</span>
-                </a>
-                <a href="/ae_manager" class="feature-card highlight">
-                    <span class="icon">&#x1F9EA;</span>
-                    <strong>AE Manager <span class="new-badge">NEW</span></strong>
-                    <span data-ko="CTCAE · SAE · 보고 타임라인" data-en="CTCAE · SAE · Reporting Timeline">CTCAE · SAE · 보고 타임라인</span>
-                </a>
-                <a href="/korea" class="feature-card">
-                    <span class="icon">&#x1F517;</span>
-                    <strong data-ko="부작용 네트워크" data-en="AE Network">부작용 네트워크</strong>
-                    <span data-ko="약물-부작용 관계 그래프" data-en="Drug-Reaction Network Graph">약물-부작용 관계 그래프</span>
+            </div>
+
+            <!-- RAG & AI 문헌 -->
+            <div class="section-title">🔬 RAG & AI 문헌 분석</div>
+            <div class="features">
+                <a href="/rag" class="feature-card highlight-teal">
+                    <span class="icon">🔬</span>
+                    <strong>RAG 약물 Q&A <span class="new-badge teal">NEW</span></strong>
+                    <span class="desc">PubMed 논문 30개 약물 1,689개 청크를 FAISS 벡터DB에 임베딩. 질문하면 논문 근거 기반으로 답변하는 RAG 챗봇.</span>
                 </a>
                 <a href="/literature" class="feature-card highlight-purple">
-                    <span class="icon">&#x1F4DA;</span>
+                    <span class="icon">📚</span>
                     <strong>논문 검색 <span class="new-badge purple">NEW</span></strong>
-                    <span data-ko="PubMed + Claude AI 요약" data-en="PubMed + Claude AI Summary">PubMed + Claude AI 요약</span>
+                    <span class="desc">PubMed API로 약물 관련 논문 자동 검색 후 Claude AI로 핵심 내용 한국어 요약. 최신 안전성 근거 빠르게 확인.</span>
+                </a>
+                <a href="/drug-lookup" class="feature-card highlight-teal">
+                    <span class="icon">🧬</span>
+                    <strong>AI 안전성 리포트 <span class="new-badge teal">NEW</span></strong>
+                    <span class="desc">FDA FAERS 통계 + PubMed 논문 5편을 통합해 llama3.2가 6개 섹션 안전성 리포트 자동 생성. PDF 다운로드 가능.</span>
+                </a>
+                <a href="/dosage" class="feature-card highlight-blue">
+                    <span class="icon">💉</span>
+                    <strong>Dosage Calculator <span class="new-badge">NEW</span></strong>
+                    <span class="desc">임상약학 기반 용량 계산기. CrCl(신기능)·소아용량·BSA 항암제·mg/kg 표준용량 4가지 공식 지원.</span>
+                </a>
+            </div>
+
+            <!-- 신호 탐지 & 규제 -->
+            <div class="section-title">📡 신호 탐지 & 규제 준수</div>
+            <div class="features">
+                <a href="/prr" class="feature-card highlight-blue">
+                    <span class="icon">📡</span>
+                    <strong>PRR / EBGM / SOC <span class="new-badge">NEW</span></strong>
+                    <span class="desc">PRR(Evans 기준)·EBGM(FDA MGPS 베이지안)·MedDRA SOC 분류 3가지 신호 탐지 알고리즘. 실무 수준 약물감시 분석.</span>
+                </a>
+                <a href="/ae_manager" class="feature-card highlight">
+                    <span class="icon">🧪</span>
+                    <strong>AE Manager <span class="new-badge">NEW</span></strong>
+                    <span class="desc">CTCAE 자동 등급화·SAE 판정·15일 보고 마감 알림·PDF/ICH E2B(R3) XML 내보내기·21 CFR Part 11 전자서명.</span>
+                </a>
+                <a href="/ae/list" class="feature-card highlight">
+                    <span class="icon">📋</span>
+                    <strong>AE 목록</strong>
+                    <span class="desc">등록된 이상반응 보고서 전체 목록. 상태별 필터(기한초과·긴급·제출완료)로 빠른 관리. E2B XML 일괄 내보내기.</span>
+                </a>
+                <a href="/korea" class="feature-card">
+                    <span class="icon">🇰🇷</span>
+                    <strong>Korea Data</strong>
+                    <span class="desc">식약처 국내 의약품 이상반응 연도별(2019~2024) 통계. 국내 약물감시 데이터와 FDA FAERS 비교 분석.</span>
+                </a>
+            </div>
+
+            <!-- 기타 도구 -->
+            <div class="section-title">🛠️ 기타 도구</div>
+            <div class="features">
+                <a href="/webcam" class="feature-card">
+                    <span class="icon">📷</span>
+                    <strong>알약 탐지</strong>
+                    <span class="desc">YOLOv8 딥러닝으로 알약 이미지 자동 감지 및 위험도 분석. 웹캠 실시간 탐지 지원.</span>
+                </a>
+                <a href="/korea" class="feature-card">
+                    <span class="icon">🔗</span>
+                    <strong>AE 네트워크</strong>
+                    <span class="desc">약물-이상반응 연관 관계를 네트워크 그래프로 시각화. 주요 부작용 클러스터 한눈에 파악.</span>
+                </a>
+                <a href="/admin" class="feature-card highlight">
+                    <span class="icon">⚙️</span>
+                    <strong>Admin Dashboard</strong>
+                    <span class="desc">관리자 전용 페이지. 회원 목록·활동 로그(로그인/로그아웃)·약물 검색 기록·AI 예측 이력 통합 관리.</span>
+                </a>
+                <a href="/api/docs" class="feature-card highlight-blue">
+                    <span class="icon">📖</span>
+                    <strong>API Docs</strong>
+                    <span class="desc">Swagger UI 기반 REST API 문서. 약물 검색·AI 예측·PRR 계산 등 전체 API 엔드포인트 테스트 가능.</span>
                 </a>
             </div>
         </div>
@@ -150,24 +201,20 @@
     .then(res => res.json())
     .then(data => {
         const nav = document.getElementById('nav-auth');
-        const lang = getLang();
         if (data.logged_in) {
             nav.innerHTML = `
-                <span class="nav-user">&#x1F464; <span>${data.username}</span>${lang === 'ko' ? '님' : ''}</span>
-                <button class="nav-btn nav-btn-logout" onclick="logout()" data-ko="로그아웃" data-en="Logout">로그아웃</button>`;
+                <span class="nav-user">👤 <span>${data.username}</span></span>
+                <button class="nav-btn nav-btn-logout" onclick="logout()">로그아웃</button>`;
         } else {
             nav.innerHTML = `
-                <a href="/login" class="nav-btn nav-btn-outline" data-ko="로그인" data-en="Login">로그인</a>
-                <a href="/register" class="nav-btn nav-btn-fill" data-ko="회원가입" data-en="Sign Up">회원가입</a>`;
+                <a href="/login" class="nav-btn nav-btn-outline">로그인</a>
+                <a href="/register" class="nav-btn nav-btn-fill">회원가입</a>`;
         }
-        applyLang(lang);
     })
     .catch(() => {
-        const lang = getLang();
         document.getElementById('nav-auth').innerHTML = `
-            <a href="/login" class="nav-btn nav-btn-outline" data-ko="로그인" data-en="Login">로그인</a>
-            <a href="/register" class="nav-btn nav-btn-fill" data-ko="회원가입" data-en="Sign Up">회원가입</a>`;
-        applyLang(lang);
+            <a href="/login" class="nav-btn nav-btn-outline">로그인</a>
+            <a href="/register" class="nav-btn nav-btn-fill">회원가입</a>`;
     });
 
     function logout() {
