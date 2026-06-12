@@ -35,33 +35,77 @@ def load_model():
     le_reac = pickle.load(open(os.path.join(MODEL_DIR, 'le_reac.pkl'), 'rb'))
     return model, le_drug, le_reac
 
+def get_drug_summary(drugname):
+    """약물 요약 정보 반환 (없으면 None). /api/search, Swagger API에서 공통 사용."""
+    df = load_df()
+    result = df[df['drugname'].str.upper() == drugname.upper()]
+    if len(result) == 0:
+        return None
+    age_data = result['age'].dropna()
+    return {
+        'drug': drugname.upper(),
+        'total_reports': len(result),
+        'age_avg': round(float(age_data.mean()), 1) if len(age_data) > 0 else 0,
+    }
+
+def predict_risk(drugname, reaction, age, sex):
+    """AI 위험도 예측 (없으면 ValueError). /api/predict, Swagger API에서 공통 사용."""
+    drugname = drugname.upper()
+    reaction = reaction.upper()
+    model, le_drug, le_reac = load_model()
+
+    if drugname not in le_drug.classes_:
+        raise ValueError(f'알 수 없는 약물: {drugname}')
+    if reaction not in le_reac.classes_:
+        raise ValueError(f'알 수 없는 부작용: {reaction}')
+
+    drug_enc = le_drug.transform([drugname])[0]
+    reac_enc = le_reac.transform([reaction])[0]
+    sex_enc = 0 if sex == 'F' else 1
+
+    risk_rates = pickle.load(open(os.path.join(MODEL_DIR, 'risk_rates.pkl'), 'rb'))
+    drug_risk_rate = risk_rates['drug_risk'].get(drug_enc, 0.5)
+    reac_risk_rate = risk_rates['reac_risk'].get(reac_enc, 0.5)
+    combo_risk_rate = risk_rates['combo_risk'].get(f"{drug_enc}_{reac_enc}", 0.5)
+
+    X = [[drug_enc, reac_enc, sex_enc, age, drug_risk_rate, reac_risk_rate, combo_risk_rate]]
+    pred = model.predict(X)[0]
+    prob = model.predict_proba(X)[0]
+
+    return {
+        'drug': drugname, 'reaction': reaction, 'risk': int(pred),
+        'risk_label': '⚠️ 고위험 (입원/사망 가능성)' if pred == 1 else '✅ 저위험',
+        'probability': {
+            'safe': round(float(prob[0]) * 100, 1),
+            'risk': round(float(prob[1]) * 100, 1)
+        }
+    }
+
+
 @drug.route('/api/search/<drugname>')
 @cache.cached(timeout=120)
 def search_drug(drugname):
+    summary = get_drug_summary(drugname)
+    if summary is None:
+        return jsonify({'error': f'약물을 찾을 수 없어요: {drugname.upper()}'}), 404
+
     df = load_df()
     result = df[df['drugname'].str.upper() == drugname.upper()]
 
-    if len(result) == 0:
-        return jsonify({'error': f'약물을 찾을 수 없어요: {drugname.upper()}'}), 404
-
     top_reac = result['pt'].value_counts().head(10).reset_index()
     top_reac.columns = ['reaction', 'count']
-    age_data = result['age'].dropna()
-    age_avg = round(float(age_data.mean()), 1) if len(age_data) > 0 else 0
     sex_counts = result['sex'].value_counts().to_dict()
     outc_counts = result['outc_cod'].value_counts().to_dict()
 
     try:
-        log = DrugSearch(drugname=drugname.upper(), total_reports=len(result), age_avg=age_avg)
+        log = DrugSearch(drugname=summary['drug'], total_reports=summary['total_reports'], age_avg=summary['age_avg'])
         db.session.add(log)
         db.session.commit()
     except:
         db.session.rollback()
 
     return jsonify({
-        'drug': drugname.upper(),
-        'total_reports': len(result),
-        'age_avg': age_avg,
+        **summary,
         'sex_distribution': sex_counts,
         'outcome_distribution': outc_counts,
         'top_reactions': top_reac.to_dict(orient='records')
@@ -75,47 +119,24 @@ def predict():
     sex = data.get('sex', 'F')
     age = float(data.get('age', 50))
 
-    model, le_drug, le_reac = load_model()
-
-    if drugname not in le_drug.classes_:
-        return jsonify({'error': f'알 수 없는 약물: {drugname}'}), 400
-    if reaction not in le_reac.classes_:
-        return jsonify({'error': f'알 수 없는 부작용: {reaction}'}), 400
-
-    drug_enc = le_drug.transform([drugname])[0]
-    reac_enc = le_reac.transform([reaction])[0]
-    sex_enc = 0 if sex == 'F' else 1
-
-    risk_rates = pickle.load(open(os.path.join(MODEL_DIR, 'risk_rates.pkl'), 'rb'))
-    drug_risk_rate = risk_rates['drug_risk'].get(drug_enc, 0.5)
-    reac_risk_rate = risk_rates['reac_risk'].get(reac_enc, 0.5)
-    combo_key = f"{drug_enc}_{reac_enc}"
-    combo_risk_rate = risk_rates['combo_risk'].get(combo_key, 0.5)
-
-    X = [[drug_enc, reac_enc, sex_enc, age, drug_risk_rate, reac_risk_rate, combo_risk_rate]]
-    pred = model.predict(X)[0]
-    prob = model.predict_proba(X)[0]
+    try:
+        result = predict_risk(drugname, reaction, age, sex)
+    except ValueError as e:
+        return jsonify({'error': str(e)}), 400
 
     try:
         log = PredictionLog(
             drugname=drugname.upper(), reaction=reaction.upper(),
-            age=age, sex=sex, risk=int(pred),
-            safe_prob=round(float(prob[0]) * 100, 1),
-            risk_prob=round(float(prob[1]) * 100, 1)
+            age=age, sex=sex, risk=result['risk'],
+            safe_prob=result['probability']['safe'],
+            risk_prob=result['probability']['risk']
         )
         db.session.add(log)
         db.session.commit()
     except:
         db.session.rollback()
 
-    return jsonify({
-        'drug': drugname, 'reaction': reaction, 'risk': int(pred),
-        'risk_label': '⚠️ 고위험 (입원/사망 가능성)' if pred == 1 else '✅ 저위험',
-        'probability': {
-            'safe': round(float(prob[0]) * 100, 1),
-            'risk': round(float(prob[1]) * 100, 1)
-        }
-    })
+    return jsonify(result)
 
 @drug.route('/api/combo', methods=['POST'])
 def combo_risk():

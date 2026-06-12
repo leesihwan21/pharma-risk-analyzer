@@ -77,17 +77,11 @@ def create_app():
         @ns_drug.marshal_with(drug_model)
         def get(self, drugname):
             """Search drug by name"""
-            import pandas as pd
-            df = pd.read_csv('data/processed/processed_faers.csv')
-            result = df[df['drugname'].str.upper() == drugname.upper()]
-            if len(result) == 0:
+            from app.routes.drug import get_drug_summary
+            summary = get_drug_summary(drugname)
+            if summary is None:
                 api.abort(404, f'Drug not found: {drugname}')
-            age_data = result['age'].dropna()
-            return {
-                'drug': drugname.upper(),
-                'total_reports': len(result),
-                'age_avg': round(float(age_data.mean()), 1) if len(age_data) > 0 else 0,
-            }
+            return summary
 
     @ns_predict.route('/risk')
     class PredictAPI(Resource):
@@ -96,44 +90,17 @@ def create_app():
         @ns_predict.marshal_with(predict_output)
         def post(self):
             """AI-based drug adverse event risk prediction"""
-            import pickle
+            from app.routes.drug import predict_risk
             data = api.payload
-            drugname = data.get('drugname', '').upper()
-            reaction = data.get('reaction', '').upper()
+            drugname = data.get('drugname', '')
+            reaction = data.get('reaction', '')
             age = float(data.get('age', 50))
             sex = data.get('sex', 'F')
 
-            model = pickle.load(open('ml/model.pkl', 'rb'))
-            le_drug = pickle.load(open('ml/le_drug.pkl', 'rb'))
-            le_reac = pickle.load(open('ml/le_reac.pkl', 'rb'))
-            risk_rates = pickle.load(open('ml/risk_rates.pkl', 'rb'))
-
-            if drugname not in le_drug.classes_:
-                api.abort(400, f'Unknown drug: {drugname}')
-            if reaction not in le_reac.classes_:
-                api.abort(400, f'Unknown reaction: {reaction}')
-
-            drug_enc = le_drug.transform([drugname])[0]
-            reac_enc = le_reac.transform([reaction])[0]
-            sex_enc = 0 if sex == 'F' else 1
-            drug_risk_rate = risk_rates['drug_risk'].get(drug_enc, 0.5)
-            reac_risk_rate = risk_rates['reac_risk'].get(reac_enc, 0.5)
-            combo_risk_rate = risk_rates['combo_risk'].get(f"{drug_enc}_{reac_enc}", 0.5)
-
-            X = [[drug_enc, reac_enc, sex_enc, age, drug_risk_rate, reac_risk_rate, combo_risk_rate]]
-            pred = model.predict(X)[0]
-            prob = model.predict_proba(X)[0]
-
-            return {
-                'drug': drugname,
-                'reaction': reaction,
-                'risk': int(pred),
-                'risk_label': 'High Risk' if pred == 1 else 'Low Risk',
-                'probability': {
-                    'safe': round(float(prob[0]) * 100, 1),
-                    'risk': round(float(prob[1]) * 100, 1)
-                }
-            }
+            try:
+                return predict_risk(drugname, reaction, age, sex)
+            except ValueError as e:
+                api.abort(400, str(e))
 
     with app.app_context():
         db.create_all()
