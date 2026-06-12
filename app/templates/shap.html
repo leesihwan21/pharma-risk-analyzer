@@ -148,10 +148,19 @@
       </div>
       <div id="shapBars"></div>
     </div>
+
+    <div class="card">
+      <h2>🤖 AI 설명 (SHAP 근거)</h2>
+      <button class="analyze-btn" id="explainBtn" onclick="loadExplanation()" style="margin-bottom:12px;">한국어로 설명 생성</button>
+      <div id="explainLoading" style="display:none; color:#94a3b8; font-size:0.9rem;">⏳ 설명 생성 중...</div>
+      <div id="explainResult" style="white-space:pre-line; line-height:1.7; font-size:0.95rem;"></div>
+    </div>
   </div>
 </div>
 
 <script>
+let lastQuery = null;
+
 async function loadShap() {
   const drug = document.getElementById('drugInput').value.trim();
   const reac = document.getElementById('reacInput').value.trim();
@@ -184,6 +193,8 @@ async function loadShap() {
 
     renderResult(data);
     document.getElementById('result-area').style.display = 'block';
+    document.getElementById('explainResult').textContent = '';
+    lastQuery = { drug, reaction: reac, age, sex };
 
   } catch(e) {
     document.getElementById('error-msg').textContent = 'Server error.';
@@ -220,6 +231,36 @@ function renderResult(data) {
       '<div class="shap-feature-val">val: ' + d.value + '</div>';
     container.appendChild(row);
   });
+}
+
+async function loadExplanation() {
+  if (!lastQuery) return;
+  const btn = document.getElementById('explainBtn');
+  const loading = document.getElementById('explainLoading');
+  const result = document.getElementById('explainResult');
+
+  btn.disabled = true;
+  loading.style.display = 'block';
+  result.textContent = '';
+
+  try {
+    const res = await fetch('/api/shap/explain', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(lastQuery)
+    });
+    const data = await res.json();
+    if (!res.ok) {
+      result.textContent = data.error || 'Error occurred';
+    } else {
+      result.textContent = data.explanation;
+    }
+  } catch (e) {
+    result.textContent = 'Server error.';
+  }
+
+  loading.style.display = 'none';
+  btn.disabled = false;
 }
 
 document.addEventListener('DOMContentLoaded', () => {

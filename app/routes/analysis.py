@@ -1,5 +1,6 @@
 import io
 import os
+import re
 import math
 import pickle
 import shap
@@ -176,23 +177,18 @@ def api_trend():
 def shap_page():
     return render_template('shap.html')
 
-@analysis.route('/api/shap')
-def api_shap():
-    drugname = request.args.get('drug', '').upper()
-    reaction = request.args.get('reaction', '').upper()
-    age = float(request.args.get('age', 50))
-    sex = request.args.get('sex', 'F')
+def compute_shap(drugname, reaction, age, sex):
+    """SHAP 기반 예측+특성기여도 계산. ValueError(message)로 알 수 없는 약물/부작용 처리."""
+    drugname = drugname.upper()
+    reaction = reaction.upper()
 
-    try:
-        model, le_drug, le_reac = load_model()
-        risk_rates = pickle.load(open(os.path.join(MODEL_DIR, 'risk_rates.pkl'), 'rb'))
-    except Exception as e:
-        return jsonify({'error': 'model load failed: ' + str(e)}), 500
+    model, le_drug, le_reac = load_model()
+    risk_rates = pickle.load(open(os.path.join(MODEL_DIR, 'risk_rates.pkl'), 'rb'))
 
     if drugname not in le_drug.classes_:
-        return jsonify({'error': 'unknown drug: ' + drugname}), 400
+        raise ValueError('unknown drug: ' + drugname)
     if reaction not in le_reac.classes_:
-        return jsonify({'error': 'unknown reaction: ' + reaction}), 400
+        raise ValueError('unknown reaction: ' + reaction)
 
     drug_enc = le_drug.transform([drugname])[0]
     reac_enc = le_reac.transform([reaction])[0]
@@ -224,7 +220,7 @@ def api_shap():
     ]
     shap_result.sort(key=lambda x: abs(x['shap']), reverse=True)
 
-    return jsonify({
+    return {
         'drug': drugname, 'reaction': reaction,
         'prediction': pred,
         'risk_label': 'HIGH RISK' if pred == 1 else 'LOW RISK',
@@ -233,6 +229,93 @@ def api_shap():
             'risk': round(float(prob[1]) * 100, 1)
         },
         'shap': shap_result
+    }
+
+@analysis.route('/api/shap')
+def api_shap():
+    drugname = request.args.get('drug', '').upper()
+    reaction = request.args.get('reaction', '').upper()
+    age = float(request.args.get('age', 50))
+    sex = request.args.get('sex', 'F')
+
+    try:
+        result = compute_shap(drugname, reaction, age, sex)
+    except ValueError as e:
+        return jsonify({'error': str(e)}), 400
+    except Exception as e:
+        return jsonify({'error': 'model load failed: ' + str(e)}), 500
+
+    return jsonify(result)
+
+FEATURE_LABELS_KO = {
+    'drug': '약물 종류',
+    'reaction': '부작용 종류',
+    'sex': '성별',
+    'age': '나이',
+    'drug_risk_rate': '해당 약물의 평균 위험률',
+    'reac_risk_rate': '해당 부작용의 평균 위험률',
+    'combo_risk_rate': '약물-부작용 조합의 위험률',
+}
+
+@analysis.route('/api/shap/explain', methods=['POST'])
+def api_shap_explain():
+    """SHAP 특성 기여도를 근거로 LLM이 예측 결과를 한국어로 설명"""
+    data = request.get_json() or {}
+    drugname = data.get('drug', '').upper()
+    reaction = data.get('reaction', '').upper()
+    age = float(data.get('age', 50))
+    sex = data.get('sex', 'F')
+
+    try:
+        result = compute_shap(drugname, reaction, age, sex)
+    except ValueError as e:
+        return jsonify({'error': str(e)}), 400
+    except Exception as e:
+        return jsonify({'error': 'model load failed: ' + str(e)}), 500
+
+    top_features = result['shap'][:3]
+    lines = []
+    for f in top_features:
+        label = FEATURE_LABELS_KO.get(f['feature'], f['feature'])
+        direction = '위험도를 높이는 방향' if f['shap'] >= 0 else '위험도를 낮추는 방향'
+        lines.append(f"- {label} (값: {f['value']}) → {direction}으로 기여 (SHAP {f['shap']:+.3f})")
+    shap_lines = '\n'.join(lines)
+
+    prompt = f"""당신은 한국어 임상 데이터 설명 보조원입니다. 반드시 자연스러운 한국어와 약물명 등 필요한 영어 단어만 사용하세요.
+절대 규칙:
+- 중국어 한자, 힌디어, 일본어, 기타 외국어 문자를 절대 섞지 마세요.
+- 아래 SHAP 분석 결과에 없는 의학적 주장을 새로 만들지 마세요.
+
+[예측 결과]
+약물: {result['drug']} / 부작용: {result['reaction']}
+AI 판정: {result['risk_label']} (안전 {result['probability']['safe']}%, 위험 {result['probability']['risk']}%)
+
+[SHAP 특성 기여도 Top 3 - 영향력 큰 순서]
+{shap_lines}
+
+[답변] 위 SHAP 기여도를 근거로, 어떤 요인이 이 예측에 가장 크게 영향을 줬는지 한국어 3문장 이내로 설명하세요. 숫자(SHAP 값)를 그대로 나열하지 말고 의미를 풀어서 설명하세요:"""
+
+    try:
+        response = http_requests.post(
+            'http://localhost:11434/api/generate',
+            json={
+                'model': 'llama3.2', 'prompt': prompt, 'stream': False,
+                'options': {'temperature': 0.2, 'top_p': 0.85}
+            },
+            timeout=60
+        )
+        explanation = response.json().get('response', '설명 생성 실패')
+        explanation = re.sub(r'[\u4E00-\u9FFF\u3400-\u4DBF\u0900-\u097F]', '', explanation)
+    except Exception as e:
+        explanation = f'Ollama 오류: {str(e)}'
+
+    return jsonify({
+        'drug': result['drug'], 'reaction': result['reaction'],
+        'top_features': [
+            {'feature': FEATURE_LABELS_KO.get(f['feature'], f['feature']), 'value': f['value'], 'shap': f['shap']}
+            for f in top_features
+        ],
+        'explanation': explanation
     })
 
 # ── Drug Lookup ───────────────────────────────
