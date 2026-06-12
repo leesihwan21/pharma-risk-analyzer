@@ -58,7 +58,16 @@ FDA FAERS(Adverse Event Reporting System) 2024 Q1 ~ 2025 Q1 다분기 데이터(
 | AI 안전성 리포트 | FDA FAERS + PubMed 5편 통합 → 6개 섹션 자동 생성 + PDF 다운로드 |
 | 논문 검색 | PubMed API 논문 검색 + Claude AI 한국어 요약 |
 
+### 👤 사용자 & 운영
+| 기능 | 설명 |
+|------|------|
+| 회원 인증 | 회원가입/로그인/로그아웃 + 이메일 기반 비밀번호 재설정 |
+| 관리자 대시보드 | 가입자/검색기록/예측로그/활동로그 모니터링 (`/admin`, 권한 분리) |
+| 활동 로그 | 로그인·로그아웃·검색 등 사용자 행동 자동 기록 |
+| PWA 지원 | 모바일 브라우저에서 "홈 화면에 추가" → 앱처럼 설치 및 실행 (오프라인 캐싱) |
+
 ### 📡 신호 탐지 & 규제 준수
+
 | 기능 | 설명 |
 |------|------|
 | PRR 신호 탐지 | Evans 기준 (PRR ≥ 2, n ≥ 3) 약물 이상반응 신호 탐지 |
@@ -131,9 +140,9 @@ Viz        : Plotly, NetworkX (Canvas), Chart.js
 DB         : SQLite (개발/배포)
 Report     : ReportLab (PDF), ICH E2B(R3) XML
 Compliance : 21 CFR Part 11 전자서명, Audit Trail, ICH E2B(R3)
-Frontend   : Jinja2 Templates, Vanilla JS, 반응형 CSS
+Frontend   : Jinja2 Templates, Vanilla JS, 반응형 CSS, PWA (manifest + service worker)
 Deploy     : Railway
-Test       : pytest (28개 유닛테스트)
+Test       : pytest (67개 유닛테스트 - API/인증·권한/AE 규제/용량계산/E2B export)
 ```
 
 ---
