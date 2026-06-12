@@ -59,7 +59,10 @@ def dashboard():
 
 @main.route('/korea')
 def korea_dashboard():
-    df = pd.read_csv(KOREA_DATA_PATH, encoding='utf-8')
+    try:
+        df = pd.read_csv(KOREA_DATA_PATH, encoding='cp949')
+    except UnicodeDecodeError:
+        df = pd.read_csv(KOREA_DATA_PATH, encoding='utf-8')
     df.columns = ['rank','sym_2024','cnt_2024','sym_2023','cnt_2023','sym_2022','cnt_2022','sym_2021','cnt_2021','sym_2020','cnt_2020','sym_2019','cnt_2019']
     fig1 = px.bar(df.head(10), x='sym_2024', y='cnt_2024', title='Korea 2024 Top 10 ADR', color='cnt_2024', color_continuous_scale='Blues')
     fig1.update_layout(xaxis_tickangle=-45, template='plotly_dark', height=420)
