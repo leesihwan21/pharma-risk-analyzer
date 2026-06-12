@@ -1,5 +1,7 @@
 # 💊 Pharma Risk Analyzer
 
+[![Tests](https://github.com/leesihwan21/pharma-risk-analyzer/actions/workflows/tests.yml/badge.svg)](https://github.com/leesihwan21/pharma-risk-analyzer/actions/workflows/tests.yml)
+
 > **AI-powered Drug Adverse Event Risk Analysis & Clinical Decision Support System**
 > FDA FAERS 데이터 기반 + XGBoost 위험도 예측 + SHAP XAI + RAG 약물 Q&A + PubMed 논문 연동 + ICH E2B(R3) + 21 CFR Part 11
 
