@@ -30,7 +30,8 @@ shap==0.52.0
 scikit-learn==1.8.0
 reportlab
 opencv-python-headless
-psycopg2-binary==2.9.9faiss-cpu
+psycopg2-binary==2.9.9
+faiss-cpu
 sentence-transformers
 langchain
 langchain-community
