@@ -1,0 +1,25 @@
+{
+  "name": "Pharma Risk Analyzer",
+  "short_name": "PharmaRisk",
+  "description": "AI 기반 약물 부작용 위험도 분석 웹앱 (FDA FAERS 데이터 기반)",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "background_color": "#0f172a",
+  "theme_color": "#0f172a",
+  "lang": "ko",
+  "icons": [
+    {
+      "src": "/static/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/static/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ]
+}

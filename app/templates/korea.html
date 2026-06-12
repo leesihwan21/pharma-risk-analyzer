@@ -46,6 +46,7 @@
 </div>
 <div class="chart-full" id="chart3"></div>
 <script src="/static/lang.js"></script>
+    <script src="/static/pwa.js"></script>
 <script>
     Plotly.newPlot('chart1', JSON.parse('{{ charts.chart1 | safe }}'));
     Plotly.newPlot('chart2', JSON.parse('{{ charts.chart2 | safe }}'));
