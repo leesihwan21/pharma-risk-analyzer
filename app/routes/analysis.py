@@ -340,6 +340,93 @@ def api_interaction():
         'top_reactions': top_reactions
     })
 
+# ── Polypharmacy (다중 약물 상호작용) ──────────
+@analysis.route('/polypharmacy')
+def polypharmacy_page():
+    return render_template('polypharmacy.html')
+
+@analysis.route('/api/polypharmacy')
+def api_polypharmacy():
+    drugs_param = request.args.get('drugs', '')
+    drugs = []
+    for d in drugs_param.split(','):
+        d = d.strip().upper()
+        if d and d not in drugs:
+            drugs.append(d)
+
+    if len(drugs) < 2:
+        return jsonify({'error': '약물 2개 이상을 입력하세요 (쉼표로 구분)'}), 400
+    if len(drugs) > 5:
+        return jsonify({'error': '최대 5개 약물까지 분석할 수 있습니다'}), 400
+
+    df = pd.read_csv(DATA_PATH)
+    serious_outcomes = {'DE', 'HO', 'LT'}
+
+    id_sets = {}
+    totals = {}
+    for d in drugs:
+        ids = set(df[df['drugname'] == d]['primaryid'])
+        if len(ids) == 0:
+            return jsonify({'error': f'{d}: 데이터에서 찾을 수 없습니다'}), 404
+        id_sets[d] = ids
+        totals[d] = len(ids)
+
+    # 약물쌍(pairwise) 위험도
+    pairs = []
+    for i in range(len(drugs)):
+        for j in range(i + 1, len(drugs)):
+            a, b = drugs[i], drugs[j]
+            both = id_sets[a] & id_sets[b]
+            if both:
+                df_both = df[df['primaryid'].isin(both)]
+                serious = df_both[df_both['outc_cod'].isin(serious_outcomes)]['primaryid'].nunique()
+                serious_rate = round(serious / len(both) * 100, 1)
+                co_rate_a = len(both) / totals[a]
+                co_rate_b = len(both) / totals[b]
+                risk_score = min(round((co_rate_a + co_rate_b) / 2 * 100 * 10, 1), 100)
+            else:
+                serious_rate, risk_score = 0, 0
+            pairs.append({
+                'drug_a': a, 'drug_b': b,
+                'co_occurrence': len(both),
+                'serious_rate': serious_rate,
+                'risk_score': risk_score
+            })
+
+    # 전체 약물 동시 복용 (교집합)
+    all_ids = set.intersection(*id_sets.values())
+    if all_ids:
+        df_all = df[df['primaryid'].isin(all_ids)]
+        serious_all = df_all[df_all['outc_cod'].isin(serious_outcomes)]['primaryid'].nunique()
+        overall_serious_rate = round(serious_all / len(all_ids) * 100, 1)
+        top_reactions = (
+            df_all['pt'].value_counts().head(10).reset_index()
+            .rename(columns={'pt': 'reaction', 'count': 'count'})
+            .to_dict(orient='records')
+        )
+    else:
+        overall_serious_rate = 0
+        top_reactions = []
+
+    overall_risk = round(sum(p['risk_score'] for p in pairs) / len(pairs), 1) if pairs else 0
+    high_risk_pairs = sorted(
+        [p for p in pairs if p['co_occurrence'] > 0],
+        key=lambda p: p['risk_score'], reverse=True
+    )
+
+    return jsonify({
+        'drugs': drugs,
+        'totals': totals,
+        'pairs': pairs,
+        'high_risk_pairs': high_risk_pairs,
+        'overall': {
+            'co_occurrence': len(all_ids),
+            'serious_rate': overall_serious_rate,
+            'top_reactions': top_reactions,
+            'risk_score': overall_risk
+        }
+    })
+
 # ── Dosage ────────────────────────────────────
 @analysis.route('/dosage')
 def dosage_page():

@@ -1,0 +1,237 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Polypharmacy Check | Pharma Risk Analyzer</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body { font-family: Arial, sans-serif; background: #0f172a; color: #e2e8f0; min-height: 100vh; }
+    .nav { background: #1e293b; border-bottom: 1px solid #334155; padding: 14px 24px; display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 10px; }
+    .nav-logo { color: #38bdf8; font-size: 1.1rem; font-weight: bold; text-decoration: none; }
+    .nav-links { display: flex; gap: 8px; flex-wrap: wrap; }
+    .nav-btn { padding: 8px 18px; border-radius: 8px; font-size: 0.88rem; font-weight: bold; text-decoration: none; color: #94a3b8; border: 1px solid #334155; }
+    .nav-btn:hover { border-color: #38bdf8; color: #38bdf8; }
+    .nav-btn.active { background: #38bdf8; color: #0f172a; border-color: #38bdf8; }
+
+    .container { max-width: 900px; margin: 48px auto; padding: 0 24px; }
+    .page-header { margin-bottom: 32px; }
+    .page-header h1 { font-size: 1.9rem; color: #38bdf8; margin-bottom: 8px; }
+    .page-header p { color: #64748b; font-size: 0.95rem; }
+
+    .drug-inputs { display: flex; flex-direction: column; gap: 10px; margin-bottom: 16px; }
+    .drug-input-row { display: flex; gap: 10px; align-items: center; }
+    .drug-input-row input { flex: 1; padding: 13px 18px; background: #1e293b; border: 1px solid #334155; border-radius: 10px; color: #e2e8f0; font-size: 1rem; outline: none; }
+    .drug-input-row input:focus { border-color: #38bdf8; }
+    .drug-input-row input::placeholder { color: #475569; }
+    .remove-btn { background: #334155; color: #94a3b8; border: none; border-radius: 8px; width: 40px; height: 40px; font-size: 1.1rem; cursor: pointer; flex-shrink: 0; }
+    .remove-btn:hover { background: #f87171; color: #0f172a; }
+
+    .action-row { display: flex; gap: 10px; margin-bottom: 32px; flex-wrap: wrap; }
+    .btn { padding: 13px 28px; border: none; border-radius: 10px; font-size: 0.95rem; font-weight: bold; cursor: pointer; }
+    .btn-outline { background: transparent; color: #94a3b8; border: 1px solid #334155; }
+    .btn-outline:hover { border-color: #38bdf8; color: #38bdf8; }
+    .btn-fill { background: #38bdf8; color: #0f172a; }
+    .btn-fill:hover { background: #0ea5e9; }
+
+    .stats-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; margin-bottom: 20px; }
+    .stat-card { background: #1e293b; border: 1px solid #334155; border-radius: 12px; padding: 20px; text-align: center; }
+    .stat-card .stat-value { font-size: 1.8rem; font-weight: bold; margin-bottom: 6px; }
+    .stat-card .stat-label { font-size: 0.82rem; color: #64748b; }
+
+    .card { background: #1e293b; border: 1px solid #334155; border-radius: 14px; padding: 28px; margin-bottom: 20px; }
+    .card h2 { font-size: 1.05rem; color: #94a3b8; margin-bottom: 20px; }
+    .card p.hint { font-size: 0.85rem; color: #64748b; margin-top: -12px; margin-bottom: 16px; }
+
+    table { width: 100%; border-collapse: collapse; }
+    th, td { padding: 12px 16px; text-align: left; border-bottom: 1px solid #334155; font-size: 0.93rem; }
+    th { color: #64748b; font-weight: 600; }
+    td { color: #e2e8f0; }
+    tr:last-child td { border-bottom: none; }
+
+    .risk-badge { padding: 3px 10px; border-radius: 6px; font-size: 0.8rem; font-weight: bold; }
+    .risk-high { background: rgba(248,113,113,0.15); color: #f87171; }
+    .risk-mid { background: rgba(251,191,36,0.15); color: #fbbf24; }
+    .risk-low { background: rgba(52,211,153,0.15); color: #34d399; }
+
+    .error { padding: 16px; background: #1e293b; border: 1px solid #f87171; border-radius: 10px; color: #f87171; margin-bottom: 20px; display: none; }
+    .loading { text-align: center; padding: 40px; color: #64748b; display: none; }
+    #result-area { display: none; }
+  </style>
+  <script src="/static/pwa.js"></script>
+</head>
+<body>
+
+<nav class="nav">
+  <a href="/" class="nav-logo">💊 Pharma Risk Analyzer</a>
+  <div class="nav-links">
+    <a href="/dashboard" class="nav-btn">Dashboard</a>
+    <a href="/filter" class="nav-btn">Search</a>
+    <a href="/compare" class="nav-btn">Compare</a>
+    <a href="/prr" class="nav-btn">PRR</a>
+    <a href="/trend" class="nav-btn">Trend</a>
+    <a href="/shap" class="nav-btn">SHAP</a>
+    <a href="/drug-lookup" class="nav-btn">Drug Lookup</a>
+    <a href="/interaction" class="nav-btn">Interaction</a>
+    <a href="/polypharmacy" class="nav-btn active">Polypharmacy</a>
+    <a href="/ae_manager" class="nav-btn">AE Manager</a>
+  </div>
+</nav>
+
+<div class="container">
+  <div class="page-header">
+    <h1>💊💊💊 Polypharmacy Check</h1>
+    <p>FDA FAERS 실데이터 기반 — 3개 이상 약물 동시 복용 시 종합 위험도 분석 (다약제 복용)</p>
+  </div>
+
+  <div class="drug-inputs" id="drugInputs">
+    <div class="drug-input-row">
+      <input type="text" class="drug-input" placeholder="약물 1 (예: METHOTREXATE)">
+    </div>
+    <div class="drug-input-row">
+      <input type="text" class="drug-input" placeholder="약물 2 (예: ASPIRIN)">
+    </div>
+    <div class="drug-input-row">
+      <input type="text" class="drug-input" placeholder="약물 3 (예: WARFARIN)">
+    </div>
+  </div>
+
+  <div class="action-row">
+    <button class="btn btn-outline" onclick="addDrugInput()">+ 약물 추가 (최대 5개)</button>
+    <button class="btn btn-fill" onclick="analyze()">분석</button>
+  </div>
+
+  <div id="loading" class="loading">⏳ 분석 중...</div>
+  <div id="error-msg" class="error"></div>
+
+  <div id="result-area">
+    <div class="stats-grid">
+      <div class="stat-card">
+        <div class="stat-value" id="statCoOccurrence" style="color:#38bdf8"></div>
+        <div class="stat-label">전체 약물 동시 복용 보고 건수</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-value" id="statSeriousRate" style="color:#f87171"></div>
+        <div class="stat-label">중증 결과 비율</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-value" id="statOverallRisk" style="color:#fbbf24"></div>
+        <div class="stat-label">평균 상호작용 위험 점수</div>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>⚠ 약물쌍(Pairwise) 위험도</h2>
+      <p class="hint">두 약물씩 묶어서 동시 복용 보고 건수 및 위험 점수를 비교합니다.</p>
+      <table>
+        <thead><tr><th>약물 A</th><th>약물 B</th><th>동시 보고</th><th>중증 비율</th><th>위험 점수</th></tr></thead>
+        <tbody id="pairsTable"></tbody>
+      </table>
+    </div>
+
+    <div class="card">
+      <h2>📄 전체 약물 동시 복용 시 주요 부작용 Top 10</h2>
+      <p class="hint" id="overallHint"></p>
+      <table>
+        <thead><tr><th>순위</th><th>부작용</th><th>보고 건수</th></tr></thead>
+        <tbody id="reactionTable"></tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<script>
+function addDrugInput() {
+  const inputs = document.querySelectorAll('.drug-input');
+  if (inputs.length >= 5) return;
+  const wrap = document.getElementById('drugInputs');
+  const row = document.createElement('div');
+  row.className = 'drug-input-row';
+  row.innerHTML = '<input type="text" class="drug-input" placeholder="약물 ' + (inputs.length + 1) + '">' +
+    '<button class="remove-btn" onclick="this.parentElement.remove()">×</button>';
+  wrap.appendChild(row);
+}
+
+function riskClass(score) {
+  if (score >= 50) return 'risk-high';
+  if (score >= 20) return 'risk-mid';
+  return 'risk-low';
+}
+
+async function analyze() {
+  const inputs = document.querySelectorAll('.drug-input');
+  const drugs = Array.from(inputs).map(i => i.value.trim()).filter(v => v);
+
+  if (drugs.length < 2) {
+    showError('약물을 2개 이상 입력하세요.');
+    return;
+  }
+
+  document.getElementById('loading').style.display = 'block';
+  document.getElementById('result-area').style.display = 'none';
+  document.getElementById('error-msg').style.display = 'none';
+
+  try {
+    const res = await fetch('/api/polypharmacy?drugs=' + encodeURIComponent(drugs.join(',')));
+    const data = await res.json();
+
+    if (!res.ok) {
+      showError(data.error || '오류가 발생했습니다.');
+      document.getElementById('loading').style.display = 'none';
+      return;
+    }
+
+    renderResult(data);
+    document.getElementById('result-area').style.display = 'block';
+  } catch (e) {
+    showError('서버 오류가 발생했습니다.');
+  }
+  document.getElementById('loading').style.display = 'none';
+}
+
+function showError(msg) {
+  const el = document.getElementById('error-msg');
+  el.textContent = msg;
+  el.style.display = 'block';
+}
+
+function renderResult(data) {
+  const overall = data.overall;
+  document.getElementById('statCoOccurrence').textContent = overall.co_occurrence.toLocaleString();
+  document.getElementById('statSeriousRate').textContent = overall.serious_rate + '%';
+  document.getElementById('statOverallRisk').textContent = overall.risk_score.toFixed(1);
+
+  document.getElementById('overallHint').textContent =
+    data.drugs.join(' + ') + ' 모두를 함께 복용한 보고 건수 기준';
+
+  const pairsBody = document.getElementById('pairsTable');
+  pairsBody.innerHTML = '';
+  data.pairs.forEach(p => {
+    pairsBody.innerHTML += '<tr>' +
+      '<td>' + p.drug_a + '</td>' +
+      '<td>' + p.drug_b + '</td>' +
+      '<td>' + p.co_occurrence.toLocaleString() + '</td>' +
+      '<td>' + p.serious_rate + '%</td>' +
+      '<td><span class="risk-badge ' + riskClass(p.risk_score) + '">' + p.risk_score.toFixed(1) + '</span></td>' +
+      '</tr>';
+  });
+
+  const reactionBody = document.getElementById('reactionTable');
+  reactionBody.innerHTML = '';
+  if (overall.top_reactions.length === 0) {
+    reactionBody.innerHTML = '<tr><td colspan="3" style="color:#64748b; text-align:center;">전체 약물을 동시 복용한 보고가 없습니다</td></tr>';
+  } else {
+    overall.top_reactions.forEach((r, i) => {
+      reactionBody.innerHTML += '<tr><td>' + (i + 1) + '</td><td>' + r.reaction + '</td><td>' + r.count.toLocaleString() + '</td></tr>';
+    });
+  }
+}
+
+document.addEventListener('DOMContentLoaded', () => {
+  document.querySelectorAll('.drug-input').forEach(input => {
+    input.addEventListener('keydown', e => { if (e.key === 'Enter') analyze(); });
+  });
+});
+</script>
+</body>
+</html>
