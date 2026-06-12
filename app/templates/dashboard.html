@@ -46,6 +46,14 @@
         body.light-mode .input-row input, body.light-mode .input-row select{background:#f1f5f9;border-color:#cbd5e1;color:#1e293b;}
         body.light-mode .chart-card{background:#ffffff;border-color:#e2e8f0;}
         body.light-mode .suggestions{background:#ffffff;border-color:#e2e8f0;}
+
+        .alert-badge { display:inline-block; padding:2px 8px; border-radius:6px; font-size:0.75rem; font-weight:bold; margin-left:6px; }
+        .alert-strong { background: rgba(248,113,113,0.15); color:#f87171; }
+        .alert-signal { background: rgba(251,191,36,0.15); color:#fbbf24; }
+        .alert-none { background: rgba(52,211,153,0.15); color:#34d399; }
+        .alert-item { display:flex; flex-direction:column; gap:4px; background:#0f172a; border:1px solid #334155; border-radius:10px; padding:10px 14px; margin-bottom:8px; }
+        .alert-item a { color:#38bdf8; text-decoration:none; font-weight:bold; }
+        .alert-reactions { font-size:0.8rem; color:#94a3b8; }
     </style>
 </head>
 <body>
@@ -126,6 +134,14 @@
     </h3>
     <div id="favorites-content" style="margin-bottom:12px;"></div>
     <div id="history-content"></div>
+</div>
+
+<div class="section">
+    <h3>
+        <span data-ko="⚠ 즐겨찾기 약물 신호 알림" data-en="⚠ Favorite Drug Signal Alerts">⚠ 즐겨찾기 약물 신호 알림</span>
+        <button onclick="loadAlerts()" class="btn btn-gray" style="margin-left:12px;" data-ko="새로고침" data-en="Refresh">새로고침</button>
+    </h3>
+    <div id="alerts-content" style="font-size:0.85rem; color:#94a3b8;" data-ko="새로고침을 눌러 확인하세요" data-en="Click refresh to check">새로고침을 눌러 확인하세요</div>
 </div>
 
 <script src="/static/lang.js"></script>
@@ -305,6 +321,35 @@
     }
 
     function addFavorite(drug) { fetch(`/api/favorite/${drug}`, { method: 'POST' }).then(res => res.json()).then(data => alert(data.message)); }
+
+    function loadAlerts() {
+        const lang = getLang();
+        const el = document.getElementById('alerts-content');
+        el.textContent = lang === 'ko' ? '⏳ 확인 중...' : '⏳ Checking...';
+        fetch('/api/favorites/alerts').then(res => res.json()).then(data => {
+            if (!data.alerts || data.alerts.length === 0) {
+                el.innerHTML = `<span style="color:#94a3b8">${lang === 'ko' ? '즐겨찾기한 약물의 신호 정보가 없어요' : 'No signal data for favorite drugs'}</span>`;
+                return;
+            }
+            const badgeClass = { strong: 'alert-strong', signal: 'alert-signal', none: 'alert-none' };
+            const badgeLabel = {
+                strong: lang === 'ko' ? '🔴 강한 신호' : '🔴 Strong signal',
+                signal: lang === 'ko' ? '🟡 신호' : '🟡 Signal',
+                none: lang === 'ko' ? '⚪ 신호 없음' : '⚪ No signal'
+            };
+            let html = '';
+            data.alerts.forEach(a => {
+                const reactions = a.top_signals.map(s => `${s.reaction} (PRR ${s.prr})`).join(', ');
+                html += `<div class="alert-item">
+                    <div><a href="/prr?drug=${a.drugname}">${a.drugname}</a><span class="alert-badge ${badgeClass[a.level]}">${badgeLabel[a.level]}</span></div>
+                    ${reactions ? `<div class="alert-reactions">${reactions}</div>` : ''}
+                </div>`;
+            });
+            el.innerHTML = html;
+        }).catch(() => {
+            el.textContent = lang === 'ko' ? '불러오기 실패' : 'Failed to load';
+        });
+    }
 
     function loadFavorites() {
         const lang = getLang();

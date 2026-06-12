@@ -9,6 +9,7 @@ import requests as http_requests
 
 from flask import Blueprint, render_template, jsonify, request, current_app
 from app import cache
+from app.models import FavoriteDrug
 
 analysis = Blueprint('analysis', __name__)
 
@@ -26,26 +27,22 @@ def load_model():
     return model, le_drug, le_reac
 
 # ── PRR ──────────────────────────────────────
-@analysis.route('/prr')
-def prr_page():
-    return render_template('prr.html')
-
-@analysis.route('/api/prr/<drugname>')
-@cache.cached(timeout=600)
-def calculate_prr(drugname):
-    df = load_df()
+def compute_prr_summary(drugname, df=None):
+    """약물의 PRR 신호 탐지 결과 반환 (없으면 None). /api/prr, 즐겨찾기 알림에서 공용 사용."""
+    if df is None:
+        df = load_df()
     drugname = drugname.upper()
 
     drug_reports = df[df['drugname'].str.upper() == drugname]
     if len(drug_reports) == 0:
-        return jsonify({'error': f'약물을 찾을 수 없어요: {drugname}'}), 404
+        return None
 
     other_reports = df[df['drugname'].str.upper() != drugname]
     total_drug = len(drug_reports)
     total_other = len(other_reports)
 
     if total_other == 0:
-        return jsonify({'error': '비교 데이터가 없습니다'}), 400
+        return None
 
     top_reactions = drug_reports['pt'].value_counts().head(20).index.tolist()
     results = []
@@ -91,13 +88,70 @@ def calculate_prr(drugname):
     signal_count = sum(1 for r in results if r['is_signal'])
     strong_signal_count = sum(1 for r in results if r['prr'] >= 5 and r['drug_count'] >= 3)
 
-    return jsonify({
+    return {
         'drugname': drugname,
         'total_reports': total_drug,
         'signal_count': signal_count,
         'strong_signal_count': strong_signal_count,
         'results': results
-    })
+    }
+
+@analysis.route('/prr')
+def prr_page():
+    return render_template('prr.html')
+
+@analysis.route('/api/prr/<drugname>')
+@cache.cached(timeout=600)
+def calculate_prr(drugname):
+    summary = compute_prr_summary(drugname)
+    if summary is None:
+        return jsonify({'error': f'약물을 찾을 수 없어요: {drugname.upper()}'}), 404
+    return jsonify(summary)
+
+@analysis.route('/api/favorites/alerts')
+def favorites_alerts():
+    """즐겨찾기한 약물의 PRR 부작용 신호 알림 (약물감시)"""
+    favorites = FavoriteDrug.query.all()
+    if not favorites:
+        return jsonify({'alerts': []})
+
+    df = load_df()
+    alerts = []
+    seen = set()
+    for fav in favorites:
+        drugname = fav.drugname.upper()
+        if drugname in seen:
+            continue
+        seen.add(drugname)
+
+        summary = compute_prr_summary(drugname, df=df)
+        if summary is None:
+            continue
+
+        top_signals = [r for r in summary['results'] if r['is_signal']][:3]
+        if summary['strong_signal_count'] > 0:
+            level = 'strong'
+        elif summary['signal_count'] > 0:
+            level = 'signal'
+        else:
+            level = 'none'
+
+        alerts.append({
+            'drugname': summary['drugname'],
+            'signal_count': summary['signal_count'],
+            'strong_signal_count': summary['strong_signal_count'],
+            'level': level,
+            'top_signals': [
+                {'reaction': r['reaction'], 'prr': r['prr'], 'signal_level': r['signal_level']}
+                for r in top_signals
+            ]
+        })
+
+    # 강한 신호 → 신호 → 없음 순으로 정렬
+    level_order = {'strong': 0, 'signal': 1, 'none': 2}
+    alerts.sort(key=lambda a: level_order[a['level']])
+
+    return jsonify({'alerts': alerts})
 
 # ── Trend ─────────────────────────────────────
 @analysis.route('/trend')

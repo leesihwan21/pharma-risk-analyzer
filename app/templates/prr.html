@@ -383,5 +383,16 @@
         });
     }
 </script>
+<script>
+    // URL의 ?drug=XXX 파라미터로 들어오면 자동으로 분석 실행 (즐겨찾기 알림 → PRR 페이지 연동)
+    document.addEventListener('DOMContentLoaded', () => {
+        const params = new URLSearchParams(window.location.search);
+        const drug = params.get('drug');
+        if (drug) {
+            document.getElementById('drug-input').value = drug;
+            runAnalysis();
+        }
+    });
+</script>
 </body>
 </html>
