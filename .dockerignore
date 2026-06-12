@@ -1,0 +1,29 @@
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.pytest_cache/
+
+# 가상환경
+venv/
+.venv/
+
+# 로컬 DB / 데이터
+instance/
+*.db
+
+# 환경변수 / 비밀값
+.env
+
+# 깃/CI
+.git/
+.github/
+
+# IDE
+.vscode/
+.idea/
+
+# 노트북/스크린샷 (이미지 빌드에 불필요)
+notebooks/
+screenshots/
+*.pdf

@@ -1,0 +1,18 @@
+version: "3.9"
+
+services:
+  web:
+    build: .
+    ports:
+      - "5001:5001"
+    environment:
+      - PORT=5001
+      - SECRET_KEY=${SECRET_KEY:-pharma-risk-dev-key}
+      - DATABASE_URL=${DATABASE_URL:-sqlite:////app/instance/pharma.db}
+      - MAIL_USERNAME=${MAIL_USERNAME:-}
+      - MAIL_PASSWORD=${MAIL_PASSWORD:-}
+      - MFDS_API_KEY=${MFDS_API_KEY:-}
+      - ANTHROPIC_API_KEY=${ANTHROPIC_API_KEY:-}
+    volumes:
+      # SQLite DB를 컨테이너 밖에 보존 (재시작/재빌드해도 데이터 유지)
+      - ./instance:/app/instance
