@@ -51,6 +51,7 @@
         .alert-strong { background: rgba(248,113,113,0.15); color:#f87171; }
         .alert-signal { background: rgba(251,191,36,0.15); color:#fbbf24; }
         .alert-none { background: rgba(52,211,153,0.15); color:#34d399; }
+        .alert-new { background: rgba(168,85,247,0.18); color:#c084fc; }
         .alert-item { display:flex; flex-direction:column; gap:4px; background:#0f172a; border:1px solid #334155; border-radius:10px; padding:10px 14px; margin-bottom:8px; }
         .alert-item a { color:#38bdf8; text-decoration:none; font-weight:bold; }
         .alert-reactions { font-size:0.8rem; color:#94a3b8; }
@@ -331,8 +332,9 @@
                 el.innerHTML = `<span style="color:#94a3b8">${lang === 'ko' ? '즐겨찾기한 약물의 신호 정보가 없어요' : 'No signal data for favorite drugs'}</span>`;
                 return;
             }
-            const badgeClass = { strong: 'alert-strong', signal: 'alert-signal', none: 'alert-none' };
+            const badgeClass = { new: 'alert-new', strong: 'alert-strong', signal: 'alert-signal', none: 'alert-none' };
             const badgeLabel = {
+                new: lang === 'ko' ? '🆕 신규 신호' : '🆕 New signal',
                 strong: lang === 'ko' ? '🔴 강한 신호' : '🔴 Strong signal',
                 signal: lang === 'ko' ? '🟡 신호' : '🟡 Signal',
                 none: lang === 'ko' ? '⚪ 신호 없음' : '⚪ No signal'
@@ -340,8 +342,15 @@
             let html = '';
             data.alerts.forEach(a => {
                 const reactions = a.top_signals.map(s => `${s.reaction} (PRR ${s.prr})`).join(', ');
+                let emergingHtml = '';
+                if (a.emerging_signals && a.emerging_signals.length > 0) {
+                    const items = a.emerging_signals.map(s => `${s.reaction} (PRR ${s.prr_latest}, ${s.quarter})`).join(', ');
+                    const label = lang === 'ko' ? '신규 신호: ' : 'New: ';
+                    emergingHtml = `<div class="alert-reactions" style="color:#c084fc;">${label}${items}</div>`;
+                }
                 html += `<div class="alert-item">
                     <div><a href="/prr?drug=${a.drugname}">${a.drugname}</a><span class="alert-badge ${badgeClass[a.level]}">${badgeLabel[a.level]}</span></div>
+                    ${emergingHtml}
                     ${reactions ? `<div class="alert-reactions">${reactions}</div>` : ''}
                 </div>`;
             });

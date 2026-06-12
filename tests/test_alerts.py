@@ -22,7 +22,7 @@ class TestFavoritesAlerts:
 
         alert = data['alerts'][0]
         assert alert['drugname'] == 'METHOTREXATE'
-        assert alert['level'] in ('strong', 'signal', 'none')
+        assert alert['level'] in ('new', 'strong', 'signal', 'none')
         assert 'signal_count' in alert
         assert 'strong_signal_count' in alert
         assert 'top_signals' in alert
@@ -52,6 +52,6 @@ class TestFavoritesAlerts:
 
         res = client.get('/api/favorites/alerts')
         data = json.loads(res.data)
-        level_order = {'strong': 0, 'signal': 1, 'none': 2}
+        level_order = {'new': 0, 'strong': 1, 'signal': 2, 'none': 3}
         levels = [level_order[a['level']] for a in data['alerts']]
         assert levels == sorted(levels)

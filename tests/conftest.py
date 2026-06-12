@@ -52,13 +52,20 @@ def ensure_sample_data():
     if not os.path.exists(DATA_PATH):
         os.makedirs(DATA_DIR, exist_ok=True)
         rows = [
-            ['primaryid', 'drugname', 'pt', 'age', 'age_group', 'sex', 'outc_cod', 'reporter_country', 'sym_2024'],
-            [1, 'METHOTREXATE', 'NAUSEA', 45, '40-49', 'F', 'HO', 'KR', 1],
-            [2, 'METHOTREXATE', 'FATIGUE', 60, '60-69', 'M', 'OT', 'US', 1],
-            [3, 'METHOTREXATE', 'NAUSEA', 55, '50-59', 'F', 'DE', 'US', 1],
-            [4, 'ASPIRIN', 'BLEEDING', 70, '70-79', 'M', 'HO', 'KR', 1],
-            [5, 'ASPIRIN', 'NAUSEA', 65, '60-69', 'F', 'OT', 'KR', 1],
-            [6, 'WARFARIN', 'BLEEDING', 72, '70-79', 'M', 'HO', 'US', 1],
+            ['primaryid', 'drugname', 'pt', 'age', 'age_group', 'sex', 'outc_cod', 'reporter_country', 'sym_2024', 'quarter'],
+            # Q1 (이전 분기)
+            [1, 'METHOTREXATE', 'FATIGUE', 60, '60-69', 'M', 'OT', 'US', 1, '2024Q1'],
+            [2, 'METHOTREXATE', 'FATIGUE', 62, '60-69', 'M', 'OT', 'US', 1, '2024Q1'],
+            [3, 'ASPIRIN', 'BLEEDING', 70, '70-79', 'M', 'HO', 'KR', 1, '2024Q1'],
+            [4, 'ASPIRIN', 'BLEEDING', 71, '70-79', 'M', 'HO', 'KR', 1, '2024Q1'],
+            [5, 'WARFARIN', 'BLEEDING', 72, '70-79', 'M', 'HO', 'US', 1, '2024Q1'],
+            # Q2 (최신 분기) - METHOTREXATE+NAUSEA 신규 신호 발생
+            [6, 'METHOTREXATE', 'NAUSEA', 45, '40-49', 'F', 'HO', 'KR', 1, '2024Q2'],
+            [7, 'METHOTREXATE', 'NAUSEA', 50, '40-49', 'F', 'DE', 'US', 1, '2024Q2'],
+            [8, 'METHOTREXATE', 'NAUSEA', 55, '50-59', 'F', 'OT', 'US', 1, '2024Q2'],
+            [9, 'ASPIRIN', 'BLEEDING', 73, '70-79', 'M', 'HO', 'KR', 1, '2024Q2'],
+            [10, 'ASPIRIN', 'NAUSEA', 65, '60-69', 'F', 'OT', 'KR', 1, '2024Q2'],
+            [11, 'WARFARIN', 'BLEEDING', 74, '70-79', 'M', 'HO', 'US', 1, '2024Q2'],
         ]
         with open(DATA_PATH, 'w', newline='', encoding='utf-8') as f:
             writer = csv.writer(f)

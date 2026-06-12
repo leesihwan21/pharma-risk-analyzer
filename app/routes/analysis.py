@@ -109,9 +109,87 @@ def calculate_prr(drugname):
         return jsonify({'error': f'약물을 찾을 수 없어요: {drugname.upper()}'}), 404
     return jsonify(summary)
 
+def compute_emerging_signals(drugname, df=None, min_count=3, prr_threshold=2.0):
+    """
+    최신 분기 vs 이전 분기 누적 데이터의 PRR을 비교하여,
+    이전에는 신호가 아니었지만 최신 분기에 새로 신호 기준(PRR≥threshold, 보고건수≥min_count)을
+    충족하게 된 '신규/이상 신호'를 탐지. (분기별 약물감시 모니터링)
+    """
+    if df is None:
+        df = load_df()
+    drugname = drugname.upper()
+
+    if 'quarter' not in df.columns:
+        return None
+
+    quarters = sorted(df['quarter'].dropna().unique())
+    if len(quarters) < 2:
+        return None
+    latest_q = quarters[-1]
+
+    df_latest = df[df['quarter'] == latest_q]
+    df_history = df[df['quarter'] != latest_q]
+
+    drug_latest = df_latest[df_latest['drugname'].str.upper() == drugname]
+    if len(drug_latest) == 0:
+        return None
+
+    other_latest = df_latest[df_latest['drugname'].str.upper() != drugname]
+    drug_history = df_history[df_history['drugname'].str.upper() == drugname]
+    other_history = df_history[df_history['drugname'].str.upper() != drugname]
+
+    b = len(drug_latest)
+    d = len(other_latest)
+    b2 = len(drug_history)
+    d2 = len(other_history)
+    if b == 0 or d == 0:
+        return None
+
+    def _prr(a, b, c, d):
+        if a == 0 or c == 0 or b == 0 or d == 0:
+            return 0.0
+        return (a / b) / (c / d)
+
+    emerging = []
+    for reac in drug_latest['pt'].value_counts().index.tolist():
+        a = len(drug_latest[drug_latest['pt'] == reac])
+        c = len(other_latest[other_latest['pt'] == reac])
+        prr_latest = _prr(a, b, c, d)
+        is_signal_now = prr_latest >= prr_threshold and a >= min_count
+        if not is_signal_now:
+            continue
+
+        a2 = len(drug_history[drug_history['pt'] == reac]) if b2 > 0 else 0
+        c2 = len(other_history[other_history['pt'] == reac]) if d2 > 0 else 0
+        prr_history = _prr(a2, b2, c2, d2)
+        was_signal_before = prr_history >= prr_threshold and a2 >= min_count
+
+        if not was_signal_before:
+            emerging.append({
+                'reaction': reac,
+                'prr_latest': round(prr_latest, 2),
+                'prr_history': round(prr_history, 2),
+                'latest_count': int(a),
+                'quarter': str(latest_q)
+            })
+
+    return {
+        'drugname': drugname,
+        'latest_quarter': str(latest_q),
+        'emerging': emerging
+    }
+
+@analysis.route('/api/signals/emerging/<drugname>')
+@cache.cached(timeout=600)
+def api_emerging_signals(drugname):
+    result = compute_emerging_signals(drugname)
+    if result is None:
+        return jsonify({'error': f'분석할 수 없습니다: {drugname.upper()} (데이터 또는 분기 정보 부족)'}), 404
+    return jsonify(result)
+
 @analysis.route('/api/favorites/alerts')
 def favorites_alerts():
-    """즐겨찾기한 약물의 PRR 부작용 신호 알림 (약물감시)"""
+    """즐겨찾기한 약물의 PRR 부작용 신호 + 분기별 신규/이상 신호 알림 (약물감시)"""
     favorites = FavoriteDrug.query.all()
     if not favorites:
         return jsonify({'alerts': []})
@@ -137,6 +215,11 @@ def favorites_alerts():
         else:
             level = 'none'
 
+        emerging_result = compute_emerging_signals(drugname, df=df)
+        emerging = emerging_result['emerging'] if emerging_result else []
+        if emerging:
+            level = 'new'
+
         alerts.append({
             'drugname': summary['drugname'],
             'signal_count': summary['signal_count'],
@@ -145,11 +228,15 @@ def favorites_alerts():
             'top_signals': [
                 {'reaction': r['reaction'], 'prr': r['prr'], 'signal_level': r['signal_level']}
                 for r in top_signals
+            ],
+            'emerging_signals': [
+                {'reaction': e['reaction'], 'prr_latest': e['prr_latest'], 'quarter': e['quarter']}
+                for e in emerging[:3]
             ]
         })
 
-    # 강한 신호 → 신호 → 없음 순으로 정렬
-    level_order = {'strong': 0, 'signal': 1, 'none': 2}
+    # 신규 신호 → 강한 신호 → 신호 → 없음 순으로 정렬
+    level_order = {'new': 0, 'strong': 1, 'signal': 2, 'none': 3}
     alerts.sort(key=lambda a: level_order[a['level']])
 
     return jsonify({'alerts': alerts})
