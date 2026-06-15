@@ -85,3 +85,7 @@ notebooks/.ipynb_checkpoints/
 
 rag_db/
 build_rag.py
+
+mlruns/
+mlflow.db
+*.pkl
