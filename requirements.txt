@@ -38,3 +38,5 @@ langchain-community
 langchain-text-splitters
 
 lime
+
+prophet

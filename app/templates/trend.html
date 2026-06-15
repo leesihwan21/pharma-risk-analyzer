@@ -8,58 +8,50 @@
   <style>
     * { margin: 0; padding: 0; box-sizing: border-box; }
     body { font-family: Arial, sans-serif; background: #0f172a; color: #e2e8f0; min-height: 100vh; }
-    .nav { background: #1e293b; border-bottom: 1px solid #334155; padding: 14px 24px; display: flex; align-items: center; justify-content: space-between; }
+    .nav { background: #1e293b; border-bottom: 1px solid #334155; padding: 14px 24px; display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 8px; }
     .nav-logo { color: #38bdf8; font-size: 1.1rem; font-weight: bold; text-decoration: none; }
-    .nav-links { display: flex; gap: 8px; }
+    .nav-links { display: flex; gap: 8px; flex-wrap: wrap; }
     .nav-btn { padding: 8px 18px; border-radius: 8px; font-size: 0.88rem; font-weight: bold; text-decoration: none; color: #94a3b8; border: 1px solid #334155; }
     .nav-btn:hover { border-color: #38bdf8; color: #38bdf8; }
     .nav-btn.active { background: #38bdf8; color: #0f172a; border-color: #38bdf8; }
-
-    .container { max-width: 900px; margin: 48px auto; padding: 0 24px; }
-
+    .container { max-width: 960px; margin: 48px auto; padding: 0 24px; }
     .page-header { margin-bottom: 32px; }
     .page-header h1 { font-size: 1.9rem; color: #38bdf8; margin-bottom: 8px; }
     .page-header p { color: #64748b; font-size: 0.95rem; }
-
     .search-bar { display: flex; gap: 10px; margin-bottom: 36px; }
-    .search-bar input {
-      flex: 1; padding: 13px 18px;
-      background: #1e293b; border: 1px solid #334155;
-      border-radius: 10px; color: #e2e8f0; font-size: 1rem;
-      outline: none;
-    }
+    .search-bar input { flex: 1; padding: 13px 18px; background: #1e293b; border: 1px solid #334155; border-radius: 10px; color: #e2e8f0; font-size: 1rem; outline: none; }
     .search-bar input:focus { border-color: #38bdf8; }
     .search-bar input::placeholder { color: #475569; }
-    .search-bar button {
-      padding: 13px 32px; background: #38bdf8; color: #0f172a;
-      border: none; border-radius: 10px; font-size: 1rem;
-      font-weight: bold; cursor: pointer;
-    }
+    .search-bar button { padding: 13px 32px; background: #38bdf8; color: #0f172a; border: none; border-radius: 10px; font-size: 1rem; font-weight: bold; cursor: pointer; }
     .search-bar button:hover { background: #0ea5e9; }
-
-    .card {
-      background: #1e293b; border: 1px solid #334155;
-      border-radius: 14px; padding: 28px; margin-bottom: 20px;
-    }
+    .search-bar button:disabled { opacity: 0.5; cursor: not-allowed; }
+    .card { background: #1e293b; border: 1px solid #334155; border-radius: 14px; padding: 28px; margin-bottom: 20px; }
     .card h2 { font-size: 1.05rem; color: #94a3b8; margin-bottom: 22px; }
-
     table { width: 100%; border-collapse: collapse; }
     th, td { padding: 13px 16px; text-align: left; border-bottom: 1px solid #334155; font-size: 0.93rem; }
     th { color: #64748b; font-weight: 600; }
     td { color: #e2e8f0; }
     tr:last-child td { border-bottom: none; }
-
     .up { color: #f87171; }
     .down { color: #34d399; }
     .flat { color: #64748b; }
-
-    .error { padding: 16px; background: #1e293b; border: 1px solid #f87171; border-radius: 10px; color: #f87171; margin-bottom: 20px; }
-    .loading { text-align: center; padding: 40px; color: #64748b; }
+    .forecast-row td { color: #a855f7; font-style: italic; }
+    .forecast-badge { display: inline-block; padding: 2px 8px; border-radius: 6px; font-size: 0.72rem; background: rgba(168,85,247,0.15); color: #a855f7; margin-left: 6px; vertical-align: middle; }
+    .legend { display: flex; gap: 20px; margin-bottom: 16px; font-size: 0.82rem; color: #64748b; flex-wrap: wrap; }
+    .legend-item { display: flex; align-items: center; gap: 6px; }
+    .legend-dot { width: 12px; height: 3px; border-radius: 2px; }
+    .info-box { background: #0f172a; border: 1px solid #334155; border-radius: 10px; padding: 12px 16px; margin-bottom: 20px; font-size: 0.84rem; color: #64748b; line-height: 1.6; }
+    .info-box strong { color: #a855f7; }
+    .error { padding: 16px; background: #1e293b; border: 1px solid #f87171; border-radius: 10px; color: #f87171; margin-bottom: 20px; display: none; }
+    .loading { text-align: center; padding: 40px; color: #64748b; display: none; }
     #result-area { display: none; }
-    #error-msg { display: none; }
-    #loading { display: none; }
+    .forecast-summary { display: flex; gap: 16px; margin-top: 16px; flex-wrap: wrap; }
+    .forecast-card { flex: 1; min-width: 160px; background: #0f172a; border: 1px solid #a855f7; border-radius: 10px; padding: 14px; }
+    .forecast-card .q { font-size: 0.82rem; color: #64748b; margin-bottom: 4px; }
+    .forecast-card .val { font-size: 1.3rem; font-weight: bold; color: #a855f7; }
+    .forecast-card .range { font-size: 0.78rem; color: #475569; margin-top: 4px; }
   </style>
-    <script src="/static/pwa.js"></script>
+  <script src="/static/pwa.js"></script>
 </head>
 <body>
 
@@ -71,6 +63,8 @@
     <a href="/compare" class="nav-btn">Compare</a>
     <a href="/prr" class="nav-btn">PRR</a>
     <a href="/trend" class="nav-btn active">Trend</a>
+    <a href="/shap" class="nav-btn">SHAP</a>
+    <a href="/recommend" class="nav-btn">Recommend</a>
     <a href="/ae_manager" class="nav-btn">AE Manager</a>
   </div>
 </nav>
@@ -78,26 +72,43 @@
 <div class="container">
   <div class="page-header">
     <h1>📈 Quarter Trend Analysis</h1>
-    <p>FDA FAERS quarterly adverse event report trend by drug</p>
+    <p>FDA FAERS quarterly adverse event report trend + Prophet forecast</p>
   </div>
 
   <div class="search-bar">
     <input type="text" id="drugInput" placeholder="Enter drug name (e.g. METHOTREXATE)" autocomplete="off">
-    <button onclick="loadTrend()">Analyze</button>
+    <button id="analyzeBtn" onclick="loadTrend()">Analyze</button>
   </div>
 
-  <div id="loading" class="loading">⏳ Loading...</div>
+  <div id="loading" class="loading">⏳ Analyzing trend & running Prophet forecast...</div>
   <div id="error-msg" class="error"></div>
 
   <div id="result-area">
+    <!-- 차트 -->
     <div class="card">
       <h2 id="chartTitle"></h2>
+      <div class="legend">
+        <div class="legend-item"><div class="legend-dot" style="background:#38bdf8"></div> Actual reports</div>
+        <div class="legend-item"><div class="legend-dot" style="background:#a855f7; border-top: 2px dashed #a855f7; height:0"></div> Prophet forecast</div>
+        <div class="legend-item"><div class="legend-dot" style="background:rgba(168,85,247,0.2); width:20px; height:10px; border-radius:3px"></div> 80% confidence interval</div>
+      </div>
       <canvas id="trendChart" height="90"></canvas>
     </div>
+
+    <!-- 예측 요약 -->
+    <div class="card" id="forecastSummaryCard" style="display:none">
+      <h2>🔮 Prophet Forecast</h2>
+      <div class="info-box">
+        <strong>Prophet</strong> — Facebook이 개발한 시계열 예측 라이브러리. 분기별 부작용 보고 추세를 학습하여 향후 2개 분기를 예측합니다. 80% 신뢰구간 표시.
+      </div>
+      <div class="forecast-summary" id="forecastSummary"></div>
+    </div>
+
+    <!-- 테이블 -->
     <div class="card">
       <h2>Quarter Summary</h2>
       <table>
-        <thead><tr><th>Quarter</th><th>Reports</th><th>vs. Previous</th></tr></thead>
+        <thead><tr><th>Quarter</th><th>Reports</th><th>vs. Previous</th><th>Forecast</th></tr></thead>
         <tbody id="tableBody"></tbody>
       </table>
     </div>
@@ -111,87 +122,194 @@ async function loadTrend() {
   const drug = document.getElementById('drugInput').value.trim();
   if (!drug) return;
 
+  const btn = document.getElementById('analyzeBtn');
+  btn.disabled = true;
   document.getElementById('loading').style.display = 'block';
   document.getElementById('result-area').style.display = 'none';
   document.getElementById('error-msg').style.display = 'none';
 
   try {
-    const res = await fetch('/api/trend?drug=' + encodeURIComponent(drug));
-    const data = await res.json();
+    const [trendRes, forecastRes] = await Promise.all([
+      fetch('/api/trend?drug=' + encodeURIComponent(drug)),
+      fetch('/api/trend/forecast?drug=' + encodeURIComponent(drug))
+    ]);
 
-    if (!res.ok) {
-      document.getElementById('error-msg').textContent = data.error || 'Error occurred';
-      document.getElementById('error-msg').style.display = 'block';
-      document.getElementById('loading').style.display = 'none';
-      return;
-    }
+    const trendData    = await trendRes.json();
+    const forecastData = await forecastRes.json();
 
-    renderChart(data);
-    renderTable(data);
-    document.getElementById('chartTitle').textContent = data.drug + ' — Quarterly Report Count';
+    if (!trendRes.ok) { showError(trendData.error || 'Error'); return; }
+
+    renderChart(trendData, forecastRes.ok ? forecastData : null);
+    renderTable(trendData, forecastRes.ok ? forecastData : null);
+    renderForecastSummary(forecastRes.ok ? forecastData : null);
+
+    document.getElementById('chartTitle').textContent = drug.toUpperCase() + ' — Quarterly Report Count + Forecast';
     document.getElementById('result-area').style.display = 'block';
 
   } catch(e) {
-    document.getElementById('error-msg').textContent = 'Server error.';
-    document.getElementById('error-msg').style.display = 'block';
+    showError('Server error: ' + e.message);
+  } finally {
+    document.getElementById('loading').style.display = 'none';
+    btn.disabled = false;
   }
-  document.getElementById('loading').style.display = 'none';
 }
 
-function renderChart(data) {
-  const labels = data.trend.map(d => d.quarter);
-  const counts = data.trend.map(d => d.count);
+function renderChart(trendData, forecastData) {
   if (chart) chart.destroy();
   const ctx = document.getElementById('trendChart').getContext('2d');
-  chart = new Chart(ctx, {
-    type: 'line',
-    data: {
-      labels: labels,
-      datasets: [{
-        label: 'Reports',
-        data: counts,
-        borderColor: '#38bdf8',
-        backgroundColor: 'rgba(56,189,248,0.08)',
-        borderWidth: 2.5,
-        pointRadius: 6,
-        pointBackgroundColor: '#38bdf8',
-        fill: true,
-        tension: 0.3
-      }]
-    },
-    options: {
-      responsive: true,
-      plugins: {
-        legend: { display: false },
-        tooltip: {
-          backgroundColor: '#1e293b',
-          borderColor: '#334155',
-          borderWidth: 1,
-          titleColor: '#94a3b8',
-          bodyColor: '#e2e8f0',
-          callbacks: { label: ctx => ' ' + ctx.raw + ' reports' }
+
+  const actualLabels = trendData.trend.map(d => d.quarter);
+  const actualCounts = trendData.trend.map(d => d.count);
+
+  const datasets = [{
+    label: 'Actual',
+    data: actualCounts,
+    borderColor: '#38bdf8',
+    backgroundColor: 'rgba(56,189,248,0.08)',
+    borderWidth: 2.5,
+    pointRadius: 6,
+    pointBackgroundColor: '#38bdf8',
+    fill: true,
+    tension: 0.3
+  }];
+
+  let allLabels = [...actualLabels];
+
+  if (forecastData && forecastData.forecast) {
+    const futureRows = forecastData.forecast.filter(r => r.is_forecast);
+    futureRows.forEach(r => { if (!allLabels.includes(r.quarter)) allLabels.push(r.quarter); });
+
+    const yhat = allLabels.map(q => {
+      const f = forecastData.forecast.find(r => r.quarter === q);
+      return f ? f.yhat : null;
+    });
+    const lower = allLabels.map(q => {
+      const f = forecastData.forecast.find(r => r.quarter === q && r.is_forecast);
+      return f ? f.yhat_lower : null;
+    });
+    const upper = allLabels.map(q => {
+      const f = forecastData.forecast.find(r => r.quarter === q && r.is_forecast);
+      return f ? f.yhat_upper : null;
+    });
+
+    datasets.push({
+      label: 'Forecast',
+      data: yhat,
+      borderColor: '#a855f7',
+      borderWidth: 2,
+      borderDash: [6, 3],
+      pointRadius: allLabels.map(q => forecastData.forecast.find(r => r.quarter === q && r.is_forecast) ? 6 : 0),
+      pointBackgroundColor: '#a855f7',
+      fill: false,
+      tension: 0.3
+    });
+    datasets.push({
+      label: 'Upper',
+      data: upper,
+      borderColor: 'transparent',
+      backgroundColor: 'rgba(168,85,247,0.12)',
+      fill: '+1',
+      pointRadius: 0,
+      tension: 0.3
+    });
+    datasets.push({
+      label: 'Lower',
+      data: lower,
+      borderColor: 'transparent',
+      backgroundColor: 'rgba(168,85,247,0.12)',
+      fill: false,
+      pointRadius: 0,
+      tension: 0.3
+    });
+
+    chart = new Chart(ctx, {
+      type: 'line',
+      data: { labels: allLabels, datasets },
+      options: {
+        responsive: true,
+        plugins: {
+          legend: { display: false },
+          tooltip: {
+            backgroundColor: '#1e293b', borderColor: '#334155', borderWidth: 1,
+            titleColor: '#94a3b8', bodyColor: '#e2e8f0',
+            filter: item => item.dataset.label !== 'Upper' && item.dataset.label !== 'Lower',
+            callbacks: { label: ctx => ' ' + (ctx.raw ? Math.round(ctx.raw).toLocaleString() : '-') + ' reports' }
+          }
+        },
+        scales: {
+          x: { ticks: { color: '#64748b' }, grid: { color: '#1e293b' } },
+          y: { beginAtZero: false, ticks: { color: '#64748b' }, grid: { color: '#334155' } }
         }
-      },
-      scales: {
-        x: { ticks: { color: '#64748b' }, grid: { color: '#1e293b' } },
-        y: { beginAtZero: true, ticks: { color: '#64748b', stepSize: 1 }, grid: { color: '#334155' } }
       }
-    }
-  });
+    });
+  } else {
+    chart = new Chart(ctx, {
+      type: 'line',
+      data: { labels: actualLabels, datasets },
+      options: {
+        responsive: true,
+        plugins: { legend: { display: false } },
+        scales: {
+          x: { ticks: { color: '#64748b' }, grid: { color: '#1e293b' } },
+          y: { beginAtZero: true, ticks: { color: '#64748b' }, grid: { color: '#334155' } }
+        }
+      }
+    });
+  }
 }
 
-function renderTable(data) {
+function renderForecastSummary(forecastData) {
+  const card = document.getElementById('forecastSummaryCard');
+  const container = document.getElementById('forecastSummary');
+  if (!forecastData || !forecastData.forecast) { card.style.display = 'none'; return; }
+  card.style.display = 'block';
+  const futures = forecastData.forecast.filter(r => r.is_forecast);
+  container.innerHTML = futures.map(r => `
+    <div class="forecast-card">
+      <div class="q">${r.quarter} (Forecast)</div>
+      <div class="val">${Math.round(r.yhat).toLocaleString()}</div>
+      <div class="range">80% CI: ${Math.round(r.yhat_lower).toLocaleString()} ~ ${Math.round(r.yhat_upper).toLocaleString()}</div>
+    </div>`).join('');
+}
+
+function renderTable(trendData, forecastData) {
   const tbody = document.getElementById('tableBody');
   tbody.innerHTML = '';
-  data.trend.forEach((d, i) => {
-    const prev = i > 0 ? data.trend[i-1].count : null;
+
+  const forecastMap = {};
+  if (forecastData && forecastData.forecast) {
+    forecastData.forecast.forEach(r => { forecastMap[r.quarter] = r; });
+  }
+
+  trendData.trend.forEach((d, i) => {
+    const prev = i > 0 ? trendData.trend[i-1].count : null;
     const diff = prev !== null ? d.count - prev : null;
     const diffStr = diff === null ? '<span class="flat">—</span>'
-      : diff > 0 ? '<span class="up">▲ ' + diff + '</span>'
-      : diff < 0 ? '<span class="down">▼ ' + Math.abs(diff) + '</span>'
-      : '<span class="flat">— 0</span>';
-    tbody.innerHTML += '<tr><td>' + d.quarter + '</td><td>' + d.count.toLocaleString() + '</td><td>' + diffStr + '</td></tr>';
+      : diff > 0 ? '<span class="up">▲ ' + diff.toLocaleString() + '</span>'
+      : diff < 0 ? '<span class="down">▼ ' + Math.abs(diff).toLocaleString() + '</span>'
+      : '<span class="flat">—</span>';
+    const f = forecastMap[d.quarter];
+    const fStr = f ? Math.round(f.yhat).toLocaleString() : '—';
+    tbody.innerHTML += `<tr><td>${d.quarter}</td><td>${d.count.toLocaleString()}</td><td>${diffStr}</td><td style="color:#64748b;font-size:0.85rem">${fStr}</td></tr>`;
   });
+
+  // 예측 분기 추가
+  if (forecastData && forecastData.forecast) {
+    forecastData.forecast.filter(r => r.is_forecast).forEach(r => {
+      tbody.innerHTML += `<tr class="forecast-row">
+        <td>${r.quarter} <span class="forecast-badge">Forecast</span></td>
+        <td>—</td><td>—</td>
+        <td>${Math.round(r.yhat).toLocaleString()} <span style="font-size:0.75rem;color:#475569">(${Math.round(r.yhat_lower).toLocaleString()}~${Math.round(r.yhat_upper).toLocaleString()})</span></td>
+      </tr>`;
+    });
+  }
+}
+
+function showError(msg) {
+  document.getElementById('error-msg').textContent = msg;
+  document.getElementById('error-msg').style.display = 'block';
+  document.getElementById('loading').style.display = 'none';
+  document.getElementById('analyzeBtn').disabled = false;
 }
 
 document.addEventListener('DOMContentLoaded', () => {
