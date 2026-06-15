@@ -1,0 +1,245 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Drug Recommendation | Pharma Risk Analyzer</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body { font-family: Arial, sans-serif; background: #0f172a; color: #e2e8f0; min-height: 100vh; }
+    .nav { background: #1e293b; border-bottom: 1px solid #334155; padding: 14px 24px; display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 8px; }
+    .nav-logo { color: #38bdf8; font-size: 1.1rem; font-weight: bold; text-decoration: none; }
+    .nav-links { display: flex; gap: 8px; flex-wrap: wrap; }
+    .nav-btn { padding: 8px 18px; border-radius: 8px; font-size: 0.88rem; font-weight: bold; text-decoration: none; color: #94a3b8; border: 1px solid #334155; }
+    .nav-btn:hover { border-color: #38bdf8; color: #38bdf8; }
+    .nav-btn.active { background: #38bdf8; color: #0f172a; border-color: #38bdf8; }
+
+    .container { max-width: 960px; margin: 48px auto; padding: 0 24px; }
+    .page-header { margin-bottom: 28px; }
+    .page-header h1 { font-size: 1.9rem; color: #38bdf8; margin-bottom: 8px; }
+    .page-header p { color: #64748b; font-size: 0.95rem; }
+
+    .tab-bar { display: flex; gap: 0; margin-bottom: 28px; border-bottom: 2px solid #334155; }
+    .tab-btn { padding: 10px 32px; font-size: 1rem; font-weight: bold; cursor: pointer; background: none; border: none; color: #64748b; border-bottom: 3px solid transparent; margin-bottom: -2px; transition: all 0.2s; }
+    .tab-btn:hover { color: #38bdf8; }
+    .tab-btn.active { color: #38bdf8; border-bottom-color: #38bdf8; }
+    .tab-badge { font-size: 0.72rem; padding: 2px 8px; border-radius: 10px; margin-left: 8px; vertical-align: middle; }
+    .badge-cluster { background: rgba(168,85,247,0.15); color: #a855f7; }
+    .badge-comed { background: rgba(251,191,36,0.15); color: #fbbf24; }
+
+    .tab-panel { display: none; }
+    .tab-panel.active { display: block; }
+
+    .search-row { display: flex; gap: 12px; margin-bottom: 28px; }
+    .search-input { flex: 1; padding: 12px 16px; background: #1e293b; border: 1px solid #334155; border-radius: 10px; color: #e2e8f0; font-size: 0.95rem; outline: none; }
+    .search-input:focus { border-color: #38bdf8; }
+    .search-input::placeholder { color: #475569; }
+    .search-btn { padding: 12px 28px; background: #38bdf8; color: #0f172a; border: none; border-radius: 10px; font-size: 0.95rem; font-weight: bold; cursor: pointer; white-space: nowrap; }
+    .search-btn:hover { background: #0ea5e9; }
+    .search-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+
+    .card { background: #1e293b; border: 1px solid #334155; border-radius: 14px; padding: 24px; margin-bottom: 20px; }
+    .card h2 { font-size: 1.05rem; color: #94a3b8; margin-bottom: 18px; }
+    .card-meta { font-size: 0.82rem; color: #475569; margin-bottom: 16px; }
+
+    /* 클러스터 */
+    .drug-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 12px; }
+    .drug-card { background: #0f172a; border: 1px solid #334155; border-radius: 10px; padding: 14px; }
+    .drug-card .drug-name { font-size: 0.9rem; font-weight: bold; color: #e2e8f0; margin-bottom: 6px; }
+    .drug-card .drug-sim { font-size: 0.82rem; color: #64748b; }
+    .sim-bar-bg { background: #334155; border-radius: 4px; height: 6px; margin-top: 8px; overflow: hidden; }
+    .sim-bar { height: 100%; border-radius: 4px; background: #a855f7; }
+    .drug-reports { font-size: 0.75rem; color: #475569; margin-top: 4px; }
+    .cluster-badge { display: inline-block; padding: 3px 10px; border-radius: 10px; font-size: 0.78rem; font-weight: bold; background: rgba(168,85,247,0.15); color: #a855f7; margin-bottom: 14px; }
+
+    /* Co-medication */
+    .comed-item { background: #0f172a; border: 1px solid #334155; border-radius: 12px; padding: 16px; margin-bottom: 14px; }
+    .comed-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 10px; }
+    .comed-name { font-size: 0.95rem; font-weight: bold; color: #fbbf24; }
+    .comed-stats { display: flex; gap: 16px; font-size: 0.8rem; color: #64748b; margin-bottom: 10px; }
+    .serious-badge { padding: 2px 8px; border-radius: 6px; font-size: 0.78rem; font-weight: bold; }
+    .serious-high { background: rgba(248,113,113,0.15); color: #f87171; }
+    .serious-mid  { background: rgba(251,191,36,0.15);  color: #fbbf24; }
+    .serious-low  { background: rgba(52,211,153,0.15);  color: #34d399; }
+    .reac-tags { display: flex; flex-wrap: wrap; gap: 6px; }
+    .reac-tag { background: #1e293b; border: 1px solid #334155; border-radius: 6px; padding: 3px 9px; font-size: 0.76rem; color: #94a3b8; }
+    .co-bar-bg { background: #334155; border-radius: 4px; height: 5px; margin: 8px 0; overflow: hidden; }
+    .co-bar { height: 100%; border-radius: 4px; background: #fbbf24; }
+
+    .info-box { background: #0f172a; border: 1px solid #334155; border-radius: 10px; padding: 14px 18px; margin-bottom: 20px; font-size: 0.85rem; color: #64748b; line-height: 1.7; }
+    .info-box strong { color: #38bdf8; }
+    .loading { text-align: center; padding: 40px; color: #64748b; display: none; }
+    .error { padding: 16px; background: #1e293b; border: 1px solid #f87171; border-radius: 10px; color: #f87171; margin-bottom: 20px; display: none; }
+    .result-area { display: none; }
+  </style>
+</head>
+<body>
+
+<nav class="nav">
+  <a href="/" class="nav-logo">💊 Pharma Risk Analyzer</a>
+  <div class="nav-links">
+    <a href="/dashboard" class="nav-btn">Dashboard</a>
+    <a href="/filter" class="nav-btn">Search</a>
+    <a href="/compare" class="nav-btn">Compare</a>
+    <a href="/prr" class="nav-btn">PRR</a>
+    <a href="/trend" class="nav-btn">Trend</a>
+    <a href="/shap" class="nav-btn">SHAP</a>
+    <a href="/recommend" class="nav-btn active">Recommend</a>
+    <a href="/ae_manager" class="nav-btn">AE Manager</a>
+  </div>
+</nav>
+
+<div class="container">
+  <div class="page-header">
+    <h1>💡 Drug Recommendation</h1>
+    <p>Find similar drugs by adverse event profile and analyze co-medication patterns</p>
+  </div>
+
+  <div class="tab-bar">
+    <button class="tab-btn active" onclick="switchTab('cluster', this)">
+      Drug Clustering <span class="tab-badge badge-cluster">K-Means</span>
+    </button>
+    <button class="tab-btn" onclick="switchTab('comed', this)">
+      Co-medication Analysis <span class="tab-badge badge-comed">FAERS</span>
+    </button>
+  </div>
+
+  <!-- 클러스터링 탭 -->
+  <div id="panel-cluster" class="tab-panel active">
+    <div class="info-box">
+      <strong>Drug Clustering</strong> — 입력 약물과 유사한 부작용 프로파일을 가진 약물을 K-Means 클러스터링으로 찾습니다.
+      상위 200개 약물을 50개 부작용 벡터로 표현하여 8개 클러스터로 분류합니다.
+    </div>
+    <div class="search-row">
+      <input class="search-input" id="clusterDrugInput" placeholder="e.g. METHOTREXATE" onkeydown="if(event.key==='Enter') loadCluster()">
+      <button class="search-btn" id="clusterBtn" onclick="loadCluster()">Find Similar Drugs</button>
+    </div>
+    <div id="clusterLoading" class="loading">Running K-Means clustering...</div>
+    <div id="clusterError" class="error"></div>
+    <div id="clusterResult" class="result-area"></div>
+  </div>
+
+  <!-- Co-medication 탭 -->
+  <div id="panel-comed" class="tab-panel">
+    <div class="info-box">
+      <strong>Co-medication Analysis</strong> — 같은 케이스에서 함께 보고된 약물 Top 10과 각 조합에서 자주 나타나는 부작용을 분석합니다.
+      중증 부작용(사망/입원/생명위협) 비율도 함께 표시합니다.
+    </div>
+    <div class="search-row">
+      <input class="search-input" id="comedDrugInput" placeholder="e.g. ASPIRIN" onkeydown="if(event.key==='Enter') loadComed()">
+      <button class="search-btn" id="comedBtn" onclick="loadComed()">Analyze Co-medications</button>
+    </div>
+    <div id="comedLoading" class="loading">Analyzing co-medication patterns...</div>
+    <div id="comedError" class="error"></div>
+    <div id="comedResult" class="result-area"></div>
+  </div>
+</div>
+
+<script>
+function switchTab(name, btn) {
+  document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+  document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
+  btn.classList.add('active');
+  document.getElementById('panel-' + name).classList.add('active');
+}
+
+// -- 클러스터링 -----------------------------------------------
+async function loadCluster() {
+  const drug = document.getElementById('clusterDrugInput').value.trim().toUpperCase();
+  if (!drug) return;
+  const loading = document.getElementById('clusterLoading');
+  const error   = document.getElementById('clusterError');
+  const result  = document.getElementById('clusterResult');
+  const btn     = document.getElementById('clusterBtn');
+  loading.style.display = 'block'; error.style.display = 'none';
+  result.style.display = 'none'; btn.disabled = true;
+  try {
+    const res  = await fetch('/api/recommend/cluster/' + encodeURIComponent(drug));
+    const data = await res.json();
+    if (!res.ok) { showError('clusterError', 'clusterLoading', 'clusterBtn', data.error); return; }
+    result.innerHTML = `
+      <div class="card">
+        <h2>📊 ${data.drug} — Cluster ${data.cluster + 1} / ${data.total_clusters}</h2>
+        <div class="card-meta">Total reports: ${data.report_count.toLocaleString()}</div>
+        <div class="cluster-badge">Cluster ${data.cluster + 1}</div>
+        <div style="margin-bottom:12px; font-size:0.85rem; color:#64748b;">Top adverse reactions:</div>
+        <div style="display:flex; flex-wrap:wrap; gap:8px; margin-bottom:20px;">
+          ${data.drug_top_reactions.map(r =>
+            `<span style="background:#1e293b; border:1px solid #334155; border-radius:6px; padding:4px 10px; font-size:0.8rem; color:#94a3b8;">${r.reaction} (${r.count})</span>`
+          ).join('')}
+        </div>
+        <h2>🔗 Similar Drugs (same cluster, ranked by similarity)</h2>
+        <div class="drug-grid">
+          ${data.similar_drugs.map(d => `
+            <div class="drug-card">
+              <div class="drug-name">${d.drug}</div>
+              <div class="drug-sim">Similarity: ${(d.similarity * 100).toFixed(1)}%</div>
+              <div class="sim-bar-bg"><div class="sim-bar" style="width:${Math.max(d.similarity*100,0)}%"></div></div>
+              <div class="drug-reports">${d.report_count.toLocaleString()} reports</div>
+            </div>`).join('')}
+        </div>
+      </div>`;
+    result.style.display = 'block';
+  } catch(e) {
+    showError('clusterError', 'clusterLoading', 'clusterBtn', 'Server error: ' + e.message);
+  } finally {
+    loading.style.display = 'none'; btn.disabled = false;
+  }
+}
+
+// -- Co-medication ----------------------------------------------
+async function loadComed() {
+  const drug = document.getElementById('comedDrugInput').value.trim().toUpperCase();
+  if (!drug) return;
+  const loading = document.getElementById('comedLoading');
+  const error   = document.getElementById('comedError');
+  const result  = document.getElementById('comedResult');
+  const btn     = document.getElementById('comedBtn');
+  loading.style.display = 'block'; error.style.display = 'none';
+  result.style.display = 'none'; btn.disabled = true;
+  try {
+    const res  = await fetch('/api/recommend/comedication/' + encodeURIComponent(drug));
+    const data = await res.json();
+    if (!res.ok) { showError('comedError', 'comedLoading', 'comedBtn', data.error); return; }
+
+    const maxCoRate = Math.max(...data.co_medications.map(d => d.co_rate), 1);
+    result.innerHTML = `
+      <div class="card">
+        <h2>💊 ${data.drug} — Co-medication Patterns</h2>
+        <div class="card-meta">Total cases: ${data.total_cases.toLocaleString()} | Top 10 co-medications</div>
+        ${data.co_medications.map(d => {
+          const sClass = d.serious_rate >= 30 ? 'serious-high' : d.serious_rate >= 15 ? 'serious-mid' : 'serious-low';
+          return `
+          <div class="comed-item">
+            <div class="comed-header">
+              <span class="comed-name">${d.co_drug}</span>
+              <span class="serious-badge ${sClass}">Serious ${d.serious_rate}%</span>
+            </div>
+            <div class="comed-stats">
+              <span>Co-reports: ${d.both_cases.toLocaleString()}</span>
+              <span>Co-rate: ${d.co_rate}% of ${data.drug} cases</span>
+            </div>
+            <div class="co-bar-bg"><div class="co-bar" style="width:${(d.co_rate/maxCoRate*100).toFixed(1)}%"></div></div>
+            <div class="reac-tags">
+              ${d.top_reactions.map(r => `<span class="reac-tag">${r.reaction} (${r.count})</span>`).join('')}
+            </div>
+          </div>`;
+        }).join('')}
+      </div>`;
+    result.style.display = 'block';
+  } catch(e) {
+    showError('comedError', 'comedLoading', 'comedBtn', 'Server error: ' + e.message);
+  } finally {
+    loading.style.display = 'none'; btn.disabled = false;
+  }
+}
+
+function showError(errId, loadId, btnId, msg) {
+  document.getElementById(errId).textContent = msg;
+  document.getElementById(errId).style.display = 'block';
+  document.getElementById(loadId).style.display = 'none';
+  document.getElementById(btnId).disabled = false;
+}
+</script>
+</body>
+</html>
