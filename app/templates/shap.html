@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>SHAP Analysis | Pharma Risk Analyzer</title>
+  <title>XAI Analysis | Pharma Risk Analyzer</title>
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   <style>
     * { margin: 0; padding: 0; box-sizing: border-box; }
@@ -16,10 +16,28 @@
     .nav-btn.active { background: #38bdf8; color: #0f172a; border-color: #38bdf8; }
 
     .container { max-width: 900px; margin: 48px auto; padding: 0 24px; }
-    .page-header { margin-bottom: 32px; }
+    .page-header { margin-bottom: 28px; }
     .page-header h1 { font-size: 1.9rem; color: #38bdf8; margin-bottom: 8px; }
     .page-header p { color: #64748b; font-size: 0.95rem; }
 
+    /* 탭 */
+    .tab-bar { display: flex; gap: 0; margin-bottom: 28px; border-bottom: 2px solid #334155; }
+    .tab-btn {
+      padding: 10px 32px; font-size: 1rem; font-weight: bold; cursor: pointer;
+      background: none; border: none; color: #64748b;
+      border-bottom: 3px solid transparent; margin-bottom: -2px;
+      transition: all 0.2s;
+    }
+    .tab-btn:hover { color: #38bdf8; }
+    .tab-btn.active { color: #38bdf8; border-bottom-color: #38bdf8; }
+    .tab-badge {
+      font-size: 0.72rem; padding: 2px 8px; border-radius: 10px;
+      margin-left: 8px; vertical-align: middle;
+    }
+    .badge-shap { background: rgba(248,113,113,0.15); color: #f87171; }
+    .badge-lime { background: rgba(56,189,248,0.15); color: #38bdf8; }
+
+    /* 입력폼 */
     .input-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 16px; }
     .input-group { display: flex; flex-direction: column; gap: 6px; }
     .input-group label { font-size: 0.82rem; color: #64748b; font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em; }
@@ -36,6 +54,7 @@
       font-weight: bold; cursor: pointer; margin-bottom: 32px;
     }
     .analyze-btn:hover { background: #0ea5e9; }
+    .analyze-btn:disabled { opacity: 0.5; cursor: not-allowed; }
 
     .card { background: #1e293b; border: 1px solid #334155; border-radius: 14px; padding: 28px; margin-bottom: 20px; }
     .card h2 { font-size: 1.05rem; color: #94a3b8; margin-bottom: 20px; }
@@ -45,7 +64,7 @@
       font-size: 0.9rem; font-weight: bold; margin-bottom: 16px;
     }
     .risk-high { background: rgba(248,113,113,0.15); color: #f87171; border: 1px solid #f87171; }
-    .risk-low { background: rgba(52,211,153,0.15); color: #34d399; border: 1px solid #34d399; }
+    .risk-low  { background: rgba(52,211,153,0.15);  color: #34d399; border: 1px solid #34d399; }
 
     .prob-row { display: flex; gap: 20px; margin-bottom: 8px; }
     .prob-item { flex: 1; }
@@ -56,6 +75,7 @@
     .prob-bar-risk { background: #f87171; }
     .prob-value { font-size: 1.1rem; font-weight: bold; margin-top: 6px; }
 
+    /* SHAP 바 */
     .shap-row { display: flex; align-items: center; gap: 12px; margin-bottom: 12px; }
     .shap-feature { width: 140px; font-size: 0.85rem; color: #94a3b8; text-align: right; flex-shrink: 0; }
     .shap-bar-wrap { flex: 1; display: flex; align-items: center; height: 26px; position: relative; }
@@ -66,14 +86,34 @@
     .shap-val { width: 70px; font-size: 0.82rem; color: #64748b; flex-shrink: 0; }
     .shap-feature-val { width: 120px; font-size: 0.8rem; color: #475569; flex-shrink: 0; text-align: right; }
 
+    /* LIME 바 */
+    .lime-row { display: flex; align-items: center; gap: 12px; margin-bottom: 14px; }
+    .lime-expr { flex: 1; font-size: 0.83rem; color: #94a3b8; }
+    .lime-bar-wrap { width: 200px; position: relative; height: 20px; flex-shrink: 0; }
+    .lime-bar-bg { position: absolute; top: 50%; transform: translateY(-50%); height: 14px; border-radius: 3px; }
+    .lime-bar-pos { background: #f87171; left: 0; }
+    .lime-bar-neg { background: #34d399; right: 0; }
+    .lime-weight { width: 70px; font-size: 0.82rem; color: #64748b; flex-shrink: 0; text-align: right; }
+
+    /* 비교 설명 박스 */
+    .compare-box {
+      background: #0f172a; border: 1px solid #334155; border-radius: 10px;
+      padding: 16px 20px; margin-bottom: 20px; font-size: 0.88rem; color: #94a3b8; line-height: 1.7;
+    }
+    .compare-box strong { color: #38bdf8; }
+
     .legend { display: flex; gap: 20px; margin-bottom: 18px; font-size: 0.82rem; color: #64748b; }
     .legend-dot { width: 10px; height: 10px; border-radius: 2px; display: inline-block; margin-right: 5px; vertical-align: middle; }
 
     .error { padding: 16px; background: #1e293b; border: 1px solid #f87171; border-radius: 10px; color: #f87171; margin-bottom: 20px; display: none; }
     .loading { text-align: center; padding: 40px; color: #64748b; display: none; }
     #result-area { display: none; }
+
+    /* 탭 패널 */
+    .tab-panel { display: none; }
+    .tab-panel.active { display: block; }
   </style>
-    <script src="/static/pwa.js"></script>
+  <script src="/static/pwa.js"></script>
 </head>
 <body>
 
@@ -92,10 +132,11 @@
 
 <div class="container">
   <div class="page-header">
-    <h1>🔍 SHAP Risk Explanation</h1>
-    <p>AI prediction with explainability — which factors drive the risk score</p>
+    <h1>🔍 XAI Risk Explanation</h1>
+    <p>AI prediction with explainability — compare SHAP and LIME explanations</p>
   </div>
 
+  <!-- 입력폼 (공유) -->
   <div class="input-grid">
     <div class="input-group">
       <label>Drug Name</label>
@@ -117,12 +158,14 @@
       </select>
     </div>
   </div>
-  <button class="analyze-btn" onclick="loadShap()">Analyze Risk</button>
+  <button class="analyze-btn" id="analyzeBtn" onclick="loadAll()">Analyze Risk</button>
 
-  <div id="loading" class="loading">⏳ Running SHAP analysis...</div>
+  <div id="loading" class="loading">⏳ Running XAI analysis...</div>
   <div id="error-msg" class="error"></div>
 
   <div id="result-area">
+
+    <!-- 예측 결과 카드 (공유) -->
     <div class="card">
       <h2>Prediction Result</h2>
       <div id="riskBadge"></div>
@@ -140,82 +183,145 @@
       </div>
     </div>
 
-    <div class="card">
-      <h2>SHAP Feature Importance</h2>
-      <div class="legend">
-        <span><span class="legend-dot" style="background:#f87171"></span>Increases risk</span>
-        <span><span class="legend-dot" style="background:#34d399"></span>Decreases risk</span>
-      </div>
-      <div id="shapBars"></div>
+    <!-- SHAP vs LIME 방법 설명 -->
+    <div class="compare-box">
+      <strong>SHAP</strong> — 전체 학습 데이터 기반으로 각 피처가 예측에 기여한 절대적 영향력을 계산합니다. 모델 전반에 일관된 설명을 제공합니다.<br>
+      <strong>LIME</strong> — 현재 입력 주변의 로컬 영역을 샘플링해 선형 근사 모델로 개별 예측을 설명합니다. 이 케이스에 특화된 설명을 제공합니다.
     </div>
 
-    <div class="card">
-      <h2>🤖 AI 설명 (SHAP 근거)</h2>
-      <button class="analyze-btn" id="explainBtn" onclick="loadExplanation()" style="margin-bottom:12px;">한국어로 설명 생성</button>
-      <div id="explainLoading" style="display:none; color:#94a3b8; font-size:0.9rem;">⏳ 설명 생성 중...</div>
-      <div id="explainResult" style="white-space:pre-line; line-height:1.7; font-size:0.95rem;"></div>
+    <!-- 탭 바 -->
+    <div class="tab-bar">
+      <button class="tab-btn active" onclick="switchTab('shap', this)">
+        SHAP <span class="tab-badge badge-shap">Global</span>
+      </button>
+      <button class="tab-btn" onclick="switchTab('lime', this)">
+        LIME <span class="tab-badge badge-lime">Local</span>
+      </button>
     </div>
+
+    <!-- SHAP 패널 -->
+    <div id="panel-shap" class="tab-panel active">
+      <div class="card">
+        <h2>SHAP Feature Importance</h2>
+        <div class="legend">
+          <span><span class="legend-dot" style="background:#f87171"></span>Increases risk</span>
+          <span><span class="legend-dot" style="background:#34d399"></span>Decreases risk</span>
+        </div>
+        <div id="shapBars"></div>
+      </div>
+
+      <div class="card">
+        <h2>🤖 AI 설명 (SHAP 근거)</h2>
+        <button class="analyze-btn" id="explainBtn" onclick="loadExplanation()" style="margin-bottom:12px;">한국어로 설명 생성</button>
+        <div id="explainLoading" style="display:none; color:#94a3b8; font-size:0.9rem;">⏳ 설명 생성 중...</div>
+        <div id="explainResult" style="white-space:pre-line; line-height:1.7; font-size:0.95rem;"></div>
+      </div>
+    </div>
+
+    <!-- LIME 패널 -->
+    <div id="panel-lime" class="tab-panel">
+      <div class="card">
+        <h2>LIME Local Explanation</h2>
+        <div class="legend">
+          <span><span class="legend-dot" style="background:#f87171"></span>Pushes toward HIGH RISK</span>
+          <span><span class="legend-dot" style="background:#34d399"></span>Pushes toward LOW RISK</span>
+        </div>
+        <div id="limeBars"></div>
+      </div>
+
+      <div class="card" style="font-size:0.88rem; color:#64748b; line-height:1.8;">
+        <h2>📌 SHAP vs LIME 해석 차이</h2>
+        <div id="compareNote">분석 후 표시됩니다.</div>
+      </div>
+    </div>
+
   </div>
 </div>
 
 <script>
 let lastQuery = null;
+let shapData = null;
+let limeData = null;
 
-async function loadShap() {
+function switchTab(name, btn) {
+  document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+  document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
+  btn.classList.add('active');
+  document.getElementById('panel-' + name).classList.add('active');
+}
+
+async function loadAll() {
   const drug = document.getElementById('drugInput').value.trim();
   const reac = document.getElementById('reacInput').value.trim();
-  const age = document.getElementById('ageInput').value;
-  const sex = document.getElementById('sexInput').value;
+  const age  = document.getElementById('ageInput').value;
+  const sex  = document.getElementById('sexInput').value;
 
   if (!drug || !reac) {
-    document.getElementById('error-msg').textContent = 'Please enter drug name and reaction.';
-    document.getElementById('error-msg').style.display = 'block';
+    showError('Please enter drug name and reaction.');
     return;
   }
 
   document.getElementById('loading').style.display = 'block';
   document.getElementById('result-area').style.display = 'none';
   document.getElementById('error-msg').style.display = 'none';
+  document.getElementById('analyzeBtn').disabled = true;
 
   try {
-    const url = '/api/shap?drug=' + encodeURIComponent(drug) +
-                '&reaction=' + encodeURIComponent(reac) +
-                '&age=' + age + '&sex=' + sex;
-    const res = await fetch(url);
-    const data = await res.json();
+    const qs = `drug=${encodeURIComponent(drug)}&reaction=${encodeURIComponent(reac)}&age=${age}&sex=${sex}`;
 
-    if (!res.ok) {
-      document.getElementById('error-msg').textContent = data.error || 'Error occurred';
-      document.getElementById('error-msg').style.display = 'block';
-      document.getElementById('loading').style.display = 'none';
-      return;
-    }
+    // SHAP + LIME 병렬 요청
+    const [shapRes, limeRes] = await Promise.all([
+      fetch('/api/shap?' + qs),
+      fetch('/api/lime?' + qs)
+    ]);
 
-    renderResult(data);
-    document.getElementById('result-area').style.display = 'block';
-    document.getElementById('explainResult').textContent = '';
+    const shapJson = await shapRes.json();
+    const limeJson = await limeRes.json();
+
+    if (!shapRes.ok) { showError(shapJson.error || 'SHAP 오류'); return; }
+    if (!limeRes.ok) { showError(limeJson.error || 'LIME 오류'); return; }
+
+    shapData = shapJson;
+    limeData = limeJson;
     lastQuery = { drug, reaction: reac, age, sex };
 
+    renderPrediction(shapJson);
+    renderShap(shapJson);
+    renderLime(limeJson);
+    renderCompareNote(shapJson, limeJson);
+
+    document.getElementById('result-area').style.display = 'block';
+    document.getElementById('explainResult').textContent = '';
+
   } catch(e) {
-    document.getElementById('error-msg').textContent = 'Server error.';
-    document.getElementById('error-msg').style.display = 'block';
+    showError('Server error: ' + e.message);
+  } finally {
+    document.getElementById('loading').style.display = 'none';
+    document.getElementById('analyzeBtn').disabled = false;
   }
-  document.getElementById('loading').style.display = 'none';
 }
 
-function renderResult(data) {
+function showError(msg) {
+  const el = document.getElementById('error-msg');
+  el.textContent = msg;
+  el.style.display = 'block';
+  document.getElementById('loading').style.display = 'none';
+  document.getElementById('analyzeBtn').disabled = false;
+}
+
+function renderPrediction(data) {
   const badge = document.getElementById('riskBadge');
   badge.innerHTML = '<span class="risk-badge ' + (data.prediction === 1 ? 'risk-high' : 'risk-low') + '">' + data.risk_label + '</span>';
-
   document.getElementById('safeBar').style.width = data.probability.safe + '%';
   document.getElementById('riskBar').style.width = data.probability.risk + '%';
   document.getElementById('safeVal').textContent = data.probability.safe + '%';
   document.getElementById('riskVal').textContent = data.probability.risk + '%';
+}
 
+function renderShap(data) {
   const maxShap = Math.max(...data.shap.map(d => Math.abs(d.shap)));
   const container = document.getElementById('shapBars');
   container.innerHTML = '';
-
   data.shap.forEach(d => {
     const pct = maxShap > 0 ? (Math.abs(d.shap) / maxShap * 45) : 0;
     const isPos = d.shap >= 0;
@@ -233,16 +339,45 @@ function renderResult(data) {
   });
 }
 
+function renderLime(data) {
+  const maxW = Math.max(...data.lime.map(d => Math.abs(d.weight)));
+  const container = document.getElementById('limeBars');
+  container.innerHTML = '';
+  data.lime.forEach(d => {
+    const pct = maxW > 0 ? (Math.abs(d.weight) / maxW * 100) : 0;
+    const isPos = d.weight >= 0;
+    const row = document.createElement('div');
+    row.className = 'lime-row';
+    row.innerHTML =
+      '<div class="lime-expr">' + d.expression + '</div>' +
+      '<div class="lime-bar-wrap">' +
+        '<div class="lime-bar-bg ' + (isPos ? 'lime-bar-pos' : 'lime-bar-neg') + '" style="width:' + pct + '%"></div>' +
+      '</div>' +
+      '<div class="lime-weight">' + (d.weight >= 0 ? '+' : '') + d.weight + '</div>';
+    container.appendChild(row);
+  });
+}
+
+function renderCompareNote(shap, lime) {
+  const shapTop = shap.shap[0]?.feature || '-';
+  const limeTop = lime.lime[0]?.feature || '-';
+  const agree = shapTop === limeTop;
+  document.getElementById('compareNote').innerHTML =
+    '• SHAP 최대 기여 피처: <strong style="color:#f87171">' + shapTop + '</strong><br>' +
+    '• LIME 최대 기여 피처: <strong style="color:#38bdf8">' + limeTop + '</strong><br><br>' +
+    (agree
+      ? '✅ 두 방법이 <strong>동일한 피처</strong>를 가장 중요하게 평가 → 예측 신뢰도가 높습니다.'
+      : '⚠️ 두 방법이 <strong>다른 피처</strong>를 중요하게 평가 → 로컬/글로벌 영향력 차이가 있습니다. LIME은 이 케이스에 특화된 설명입니다.');
+}
+
 async function loadExplanation() {
   if (!lastQuery) return;
   const btn = document.getElementById('explainBtn');
   const loading = document.getElementById('explainLoading');
-  const result = document.getElementById('explainResult');
-
+  const result  = document.getElementById('explainResult');
   btn.disabled = true;
   loading.style.display = 'block';
   result.textContent = '';
-
   try {
     const res = await fetch('/api/shap/explain', {
       method: 'POST',
@@ -250,22 +385,17 @@ async function loadExplanation() {
       body: JSON.stringify(lastQuery)
     });
     const data = await res.json();
-    if (!res.ok) {
-      result.textContent = data.error || 'Error occurred';
-    } else {
-      result.textContent = data.explanation;
-    }
-  } catch (e) {
+    result.textContent = res.ok ? data.explanation : (data.error || 'Error occurred');
+  } catch(e) {
     result.textContent = 'Server error.';
   }
-
   loading.style.display = 'none';
   btn.disabled = false;
 }
 
 document.addEventListener('DOMContentLoaded', () => {
   document.getElementById('reacInput').addEventListener('keydown', e => {
-    if (e.key === 'Enter') loadShap();
+    if (e.key === 'Enter') loadAll();
   });
 });
 </script>

@@ -962,3 +962,106 @@ def soc_analysis(drugname):
         'mapped_count': sum(1 for r in mapped_reactions if r['soc'] != 'Other'),
         'note': 'MedDRA SOC ë§¤í•‘ (ë¹ˆì¶œ PT ê¸°ì¤€ ìˆ˜ë™ ë§¤í•‘, í¬íŠ¸í´ë¦¬ì˜¤ìš©)'
     })
+# ?€?€ LIME ?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€
+@analysis.route('/api/lime')
+def api_lime():
+    drugname = request.args.get('drug', '').upper()
+    reaction = request.args.get('reaction', '').upper()
+    age      = float(request.args.get('age', 50))
+    sex      = request.args.get('sex', 'F')
+
+    try:
+        from lime.lime_tabular import LimeTabularExplainer
+        import pandas as pd
+
+        model, le_drug, le_reac = load_model()
+        risk_rates = pickle.load(open(os.path.join(MODEL_DIR, 'risk_rates.pkl'), 'rb'))
+
+        if drugname not in le_drug.classes_:
+            return jsonify({'error': 'unknown drug: ' + drugname}), 400
+        if reaction not in le_reac.classes_:
+            return jsonify({'error': 'unknown reaction: ' + reaction}), 400
+
+        drug_enc  = le_drug.transform([drugname])[0]
+        reac_enc  = le_reac.transform([reaction])[0]
+        sex_enc   = 0 if sex == 'F' else 1
+        drug_risk_rate  = risk_rates['drug_risk'].get(drug_enc, 0.5)
+        reac_risk_rate  = risk_rates['reac_risk'].get(reac_enc, 0.5)
+        combo_risk_rate = risk_rates['combo_risk'].get(f"{drug_enc}_{reac_enc}", 0.5)
+
+        feature_names = ['drug', 'reaction', 'sex', 'age',
+                         'drug_risk_rate', 'reac_risk_rate', 'combo_risk_rate']
+        x = np.array([[drug_enc, reac_enc, sex_enc, age,
+                       drug_risk_rate, reac_risk_rate, combo_risk_rate]])
+
+        # LIME ë°°ê²½ ?°ì´??(?œë¤ ?˜í”Œë§?
+        np.random.seed(42)
+        n_bg = 500
+        bg = np.column_stack([
+            np.random.randint(0, max(len(le_drug.classes_), 1), n_bg),
+            np.random.randint(0, max(len(le_reac.classes_), 1), n_bg),
+            np.random.randint(0, 3, n_bg),
+            np.random.uniform(0, 100, n_bg),
+            np.random.uniform(0, 1, n_bg),
+            np.random.uniform(0, 1, n_bg),
+            np.random.uniform(0, 1, n_bg),
+        ])
+
+        explainer = LimeTabularExplainer(
+            bg,
+            feature_names=feature_names,
+            class_names=['ë¹„ìœ„??, '?„í—˜'],
+            mode='classification',
+            random_state=42
+        )
+
+        exp = explainer.explain_instance(
+            x[0],
+            model.predict_proba,
+            num_features=7,
+            num_samples=300,
+            labels=(1,)
+        )
+
+        pred  = int(model.predict(x)[0])
+        prob  = model.predict_proba(x)[0]
+
+        # LIME ê²°ê³¼ ??featureëª?+ ê¸°ì—¬???•ë¦¬
+        lime_list = exp.as_list(label=1)
+        lime_result = []
+        for feat_expr, weight in lime_list:
+            # feat_expr ?? "drug_risk_rate > 0.50"  ?? feature ?´ë¦„ë§?ì¶”ì¶œ
+            feat_name = feat_expr.split(' ')[0].strip()
+            # feature_names ì¤?ê°€??? ì‚¬??ê²?ë§¤í•‘
+            matched = next((f for f in feature_names if f in feat_expr), feat_expr)
+            lime_result.append({
+                'feature':    matched,
+                'expression': feat_expr,
+                'weight':     round(float(weight), 4)
+            })
+        lime_result.sort(key=lambda x: abs(x['weight']), reverse=True)
+
+        feature_display = {
+            'drug': drugname, 'reaction': reaction, 'sex': sex, 'age': age,
+            'drug_risk_rate':  round(drug_risk_rate, 3),
+            'reac_risk_rate':  round(reac_risk_rate, 3),
+            'combo_risk_rate': round(combo_risk_rate, 3)
+        }
+
+        return jsonify({
+            'drug':       drugname,
+            'reaction':   reaction,
+            'prediction': pred,
+            'risk_label': 'HIGH RISK' if pred == 1 else 'LOW RISK',
+            'probability': {
+                'safe': round(float(prob[0]) * 100, 1),
+                'risk': round(float(prob[1]) * 100, 1)
+            },
+            'lime':           lime_result,
+            'feature_values': feature_display
+        })
+
+    except ImportError:
+        return jsonify({'error': 'lime ?¨í‚¤ì§€ê°€ ?¤ì¹˜?˜ì? ?Šì•˜?µë‹ˆ?? pip install lime'}), 500
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
