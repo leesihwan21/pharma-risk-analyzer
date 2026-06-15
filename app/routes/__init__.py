@@ -7,3 +7,5 @@ from app.routes.vision import vision
 from app.routes.literature import literature
 
 from app.routes.recommend import recommend
+
+from app.routes.ml_dashboard import ml_dashboard

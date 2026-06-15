@@ -1,0 +1,239 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ML Dashboard | Pharma Risk Analyzer</title>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body { font-family: Arial, sans-serif; background: #0f172a; color: #e2e8f0; min-height: 100vh; }
+    .nav { background: #1e293b; border-bottom: 1px solid #334155; padding: 14px 24px; display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 8px; }
+    .nav-logo { color: #38bdf8; font-size: 1.1rem; font-weight: bold; text-decoration: none; }
+    .nav-links { display: flex; gap: 8px; flex-wrap: wrap; }
+    .nav-btn { padding: 8px 18px; border-radius: 8px; font-size: 0.88rem; font-weight: bold; text-decoration: none; color: #94a3b8; border: 1px solid #334155; }
+    .nav-btn:hover { border-color: #38bdf8; color: #38bdf8; }
+    .nav-btn.active { background: #38bdf8; color: #0f172a; border-color: #38bdf8; }
+    .container { max-width: 1100px; margin: 48px auto; padding: 0 24px; }
+    .page-header { margin-bottom: 28px; }
+    .page-header h1 { font-size: 1.9rem; color: #38bdf8; margin-bottom: 8px; }
+    .page-header p { color: #64748b; font-size: 0.95rem; }
+    .metrics-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap: 14px; margin-bottom: 24px; }
+    .metric-card { background: #1e293b; border: 1px solid #334155; border-radius: 12px; padding: 18px; }
+    .metric-card .label { font-size: 0.78rem; color: #64748b; margin-bottom: 6px; text-transform: uppercase; letter-spacing: 0.05em; }
+    .metric-card .value { font-size: 1.6rem; font-weight: bold; }
+    .metric-card .sub { font-size: 0.78rem; color: #475569; margin-top: 4px; }
+    .card { background: #1e293b; border: 1px solid #334155; border-radius: 14px; padding: 24px; margin-bottom: 20px; }
+    .card h2 { font-size: 1.05rem; color: #94a3b8; margin-bottom: 18px; }
+    table { width: 100%; border-collapse: collapse; font-size: 0.88rem; }
+    th, td { padding: 11px 14px; text-align: left; border-bottom: 1px solid #334155; }
+    th { color: #64748b; font-weight: 600; }
+    td { color: #e2e8f0; }
+    tr:last-child td { border-bottom: none; }
+    tr:hover td { background: rgba(56,189,248,0.04); }
+    .status-finished { color: #34d399; }
+    .status-failed { color: #f87171; }
+    .status-running { color: #fbbf24; }
+    .run-id { font-family: monospace; font-size: 0.8rem; color: #475569; }
+    .best-badge { display: inline-block; padding: 2px 8px; border-radius: 6px; font-size: 0.72rem; background: rgba(56,189,248,0.15); color: #38bdf8; margin-left: 6px; }
+    .loading { text-align: center; padding: 40px; color: #64748b; }
+    .error-box { padding: 16px; background: #1e293b; border: 1px solid #f87171; border-radius: 10px; color: #f87171; margin-bottom: 20px; }
+  </style>
+</head>
+<body>
+
+<nav class="nav">
+  <a href="/" class="nav-logo">💊 Pharma Risk Analyzer</a>
+  <div class="nav-links">
+    <a href="/dashboard" class="nav-btn">Dashboard</a>
+    <a href="/filter" class="nav-btn">Search</a>
+    <a href="/prr" class="nav-btn">PRR</a>
+    <a href="/trend" class="nav-btn">Trend</a>
+    <a href="/shap" class="nav-btn">SHAP</a>
+    <a href="/recommend" class="nav-btn">Recommend</a>
+    <a href="/ml_dashboard" class="nav-btn active">ML Dashboard</a>
+    <a href="/ae_manager" class="nav-btn">AE Manager</a>
+  </div>
+</nav>
+
+<div class="container">
+  <div class="page-header">
+    <h1>🧪 ML Dashboard</h1>
+    <p>MLflow 실험 추적 · 모델 성능 비교 · 재학습 이력</p>
+  </div>
+
+  <div id="loading" class="loading">⏳ Loading MLflow data...</div>
+  <div id="error-box" class="error-box" style="display:none"></div>
+  <div id="main" style="display:none">
+
+    <!-- 최고 성능 메트릭 -->
+    <div class="metrics-grid" id="metricsGrid"></div>
+
+    <!-- 성능 트렌드 차트 -->
+    <div class="card">
+      <h2>📊 Model Performance Trend (per run)</h2>
+      <canvas id="perfChart" height="60"></canvas>
+    </div>
+
+    <!-- Run 목록 -->
+    <div class="card">
+      <h2>🏃 Training Runs</h2>
+      <table>
+        <thead>
+          <tr>
+            <th>Run</th><th>Experiment</th><th>Quarter</th>
+            <th>Accuracy</th><th>F1(risk)</th><th>Recall</th><th>Precision</th>
+            <th>Duration</th><th>Status</th>
+          </tr>
+        </thead>
+        <tbody id="runsTable"></tbody>
+      </table>
+    </div>
+
+    <!-- 파이프라인 로그 -->
+    <div class="card" id="pipelineCard" style="display:none">
+      <h2>🔄 Pipeline Log (자동 재학습 이력)</h2>
+      <table>
+        <thead><tr><th>Quarter</th><th>Timestamp</th><th>Accuracy</th><th>F1(risk)</th><th>Recall</th><th>Total Rows</th><th>Run ID</th></tr></thead>
+        <tbody id="pipelineTable"></tbody>
+      </table>
+    </div>
+
+  </div>
+</div>
+
+<script>
+let perfChart = null;
+
+async function loadData() {
+  try {
+    const res  = await fetch('/api/ml_dashboard/runs');
+    const data = await res.json();
+
+    if (!res.ok) { showError('API error'); return; }
+    if (!data.db_exists) { showError('mlflow.db not found. Run train_model_optuna.py first.'); return; }
+
+    const runs = data.runs.filter(r => !r.error && r.accuracy);
+
+    if (runs.length === 0) { showError('No completed runs found in MLflow.'); return; }
+
+    renderMetrics(runs);
+    renderChart(runs);
+    renderTable(runs);
+    renderPipelineLog(data.pipeline_log);
+
+    document.getElementById('loading').style.display = 'none';
+    document.getElementById('main').style.display = 'block';
+
+  } catch(e) {
+    showError('Server error: ' + e.message);
+  }
+}
+
+function renderMetrics(runs) {
+  const best = runs.reduce((a, b) => (b.f1_risk || 0) > (a.f1_risk || 0) ? b : a, runs[0]);
+  const grid = document.getElementById('metricsGrid');
+  grid.innerHTML = `
+    <div class="metric-card">
+      <div class="label">Best Accuracy</div>
+      <div class="value" style="color:#38bdf8">${best.accuracy}</div>
+      <div class="sub">${best.name} · ${best.quarter}</div>
+    </div>
+    <div class="metric-card">
+      <div class="label">Best F1 (Risk)</div>
+      <div class="value" style="color:#f87171">${best.f1_risk}</div>
+      <div class="sub">pos_label=1</div>
+    </div>
+    <div class="metric-card">
+      <div class="label">Best Recall</div>
+      <div class="value" style="color:#34d399">${best.recall_risk}</div>
+      <div class="sub">Risk class</div>
+    </div>
+    <div class="metric-card">
+      <div class="label">Total Runs</div>
+      <div class="value" style="color:#fbbf24">${runs.length}</div>
+      <div class="sub">Completed</div>
+    </div>
+    <div class="metric-card">
+      <div class="label">Best Params</div>
+      <div class="value" style="color:#a855f7; font-size:1rem">${best.n_estimators || '-'} trees</div>
+      <div class="sub">depth=${best.max_depth || '-'} lr=${best.learning_rate ? parseFloat(best.learning_rate).toFixed(3) : '-'}</div>
+    </div>
+  `;
+}
+
+function renderChart(runs) {
+  if (perfChart) perfChart.destroy();
+  const rev = [...runs].reverse();
+  const labels = rev.map((r, i) => `Run ${i+1} (${r.quarter})`);
+  const ctx = document.getElementById('perfChart').getContext('2d');
+  perfChart = new Chart(ctx, {
+    type: 'line',
+    data: {
+      labels,
+      datasets: [
+        { label: 'Accuracy',  data: rev.map(r => r.accuracy),     borderColor: '#38bdf8', backgroundColor: 'rgba(56,189,248,0.08)', fill: true,  tension: 0.3, pointRadius: 5 },
+        { label: 'F1(risk)',  data: rev.map(r => r.f1_risk),       borderColor: '#f87171', backgroundColor: 'transparent',            fill: false, tension: 0.3, pointRadius: 5 },
+        { label: 'Recall',    data: rev.map(r => r.recall_risk),   borderColor: '#34d399', backgroundColor: 'transparent',            fill: false, tension: 0.3, pointRadius: 5 },
+        { label: 'Precision', data: rev.map(r => r.precision_risk),borderColor: '#fbbf24', backgroundColor: 'transparent',            fill: false, tension: 0.3, pointRadius: 5 },
+      ]
+    },
+    options: {
+      responsive: true,
+      plugins: {
+        legend: { labels: { color: '#94a3b8', boxWidth: 12 } },
+        tooltip: { backgroundColor: '#1e293b', borderColor: '#334155', borderWidth: 1, titleColor: '#94a3b8', bodyColor: '#e2e8f0' }
+      },
+      scales: {
+        x: { ticks: { color: '#64748b' }, grid: { color: '#334155' } },
+        y: { min: 0, max: 1, ticks: { color: '#64748b' }, grid: { color: '#334155' } }
+      }
+    }
+  });
+}
+
+function renderTable(runs) {
+  const best = runs.reduce((a, b) => (b.f1_risk || 0) > (a.f1_risk || 0) ? b : a, runs[0]);
+  const tbody = document.getElementById('runsTable');
+  tbody.innerHTML = runs.map(r => {
+    const isBest = r.run_id === best.run_id;
+    const statusClass = r.status === 'FINISHED' ? 'status-finished' : r.status === 'FAILED' ? 'status-failed' : 'status-running';
+    return `<tr>
+      <td><span class="run-id">${r.run_id}</span>${isBest ? '<span class="best-badge">Best</span>' : ''}<br><span style="font-size:0.78rem;color:#475569">${r.name}</span></td>
+      <td style="font-size:0.82rem;color:#64748b">${r.experiment}</td>
+      <td style="font-size:0.82rem">${r.quarter}</td>
+      <td>${r.accuracy || '-'}</td>
+      <td>${r.f1_risk || '-'}</td>
+      <td>${r.recall_risk || '-'}</td>
+      <td>${r.precision_risk || '-'}</td>
+      <td style="font-size:0.82rem;color:#475569">${r.duration_sec ? r.duration_sec + 's' : '-'}</td>
+      <td><span class="${statusClass}">${r.status}</span></td>
+    </tr>`;
+  }).join('');
+}
+
+function renderPipelineLog(log) {
+  if (!log || log.length === 0) return;
+  document.getElementById('pipelineCard').style.display = 'block';
+  const tbody = document.getElementById('pipelineTable');
+  tbody.innerHTML = [...log].reverse().map(r => `<tr>
+    <td>${r.quarter}</td>
+    <td style="font-size:0.8rem;color:#475569">${r.timestamp ? r.timestamp.slice(0,19).replace('T',' ') : '-'}</td>
+    <td>${r.accuracy}</td>
+    <td>${r.f1_risk}</td>
+    <td>${r.recall_risk}</td>
+    <td>${r.total_rows ? r.total_rows.toLocaleString() : '-'}</td>
+    <td class="run-id">${r.run_id ? r.run_id.slice(0,8) : '-'}</td>
+  </tr>`).join('');
+}
+
+function showError(msg) {
+  document.getElementById('loading').style.display = 'none';
+  document.getElementById('error-box').textContent = msg;
+  document.getElementById('error-box').style.display = 'block';
+}
+
+loadData();
+</script>
+</body>
+</html>
