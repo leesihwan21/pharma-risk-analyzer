@@ -1275,3 +1275,18 @@ def api_autocomplete():
         return jsonify(matched)
     except Exception as e:
         return jsonify([])
+
+
+# -- Reaction autocomplete ------------------------------------------
+@analysis.route('/api/autocomplete/reaction')
+def api_autocomplete_reaction():
+    q = request.args.get('q', '').upper().strip()
+    if len(q) < 2:
+        return jsonify([])
+    try:
+        df = load_df()
+        reactions = df['pt'].str.upper().dropna().unique()
+        matched = sorted([r for r in reactions if r.startswith(q)])[:10]
+        return jsonify(matched)
+    except Exception as e:
+        return jsonify([])
