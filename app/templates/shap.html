@@ -114,6 +114,7 @@
     .tab-panel.active { display: block; }
   </style>
   <script src="/static/pwa.js"></script>
+<script src="/static/autocomplete.js"></script>
 </head>
 <body>
 
@@ -399,5 +400,6 @@ document.addEventListener('DOMContentLoaded', () => {
   });
 });
 </script>
+<script>document.addEventListener("DOMContentLoaded",function(){initAutocomplete('drugInput');});</script>
 </body>
 </html>

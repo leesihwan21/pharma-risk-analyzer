@@ -52,6 +52,7 @@
     .forecast-card .range { font-size: 0.78rem; color: #475569; margin-top: 4px; }
   </style>
   <script src="/static/pwa.js"></script>
+<script src="/static/autocomplete.js"></script>
 </head>
 <body>
 
@@ -318,5 +319,6 @@ document.addEventListener('DOMContentLoaded', () => {
   });
 });
 </script>
+<script>document.addEventListener("DOMContentLoaded",function(){initAutocomplete('drugInput');});</script>
 </body>
 </html>

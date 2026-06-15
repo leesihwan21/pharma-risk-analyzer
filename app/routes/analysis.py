@@ -1260,3 +1260,18 @@ def api_quarterly_prr_trend(drugname):
 
     except Exception as e:
         return jsonify({'error': str(e)}), 500
+
+
+# -- Drug autocomplete ------------------------------------------
+@analysis.route('/api/autocomplete')
+def api_autocomplete():
+    q = request.args.get('q', '').upper().strip()
+    if len(q) < 2:
+        return jsonify([])
+    try:
+        df = load_df()
+        drugs = df['drugname'].str.upper().dropna().unique()
+        matched = sorted([d for d in drugs if d.startswith(q)])[:10]
+        return jsonify(matched)
+    except Exception as e:
+        return jsonify([])

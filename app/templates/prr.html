@@ -80,6 +80,7 @@
         .no-alert-msg { text-align: center; padding: 40px; color: #475569; font-size: 0.9rem; }
         .prr-trend-wrap { background: #0f172a; border-radius: 10px; padding: 16px; margin-top: 16px; }
     </style>
+<script src="/static/autocomplete.js"></script>
 </head>
 <body>
 {% include 'nav.html' %}
@@ -495,5 +496,6 @@
     <canvas id="prrTrendChart" height="80"></canvas>
   </div>
 </div>
+<script>document.addEventListener("DOMContentLoaded",function(){initAutocomplete('drug-input');});</script>
 </body>
 </html>
