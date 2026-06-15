@@ -1,0 +1,11 @@
+[
+  {
+    "quarter": "2026q1",
+    "run_id": "209fc8f145754c39a8d302b9db8749ec",
+    "timestamp": "2026-06-15T14:12:24.022895",
+    "accuracy": 0.6933,
+    "f1_risk": 0.6217,
+    "recall_risk": 0.7071,
+    "total_rows": 470824
+  }
+]

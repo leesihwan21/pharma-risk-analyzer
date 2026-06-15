@@ -1,0 +1,12 @@
+{
+  "before_smote": {
+    "accuracy": 0.6933,
+    "f1_risk": 0.6217,
+    "recall_risk": 0.71
+  },
+  "after_smote": {
+    "accuracy": 0.6916,
+    "f1_risk": 0.6203,
+    "recall_risk": 0.7068
+  }
+}
