@@ -4,7 +4,8 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>PRR / EBGM / SOC Signal Detection - Pharma Risk Analyzer</title>
-    <script src="https://cdn.plot.ly/plotly-latest.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script src="https://cdn.plot.ly/plotly-latest.min.js"></script>
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body { background: #0f172a; color: #e2e8f0; font-family: Arial, sans-serif; }
@@ -62,6 +63,22 @@
         .soc-card .soc-pct { font-size: 0.78rem; color: #64748b; margin-top: 2px; }
         @media (max-width: 768px) { .summary-grid { grid-template-columns: repeat(2, 1fr); padding: 14px 16px 0; } .chart-section { padding: 14px 16px 0; } .table-wrap { padding: 12px 16px 16px; } .soc-grid { padding: 12px 16px; } }
         @media (max-width: 480px) { .header { padding: 12px 14px; } .method-tabs { padding: 12px 14px; } }
+        .method-tab.active-signal { background: #f97316; color: #fff; border-color: #f97316; }
+        #signal-section { display:none; padding: 20px 24px; }
+        .signal-summary { display: grid; grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); gap: 12px; margin-bottom: 20px; }
+        .signal-sum-card { background: #1e293b; border: 1px solid #334155; border-radius: 10px; padding: 14px; text-align: center; }
+        .signal-sum-card .val { font-size: 1.5rem; font-weight: bold; margin-bottom: 4px; }
+        .signal-sum-card .lbl { font-size: 0.78rem; color: #64748b; }
+        .alert-card { background: #1e293b; border: 1px solid #f97316; border-radius: 12px; padding: 16px 20px; margin-bottom: 12px; }
+        .alert-card.new-sig { border-color: #a855f7; }
+        .alert-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px; }
+        .alert-reaction { font-size: 0.95rem; font-weight: bold; color: #e2e8f0; }
+        .alert-type { padding: 3px 10px; border-radius: 6px; font-size: 0.75rem; font-weight: bold; }
+        .type-spike { background: rgba(249,115,22,0.15); color: #f97316; }
+        .type-new { background: rgba(168,85,247,0.15); color: #a855f7; }
+        .alert-stats { display: flex; gap: 16px; font-size: 0.82rem; color: #64748b; flex-wrap: wrap; }
+        .no-alert-msg { text-align: center; padding: 40px; color: #475569; font-size: 0.9rem; }
+        .prr-trend-wrap { background: #0f172a; border-radius: 10px; padding: 16px; margin-top: 16px; }
     </style>
 </head>
 <body>
@@ -96,6 +113,7 @@
     <button class="method-tab active-prr" id="tab-prr" onclick="switchMethod('prr')">📊 PRR (Evans 기준)</button>
     <button class="method-tab" id="tab-ebgm" onclick="switchMethod('ebgm')">🔬 EBGM (베이지안 · 실무 수준)</button>
     <button class="method-tab" id="tab-soc" onclick="switchMethod('soc')">🏥 MedDRA SOC 분류</button>
+    <button class="method-tab" id="tab-signal" onclick="switchMethod('signal')">⚡ 이상 신호 탐지</button>
 </div>
 
 <div class="search-bar">
@@ -152,7 +170,80 @@
     let allResults = [];
     let currentMethod = 'prr';
 
+    let prrTrendChartInst = null;
+
+    async function loadSignalTrend(drug) {
+        const alertsWrap = document.getElementById('signal-alerts-wrap');
+        const summaryCards = document.getElementById('signal-summary-cards');
+        const trendWrap = document.getElementById('prr-trend-wrap');
+        alertsWrap.innerHTML = '<div class="no-alert-msg">⏳ 이상 신호 분석 중...</div>';
+        summaryCards.innerHTML = '';
+        trendWrap.style.display = 'none';
+        try {
+            const res = await fetch('/api/signals/quarterly_trend/' + encodeURIComponent(drug));
+            const data = await res.json();
+            if (!res.ok) { alertsWrap.innerHTML = '<div class="no-alert-msg">오류: ' + (data.error || '분석 실패') + '</div>'; return; }
+            const totalSig = data.quarterly_data.reduce((s, q) => s + q.signals.length, 0);
+            summaryCards.innerHTML =
+                '<div class="signal-sum-card"><div class="val" style="color:#38bdf8">' + data.quarters.length + '</div><div class="lbl">분석 분기</div></div>' +
+                '<div class="signal-sum-card"><div class="val" style="color:#f97316">' + data.spike_alerts.filter(function(a){return a.type==='SPIKE';}).length + '</div><div class="lbl">급등 신호</div></div>' +
+                '<div class="signal-sum-card"><div class="val" style="color:#a855f7">' + data.spike_alerts.filter(function(a){return a.type==='NEW_SIGNAL';}).length + '</div><div class="lbl">신규 신호</div></div>' +
+                '<div class="signal-sum-card"><div class="val" style="color:#34d399">' + totalSig + '</div><div class="lbl">총 PRR 신호</div></div>';
+            if (data.spike_alerts.length === 0) {
+                alertsWrap.innerHTML = '<div class="no-alert-msg">✅ 분기별 이상 신호 없음 — PRR이 안정적으로 유지되고 있습니다.</div>';
+            } else {
+                alertsWrap.innerHTML = data.spike_alerts.map(function(a) {
+                    var isSpike = a.type === 'SPIKE';
+                    return '<div class="alert-card ' + (isSpike ? '' : 'new-sig') + '">' +
+                        '<div class="alert-header">' +
+                        '<span class="alert-reaction">' + a.reaction + '</span>' +
+                        '<span class="alert-type ' + (isSpike ? 'type-spike' : 'type-new') + '">' + (isSpike ? '⚡ SPIKE' : '🆕 NEW SIGNAL') + '</span>' +
+                        '</div>' +
+                        '<div class="alert-stats">' +
+                        '<span>분기: <b>' + a.prev_quarter + ' → ' + a.quarter + '</b></span>' +
+                        '<span>PRR: <b>' + a.prev_prr + '</b> → <b>' + a.curr_prr + '</b></span>' +
+                        (isSpike ? '<span>변화율: <b style="color:#f97316">+' + a.change_pct + '%</b></span>' : '<span style="color:#a855f7">신규 발생</span>') +
+                        '<span>건수: <b>' + a.count + '</b></span>' +
+                        '</div></div>';
+                }).join('');
+            }
+            if (Object.keys(data.trend_by_reaction).length > 0) {
+                trendWrap.style.display = 'block';
+                if (prrTrendChartInst) prrTrendChartInst.destroy();
+                var colors = ['#38bdf8','#f87171','#34d399','#fbbf24','#a855f7','#f97316','#06b6d4','#ec4899'];
+                var datasets = Object.entries(data.trend_by_reaction).map(function(entry, i) {
+                    return { label: entry[0], data: entry[1].map(function(t){return t.prr;}), borderColor: colors[i % colors.length], backgroundColor: 'transparent', borderWidth: 2, pointRadius: 4, tension: 0.3 };
+                });
+                var ctx = document.getElementById('prrTrendChart').getContext('2d');
+                prrTrendChartInst = new Chart(ctx, {
+                    type: 'line',
+                    data: { labels: data.quarters, datasets: datasets },
+                    options: { responsive: true,
+                        plugins: { legend: { labels: { color: '#94a3b8', boxWidth: 12 } }, tooltip: { backgroundColor: '#1e293b', borderColor: '#334155', borderWidth: 1, titleColor: '#94a3b8', bodyColor: '#e2e8f0' } },
+                        scales: { x: { ticks: { color: '#64748b' }, grid: { color: '#334155' } }, y: { beginAtZero: true, ticks: { color: '#64748b' }, grid: { color: '#334155' } } }
+                    }
+                });
+            }
+        } catch(e) { alertsWrap.innerHTML = '<div class="no-alert-msg">오류: ' + e.message + '</div>'; }
+    }
+
     function switchMethod(method) {
+        if (method === 'signal') {
+            currentMethod = 'signal';
+            document.getElementById('tab-prr').className = 'method-tab';
+            document.getElementById('tab-ebgm').className = 'method-tab';
+            document.getElementById('tab-soc').className = 'method-tab';
+            document.getElementById('tab-signal').className = 'method-tab active-signal';
+            document.getElementById('summary-section').style.display = 'none';
+            document.getElementById('empty-state').style.display = 'none';
+            document.getElementById('signal-section').style.display = 'block';
+            document.getElementById('status').innerHTML = '';
+            var drug = document.getElementById('drug-input').value.trim();
+            if (drug) loadSignalTrend(drug);
+            else document.getElementById('signal-alerts-wrap').innerHTML = '<div class="no-alert-msg">약물명을 입력 후 PRR 계산을 먼저 해주세요.</div>';
+            return;
+        }
+        document.getElementById('signal-section').style.display = 'none';
         currentMethod = method;
         document.getElementById('tab-prr').className = 'method-tab' + (method === 'prr' ? ' active-prr' : '');
         document.getElementById('tab-ebgm').className = 'method-tab' + (method === 'ebgm' ? ' active-ebgm' : '');
@@ -394,5 +485,15 @@
         }
     });
 </script>
+
+<!-- 이상 신호 탐지 섹션 -->
+<div id="signal-section">
+  <div class="signal-summary" id="signal-summary-cards"></div>
+  <div id="signal-alerts-wrap"></div>
+  <div class="prr-trend-wrap" id="prr-trend-wrap" style="display:none">
+    <h3 style="color:#94a3b8; font-size:0.95rem; margin-bottom:14px;">📈 분기별 PRR 트렌드</h3>
+    <canvas id="prrTrendChart" height="80"></canvas>
+  </div>
+</div>
 </body>
 </html>

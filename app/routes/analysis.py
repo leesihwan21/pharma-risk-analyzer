@@ -1,4 +1,4 @@
-import io
+﻿import io
 import os
 import re
 import math
@@ -1135,6 +1135,127 @@ def api_trend_forecast():
             'forecast': result_rows,
             'quarters': len(trend),
             'forecast_periods': 2
+        })
+
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+
+# -- PRR 분기별 급변 신호 탐지 --------------------------------
+@analysis.route('/api/signals/quarterly_trend/<drugname>')
+def api_quarterly_prr_trend(drugname):
+    """
+    약물의 분기별 PRR 변화 추이 + 급변(50% 이상 상승) 플래그
+    """
+    try:
+        df = load_df()
+        drugname = drugname.upper()
+
+        if 'quarter' not in df.columns:
+            return jsonify({'error': 'quarter column not found'}), 400
+
+        drug_df = df[df['drugname'].str.upper() == drugname]
+        if drug_df.empty:
+            return jsonify({'error': f'Drug not found: {drugname}'}), 404
+
+        quarters = sorted(df['quarter'].dropna().unique())
+        if len(quarters) < 2:
+            return jsonify({'error': 'Not enough quarters (need 2+)'}), 400
+
+        # 분기별 PRR 계산
+        results = []
+        for q in quarters:
+            df_q = df[df['quarter'] == q]
+            drug_q = df_q[df_q['drugname'].str.upper() == drugname]
+            other_q = df_q[df_q['drugname'].str.upper() != drugname]
+
+            b = len(drug_q)
+            d = len(other_q)
+            if b == 0 or d == 0:
+                continue
+
+            # 상위 부작용별 PRR
+            reac_data = []
+            for reac in drug_q['pt'].value_counts().head(20).index:
+                a = len(drug_q[drug_q['pt'] == reac])
+                c = len(other_q[other_q['pt'] == reac])
+                if c == 0:
+                    continue
+                prr = round((a / b) / (c / d), 2)
+                if prr >= 2.0 and a >= 3:
+                    reac_data.append({
+                        'reaction': reac,
+                        'prr': prr,
+                        'count': int(a)
+                    })
+
+            results.append({
+                'quarter': q,
+                'total_reports': int(b),
+                'signals': sorted(reac_data, key=lambda x: x['prr'], reverse=True)[:10]
+            })
+
+        # 급변 플래그 탐지 (전 분기 대비 PRR 50% 이상 상승)
+        spike_alerts = []
+        for i in range(1, len(results)):
+            prev = results[i - 1]
+            curr = results[i]
+
+            prev_prr_map = {s['reaction']: s['prr'] for s in prev['signals']}
+            for sig in curr['signals']:
+                reac = sig['reaction']
+                curr_prr = sig['prr']
+                prev_prr = prev_prr_map.get(reac, 0)
+
+                if prev_prr == 0:
+                    # 이전 분기에 없던 신규 신호
+                    spike_alerts.append({
+                        'reaction': reac,
+                        'type': 'NEW_SIGNAL',
+                        'quarter': curr['quarter'],
+                        'prev_quarter': prev['quarter'],
+                        'curr_prr': curr_prr,
+                        'prev_prr': prev_prr,
+                        'change_pct': None,
+                        'count': sig['count']
+                    })
+                elif curr_prr >= prev_prr * 1.5:
+                    # 50% 이상 급등
+                    change_pct = round((curr_prr - prev_prr) / prev_prr * 100, 1)
+                    spike_alerts.append({
+                        'reaction': reac,
+                        'type': 'SPIKE',
+                        'quarter': curr['quarter'],
+                        'prev_quarter': prev['quarter'],
+                        'curr_prr': curr_prr,
+                        'prev_prr': prev_prr,
+                        'change_pct': change_pct,
+                        'count': sig['count']
+                    })
+
+        # 특정 부작용의 분기별 PRR 트렌드 (차트용)
+        all_reactions = set()
+        for r in results:
+            for s in r['signals']:
+                all_reactions.add(s['reaction'])
+
+        trend_by_reaction = {}
+        for reac in list(all_reactions)[:8]:
+            trend_by_reaction[reac] = []
+            for r in results:
+                prr_map = {s['reaction']: s['prr'] for s in r['signals']}
+                trend_by_reaction[reac].append({
+                    'quarter': r['quarter'],
+                    'prr': prr_map.get(reac, 0)
+                })
+
+        return jsonify({
+            'drug': drugname,
+            'quarters': [r['quarter'] for r in results],
+            'quarterly_data': results,
+            'spike_alerts': spike_alerts,
+            'trend_by_reaction': trend_by_reaction,
+            'total_spikes': len(spike_alerts)
         })
 
     except Exception as e:
