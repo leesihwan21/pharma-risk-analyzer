@@ -1,0 +1,30 @@
+[
+  {
+    "model": "RandomForest",
+    "accuracy": 0.4937,
+    "f1_risk": 0.4495,
+    "recall_risk": 0.5797,
+    "precision_risk": 0.367
+  },
+  {
+    "model": "XGBoost",
+    "accuracy": 0.5199,
+    "f1_risk": 0.4098,
+    "recall_risk": 0.4676,
+    "precision_risk": 0.3648
+  },
+  {
+    "model": "LightGBM",
+    "accuracy": 0.5212,
+    "f1_risk": 0.4069,
+    "recall_risk": 0.4607,
+    "precision_risk": 0.3644
+  },
+  {
+    "model": "LogisticRegression",
+    "accuracy": 0.5487,
+    "f1_risk": 0.351,
+    "recall_risk": 0.3423,
+    "precision_risk": 0.3601
+  }
+]

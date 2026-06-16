@@ -1,0 +1,38 @@
+[
+  {
+    "quarter": "2024q1",
+    "n_rows": 116966,
+    "accuracy": 0.8097,
+    "f1": 0.7517,
+    "recall": 0.8054,
+    "precision": 0.7048,
+    "is_train_quarter": true
+  },
+  {
+    "quarter": "2024q2",
+    "n_rows": 117810,
+    "accuracy": 0.5342,
+    "f1": 0.3825,
+    "recall": 0.3983,
+    "precision": 0.3679,
+    "is_train_quarter": false
+  },
+  {
+    "quarter": "2024q3",
+    "n_rows": 117830,
+    "accuracy": 0.5328,
+    "f1": 0.376,
+    "recall": 0.3972,
+    "precision": 0.357,
+    "is_train_quarter": false
+  },
+  {
+    "quarter": "2025q1",
+    "n_rows": 118218,
+    "accuracy": 0.5386,
+    "f1": 0.3769,
+    "recall": 0.3971,
+    "precision": 0.3586,
+    "is_train_quarter": false
+  }
+]
