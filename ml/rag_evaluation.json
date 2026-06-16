@@ -1,0 +1,67 @@
+{
+  "questions": [
+    {
+      "question": "아스피린의 주요 부작용은 무엇인가요?",
+      "answer": "1. 아스피린은 간 손상으로 인한 간 저하를 유발할 수 있습니다.\n2. 아스피린은 혈관 내 pression을 높여서 심장 attack이나 cerebral hemorrhage를 일으킬 수 있습니다.\n3. 아스피린은 자가 보충제로 인해 간질환의 발병을 유발할 수 있습니다.",
+      "num_contexts": 3,
+      "faithfulness": 0.8,
+      "faithfulness_reasoning": "아스피린의 주요 부작용으로는 간 손상으로 인한 간 저하와 혈관 내 압력을 높여서 심장 attack이나 cerebral hemorrhage를 일으킬 수 있다.",
+      "answer_relevancy": 0.8,
+      "answer_relevancy_reasoning": "답변은 아스피린의 주요 부작용에 대한 세 가지 관련된 예를 제공하지만, 자가 보충제로 인한 간질환 발병을 유발할 수 있다는 문장은 질문과 직접적이지 않습니다.",
+      "context_precision": 0.5,
+      "context_precision_reasoning": "아스피린의 주요 부작용에 대한 정보는 제공되지 않았지만, 여러 대학과 연구소가 포함된 목록이므로 일부 관련 정보를 찾을 수 있을 것이라는 추정은 가능합니다."
+    },
+    {
+      "question": "메트포르민 복용 시 주의해야 할 점은?",
+      "answer": "1. 메트포르민을 복용할 때는 충분한 물을 마시고, 열을 피하는 것이 중요합니다.\n2. 메트포르민은 간이Poor한 사람에게 주의가 필요합니다.\n3. 메트포르민을 복용할 때는 의사와 의사과에서 확인하는 것이 좋습니다.",
+      "num_contexts": 3,
+      "faithfulness": 0.8,
+      "faithfulness_reasoning": "메트포르민을 복용할 때는 충분한 물을 마시고, 열을 피하는 것이 중요합니다. (1) 메트포르민은 간이 Poor한 사람에게 주의가 필요합니다. (2)",
+      "answer_relevancy": 0.8,
+      "answer_relevancy_reasoning": "답변은 메트포르민 복용 시 주의해야 할 점을 일부 언급하지만, 질문에 대한 직접적인 답변은 아니다.",
+      "context_precision": 0.5,
+      "context_precision_reasoning": "메트포르민 복용 시 주의해야 할 점에 대한 정보가 포함된 컨텍스트는 없지만, University School of Medicine, Seoul, Korea와 같은 관련 기관이 나열되어 있으므로 일부 유용성이 있을 수 있다."
+    },
+    {
+      "question": "이부프로펜과 관련된 심혈관계 위험이 있나요?",
+      "answer": "1. 이부프로펜은 심혈관계 위험이 있지만, 심혈관계 질환의 환자에게는 주의가 필요합니다.\n2. 이부프로펜은 심혈관계 위험이 있지만, 심혈관계 질환의 환자에게는 주의가 필요합니다.\n3. 논문에서 확인하지 못했습니다.",
+      "num_contexts": 3,
+      "faithfulness": 0.5,
+      "faithfulness_reasoning": "이부프로펜의 심혈관계 위험성에 대한 일반적인 지식과 논문에서 확인되지 않은 내용이 혼합되어 있습니다.",
+      "answer_relevancy": 1.0,
+      "answer_relevancy_reasoning": "답변 1과 2는 질문에 직접적이고 관련된 내용을 포함하고 있습니다.",
+      "context_precision": 0.0,
+      "context_precision_reasoning": "컨텍스트는 이부프로펜과 관련된 심혈관계 위험에 대한 정보가 없으므로, 검색 결과의 품질이 낮습니다."
+    },
+    {
+      "question": "와파린 복용 중 출혈 위험은 어떻게 관리하나요?",
+      "answer": "와파린 복용 중 출혈 위험을 관리하는 방법은 다음과 같습니다.\n\n1. 와파린 복용 후에 항산화제를 섭취하여 출혈 위험이 줄어들 수 있습니다.\n2. 와파린 복용 중에는 피부에 부상이 생기면 즉시 의사에게 consultation을 하세요.\n3. 와파린 복용 중에는 피부에 부상이 생기면 항산화제를 섭취하여 출혈 위험이 줄어들 수 있습니다.",
+      "num_contexts": 3,
+      "faithfulness": 0.2,
+      "faithfulness_reasoning": "컨텍스트에서 항산화제의 역할에 대한 언급이 없고, 피부 부상 시 의사와 상담하는 것이 중요하다는 주장만 근거가 있는 것 같습니다.",
+      "answer_relevancy": 0.5,
+      "answer_relevancy_reasoning": "답변은 질문에 대한 일부 관련 내용을 포함하지만, 출혈 위험 관리의 핵심적인 방법과 관련된 정보는 부족하고, 무관한 내용도 포함되어 있다.",
+      "context_precision": 0.5,
+      "context_precision_reasoning": "와파린 복용 중 출혈 위험을 관리하는 방법에 대한 구체적인 정보는 제공되지 않았지만, 와파린의 부작용으로 인한 출혈 위험이 있는 경우 일반적으로 출혈 위험이 높은 환자에게 주의를 기울이고, 혈소판 기능 검사를 수행하고, 적절한 치료를 제공하는 것이 중요하다는 것을 암시하는 문헌이 포함되어 있습니다."
+    },
+    {
+      "question": "스타틴 계열 약물의 간 독성 가능성에 대해 알려주세요.",
+      "answer": "1. 스타틴 계열 약물은 간 독성 가능성이 있습니다.\n2. 간독성 가능성을 높이는 요인은 스타틴을 함께 사용하는 약물과 고혈압이 있습니다.\n3. 간독성 가능성을 줄이는 방법으로는 스타틴을 함께 사용하는 약물을 제거하고, 고혈압을 관리하는 것이 있습니다.",
+      "num_contexts": 3,
+      "faithfulness": 0.8,
+      "faithfulness_reasoning": "스태틴 계열 약물의 간 독성 가능성을 높이는 요인은 스타틴을 함께 사용하는 약물과 고혈압이 있다.",
+      "answer_relevancy": 1.0,
+      "answer_relevancy_reasoning": "답변은 질문에 대한 직접적이고 명확한 정보를 제공하며, 간독성 가능성을 높이는 요인과 줄이는 방법을 구체적으로 언급한다.",
+      "context_precision": 0.2,
+      "context_precision_reasoning": "컨텍스트 중 일부는 관련이 없거나 간략한 정보를 제공하기 때문에 낮은 점수를 받았습니다."
+    }
+  ],
+  "average": {
+    "faithfulness": 0.62,
+    "answer_relevancy": 0.82,
+    "context_precision": 0.34
+  },
+  "n_questions": 5,
+  "judge_model": "llama3.1:8b",
+  "note": "RAGAS 라이브러리 의존성 충돌로 동일 방법론을 Claude API 직접 호출로 구현"
+}

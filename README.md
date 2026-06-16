@@ -156,7 +156,14 @@ train_idx, test_idx = next(splitter.split(X, y, groups=df["primaryid"]))
 | LightGBM | 0.521 | 0.407 | 0.461 | 0.364 |
 | LogisticRegression | **0.549** | 0.351 | 0.342 | 0.360 |
 
-**모델 선택 근거:** RandomForest가 F1과 Recall에서 가장 높지만, 4개 모델 간 Precision 차이가 거의 없어(0.36 안팎) 현재 피처셋의 한계로 판단했습니다. XGBoost를 최종 모델로 채택한 이유는 (1) Optuna 기반 하이퍼파라미터 자동 튜닝 인프라가 이미 구축되어 있고, (2) SHAP 기반 설명 가능성 모듈과의 통합이 검증되어 있으며, (3) Accuracy와 F1의 균형이 RandomForest 대비 합리적이기 때문입니다. 다만 의료 스크리닝 목적상 Recall이 중요한 경우 RandomForest가 더 적합할 수 있다는 트레이드오프를 인지하고 있습니다.
+**모델 선택 근거:** RandomForest가 F1(0.450)과 Recall(0.580)에서 XGBoost(F1 0.410)보다 높게 나왔습니다. 단순히 지표만 보면 RandomForest가 더 좋은 선택처럼 보이지만, XGBoost를 최종 모델로 채택한 이유는 다음과 같습니다.
+
+1. **SHAP 설명 가능성과의 통합**: XGBoost는 SHAP TreeExplainer와의 호환성이 가장 안정적이며, 이미 Global/Local 설명 파이프라인이 구축되어 있습니다.
+2. **안정적인 Optuna 최적화 워크플로우**: 9개 하이퍼파라미터에 대한 베이지안 탐색 인프라가 XGBoost 기준으로 구축되어 있어, 추가 데이터 확보 시 즉시 재튜닝이 가능합니다.
+3. **빠른 재학습 파이프라인**: Drift Monitoring 결과(아래 참고)가 보여주듯 분기별 재학습이 필수적인데, XGBoost는 RandomForest보다 학습 속도가 빠르고 증분 학습 확장이 용이합니다.
+4. **프로덕션 배포 확장성**: 모델 직렬화 크기, 추론 속도, gunicorn 환경에서의 메모리 사용량 면에서 XGBoost가 더 가볍습니다.
+
+즉 "어떤 모델이 가장 높은 점수를 받았는가"가 아니라 "어떤 모델이 SHAP·Optuna·재학습 자동화까지 포함한 전체 MLOps 파이프라인에 가장 잘 맞는가"를 기준으로 선택했습니다. 다만 의료 스크리닝처럼 위험 케이스를 놓치지 않는 것이 최우선인 환경에서는 Recall이 높은 RandomForest가 더 적합할 수 있다는 트레이드오프를 인지하고 있으며, 이는 추후 앙상블(XGBoost + RandomForest) 검토 과제로 남겨두고 있습니다.
 
 ---
 
@@ -188,13 +195,27 @@ Calibration은 환자 단위로 분리된 별도의 held-out calibration set(학
 
 ---
 
+## 🔬 RAG 평가 | RAG Evaluation
+
+PubMed 기반 RAG 챗봇의 답변 품질을 정량적으로 평가했습니다. RAGAS 라이브러리는 의존성 충돌(`langchain_community`의 vertexai 모듈 누락)로 직접 실행이 불가능했고, 동일한 평가 방법론(Faithfulness, Answer Relevancy, Context Precision)을 LLM judge(llama3.1:8b) 호출로 직접 구현했습니다. 자기평가 편향을 줄이기 위해 답변 생성(llama3.2)과 평가(llama3.1:8b) 모델을 분리했습니다.
+
+| Metric | 평균 점수 | 의미 |
+|---|---|---|
+| Faithfulness | 0.62 | 답변이 검색된 문헌에 얼마나 근거하는지 |
+| Answer Relevancy | 0.82 | 답변이 질문에 얼마나 직접적으로 대응하는지 |
+| Context Precision | 0.34 | 검색된 청크가 질문에 실제로 유용한지 |
+
+**진단:** Faithfulness와 Answer Relevancy는 양호한 수준이지만, Context Precision이 상대적으로 낮게(5개 질문 중 1개는 0.0) 나타났습니다. 이는 생성(Generation) 단계보다 검색(Retrieval) 단계가 RAG 파이프라인의 병목임을 시사합니다. 5개 평가 질문 중 와파린 출혈 관리 질문에서 Faithfulness 0.2로 가장 낮게 나타났는데, 이는 검색된 컨텍스트 밖의 내용(항산화제 관련 서술)이 답변에 포함된 사례로, 향후 임베딩 모델 교체(`all-MiniLM-L6-v2` → 의학 도메인 특화 임베딩) 또는 청크 분할 전략 개선이 우선 과제로 식별되었습니다.
+
+---
+
 ## 🛠️ 기술 스택 | Tech Stack
 
 ```
 Backend    : Flask 3.1, SQLAlchemy, Flask-Login, Flask-Limiter, Flask-Caching
 ML/AI      : XGBoost, Optuna, SHAP, LIME, LightGBM, RandomForest (비교 실험)
 MLOps      : MLflow (실험 추적), Prophet (시계열 예측), scikit-learn
-검증        : GroupShuffleSplit(데이터 누수 방지), Calibration(Isotonic), Drift Monitoring
+검증        : GroupShuffleSplit(데이터 누수 방지), Calibration(Isotonic), Drift Monitoring, RAG 평가(Faithfulness/Relevancy/Context Precision)
 추천 시스템 : K-Means 클러스터링, Co-medication 연관 분석
 RAG        : LangChain, FAISS, sentence-transformers, llama3.2 (Ollama)
 Data       : FDA FAERS 2024 Q1~2025 Q1 (~480,000건)
@@ -246,6 +267,7 @@ pharma-risk-analyzer/
 │   ├── compare_models.py        # 모델 비교 실험
 │   ├── calibration_check.py     # Calibration 검증
 │   ├── drift_monitoring.py      # 분기별 Drift 모니터링
+│   ├── rag_evaluation.py        # RAG 평가 (Faithfulness/Relevancy/Context Precision)
 │   ├── retrain_pipeline.py      # 분기별 자동 재학습
 │   ├── model.pkl
 │   ├── best_params.json
@@ -287,10 +309,11 @@ ANTHROPIC_API_KEY=your-api-key
 # 5. ML 모델 학습 (데이터 누수 방지 적용된 버전)
 python ml/train_model_optuna.py
 
-# 6. (선택) 모델 비교 / Calibration / Drift 검증
+# 6. (선택) 모델 비교 / Calibration / Drift / RAG 평가
 python ml/compare_models.py
 python ml/calibration_check.py
 python ml/drift_monitoring.py
+python ml/rag_evaluation.py
 
 # 7. 서버 실행
 python run.py
@@ -348,6 +371,14 @@ AI 개발자 과정(MBC아카데미)을 통해 쌓은 머신러닝·웹 개발 �
 ### 개발 과정에서의 전환점
 
 초기에는 Accuracy 69%라는 결과에 만족할 수 있었지만, FAERS 데이터의 구조(동일 환자가 여러 레코드에 등장)를 고려하면 이 수치를 그대로 신뢰할 수 없다는 점을 인지하고 데이터 누수 검증을 진행했습니다. 그 결과 실제 성능이 52%로 재산정되었고, 이는 오히려 "왜 분기별 재학습이 필요한가"를 보여주는 Drift Monitoring 실험으로 이어지는 계기가 되었습니다. 이 과정 자체가 모델 성능 수치보다 더 중요한 엔지니어링 역량이라고 생각하여 README에도 정직하게 기록했습니다.
+
+---
+
+## 💡 Key Lessons
+
+Initially the model achieved 69% accuracy. However, after discovering patient-level leakage within FAERS reports — the same patient appearing in both train and test sets — the evaluation pipeline was redesigned using `GroupShuffleSplit` on patient ID (`primaryid`), and risk-rate features were recomputed using only the training set.
+
+The resulting performance decreased to 52%, but became significantly more reliable and realistic. This experience highlighted the importance of **data validation over raw model metrics** — a lower, honest number is more valuable than a higher, leaked one. The same validation mindset was extended further: Calibration testing revealed that raw model probabilities did not match real-world outcome rates (improved via isotonic regression), and Drift Monitoring revealed that a model trained on a single quarter loses roughly half its F1 score by the very next quarter — providing quantitative justification for the quarterly retraining pipeline already built into this project.
 
 ---
 
