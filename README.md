@@ -17,7 +17,7 @@
 
 ## 🌐 Live Demo
 
-**배포 URL**: https://pharma-risk-analyzer-production.up.railway.app
+**배포 URL**: [http://3.36.178.61:5001](http://3.36.178.61:5001)
 
 ---
 
