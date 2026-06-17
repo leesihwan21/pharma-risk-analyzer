@@ -1,4 +1,4 @@
-﻿"""
+"""
 Optuna + MLflow 실험 추적
 사용법: python ml/train_model_optuna.py
 결과:  ml/model.pkl, ml/best_params.json
@@ -8,6 +8,13 @@ UI:    mlflow ui -> http://127.0.0.1:5000
 Data Leakage Prevention:
 - Patient-level leakage prevented via GroupShuffleSplit on primaryid
 - Risk-rate features computed on TRAIN set only, then mapped to test
+
+[수정 사항]
+1. risk-rate 피처에 Bayesian 스무딩 적용: 표본 수가 적은 약물/부작용은
+   global_rate 쪽으로 끌어당겨서 극단값(0.0/1.0) 노이즈를 줄임.
+2. 원시 LabelEncoder ID(drug_encoded, reac_encoded)를 모델 피처에서 제거.
+   의미 없는 정수 ID라 트리 모델이 특정 값에 과적합할 위험이 있었고,
+   risk-rate 피처가 이미 더 안정적으로 같은 정보를 담고 있음.
 """
 
 import pandas as pd
@@ -33,6 +40,7 @@ MODEL_DIR = os.path.dirname(os.path.abspath(__file__))
 N_TRIALS     = 1
 CV_FOLDS     = 3
 RANDOM_STATE = 42
+SMOOTHING_K  = 20  # 스무딩 강도: 표본이 이 정도보다 적으면 global_rate 쪽으로 더 끌어당김
 EXPERIMENT_NAME = "pharma-risk-xgboost"
 
 
@@ -55,21 +63,28 @@ def prepare_features(df):
     return df, le_drug, le_reac
 
 
-# -- Train 기준 risk-rate 피처 생성 (누수 방지) ------------------
-def add_risk_rate_features(df_train, df_test):
+# -- Train 기준 risk-rate 피처 생성 (누수 방지 + Bayesian 스무딩) ------------------
+def add_risk_rate_features(df_train, df_test, k=SMOOTHING_K):
+    """smoothed_rate = (count * mean + k * global_rate) / (count + k)
+    표본이 적은 약물/부작용일수록 global_rate 쪽으로 더 강하게 끌어당겨,
+    1~2건만 등장한 카테고리가 risk_rate=0.0/1.0 같은 극단값을 갖는 문제를 완화한다.
+    """
     global_rate = df_train['risk'].mean()
 
-    drug_rate = df_train.groupby('drug_encoded')['risk'].mean()
+    drug_grp = df_train.groupby('drug_encoded')['risk']
+    drug_rate = (drug_grp.sum() + k * global_rate) / (drug_grp.count() + k)
     df_train['drug_risk_rate'] = df_train['drug_encoded'].map(drug_rate)
     df_test['drug_risk_rate']  = df_test['drug_encoded'].map(drug_rate).fillna(global_rate)
 
-    reac_rate = df_train.groupby('reac_encoded')['risk'].mean()
+    reac_grp = df_train.groupby('reac_encoded')['risk']
+    reac_rate = (reac_grp.sum() + k * global_rate) / (reac_grp.count() + k)
     df_train['reac_risk_rate'] = df_train['reac_encoded'].map(reac_rate)
     df_test['reac_risk_rate']  = df_test['reac_encoded'].map(reac_rate).fillna(global_rate)
 
     df_train['drug_reac_key'] = df_train['drug_encoded'].astype(str) + '_' + df_train['reac_encoded'].astype(str)
     df_test['drug_reac_key']  = df_test['drug_encoded'].astype(str) + '_' + df_test['reac_encoded'].astype(str)
-    combo_rate = df_train.groupby('drug_reac_key')['risk'].mean()
+    combo_grp = df_train.groupby('drug_reac_key')['risk']
+    combo_rate = (combo_grp.sum() + k * global_rate) / (combo_grp.count() + k)
     df_train['combo_risk_rate'] = df_train['drug_reac_key'].map(combo_rate)
     df_test['combo_risk_rate']  = df_test['drug_reac_key'].map(combo_rate).fillna(global_rate)
 
@@ -115,7 +130,9 @@ def make_objective(X_train, y_train):
 
 # -- 메인 ----------------------------------------------------
 if __name__ == '__main__':
-    FEATURES = ['drug_encoded', 'reac_encoded', 'sex_encoded', 'age',
+    # drug_encoded / reac_encoded 원시 ID는 더 이상 모델 피처로 쓰지 않음
+    # (의미 없는 정수 ID라 과적합 위험; risk_rate 피처가 더 안정적으로 같은 정보를 담음)
+    FEATURES = ['sex_encoded', 'age',
                 'drug_risk_rate', 'reac_risk_rate', 'combo_risk_rate']
 
     # 1. 데이터 로드
@@ -129,7 +146,7 @@ if __name__ == '__main__':
     df_train = df.iloc[train_idx].copy()
     df_test  = df.iloc[test_idx].copy()
 
-    # 3. risk-rate 피처는 train으로만 계산 (피처 누수 방지)
+    # 3. risk-rate 피처는 train으로만 계산 (피처 누수 방지 + 스무딩)
     df_train, df_test = add_risk_rate_features(df_train, df_test)
 
     X_train, y_train = df_train[FEATURES], df_train['risk']
@@ -158,7 +175,7 @@ if __name__ == '__main__':
     print(f"\nBest F1 (CV): {study.best_value:.4f}")
 
     # 6. MLflow run 시작
-    with mlflow.start_run(run_name="optuna_xgboost"):
+    with mlflow.start_run(run_name="optuna_xgboost_smoothed_te"):
 
         mlflow.log_params(best_params)
         mlflow.log_param("n_trials", N_TRIALS)
@@ -166,6 +183,8 @@ if __name__ == '__main__':
         mlflow.log_param("train_size", len(X_train))
         mlflow.log_param("test_size", len(X_test))
         mlflow.log_param("split_method", "GroupShuffleSplit_primaryid")
+        mlflow.log_param("target_encoding_smoothing_k", SMOOTHING_K)
+        mlflow.log_param("raw_label_id_features", False)
 
         scale = (y_train == 0).sum() / (y_train == 1).sum()
         final_params = best_params.copy()
@@ -194,7 +213,7 @@ if __name__ == '__main__':
 
         mlflow.xgboost.log_model(model, "model")
 
-        print(f"\nTest Results (patient-level split, no leakage)")
+        print(f"\nTest Results (patient-level split, no leakage, smoothed target encoding)")
         print(f"  Accuracy      : {acc:.4f}")
         print(f"  F1(risk)      : {f1:.4f}")
         print(f"  Recall(risk)  : {rec:.4f}")

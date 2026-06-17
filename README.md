@@ -142,16 +142,18 @@ train_idx, test_idx = next(splitter.split(X, y, groups=df["primaryid"]))
 
 ## 🏆 모델 비교 실험 | Model Comparison
 
-동일한 환자 단위 split(GroupShuffleSplit, primaryid 기준)으로 4개 모델을 공정하게 비교했습니다.
+동일한 환자 단위 split(GroupShuffleSplit, primaryid 기준)으로 4개 모델을 공정하게 비교했습니다. (Bayesian 스무딩 적용 + 원시 LabelEncoder ID 제거 후 수치)
 
 | Model | Accuracy | F1 (risk) | Recall (risk) | Precision (risk) |
 |---|---|---|---|---|
-| RandomForest | 0.494 | **0.450** | **0.580** | 0.367 |
-| XGBoost | 0.520 | 0.410 | 0.468 | 0.365 |
-| LightGBM | 0.521 | 0.407 | 0.461 | 0.364 |
-| LogisticRegression | **0.549** | 0.351 | 0.342 | 0.360 |
+| LogisticRegression | **0.527** | 0.406 | 0.453 | **0.368** |
+| RandomForest | 0.508 | **0.420** | **0.500** | 0.362 |
+| LightGBM | 0.519 | 0.409 | 0.468 | 0.364 |
+| XGBoost | 0.520 | 0.405 | 0.458 | 0.363 |
 
-**모델 선택 근거:** RandomForest가 F1(0.450)과 Recall(0.580)에서 XGBoost(F1 0.410)보다 높게 나타납니다. 단순 지표만 보면 RandomForest가 더 좋은 선택처럼 보이지만, XGBoost를 최종 모델로 채택한 이유는 다음과 같습니다.
+**Target Encoding 개선 효과:** 원래 피처셋에는 `drug_encoded`/`reac_encoded`(의미 없는 LabelEncoder 정수 ID)가 risk-rate 피처와 함께 그대로 모델 입력으로 들어가 있었습니다. 이 원시 ID를 제거하고 risk-rate 피처에 표본 수 기반 Bayesian 스무딩(`(count·mean + k·global_rate) / (count + k)`, k=20)을 적용한 결과, **LogisticRegression의 F1이 0.351 → 0.406으로 크게 개선**되었습니다. 선형 모델은 의미 없는 정수 인코딩에 특히 민감하기 때문에, 이 개선이 원시 ID 제거가 실제로 유효한 수정이었음을 보여주는 근거가 됩니다. 트리 모델들은 원래도 무의미한 분기를 일부 무시할 수 있어 변화가 상대적으로 작았습니다.
+
+**모델 선택 근거:** RandomForest가 F1(0.420)과 Recall(0.500)에서 가장 높게 나타납니다. 단순 지표만 보면 RandomForest가 더 좋은 선택처럼 보이지만, XGBoost를 최종 모델로 채택한 이유는 다음과 같습니다.
 
 1. **SHAP 설명 가능성과의 통합**: XGBoost는 SHAP TreeExplainer와 호환성이 가장 안정적이며, 이미 Global/Local 설명 파이프라인이 구축되어 있습니다.
 2. **안정적인 Optuna 최적화 워크플로우**: 9개 하이퍼파라미터에 대한 베이지안 탐색 파이프라인이 XGBoost 기준으로 구축되어 있어, 추가 데이터 확보 시 즉시 재학습이 가능합니다.
@@ -168,10 +170,10 @@ train_idx, test_idx = next(splitter.split(X, y, groups=df["primaryid"]))
 
 | | Brier Score (낮을수록 좋음) |
 |---|---|
-| Base XGBoost | 0.2954 |
-| Calibrated (Isotonic) | **0.2588** (12.4% 개선) |
+| Base XGBoost | 0.2945 |
+| Calibrated (Isotonic) | **0.2587** (12.1% 개선) |
 
-Calibration은 환자 단위로 분리된 별도의 held-out calibration set(학습/테스트와 모두 비중복)으로 fit하여, calibration 과정 자체에서도 데이터 누수가 없도록 구성했습니다 (`sklearn.frozen.FrozenEstimator` 사용).
+Calibration은 환자 단위로 분리된 별도의 held-out calibration set(학습/테스트와 모두 비중복)으로 fit하여, calibration 과정 자체에서도 데이터 누수가 없도록 구성했습니다 (`sklearn.frozen.FrozenEstimator` 사용). Target Encoding 스무딩 적용 전후로 Brier Score는 거의 변화가 없었는데(0.2954→0.2945), 이는 자연스러운 결과입니다 — 스무딩은 피처의 노이즈를 줄이는 것이고 Calibration은 모델이 이미 내놓은 확률 출력을 보정하는 것이라, 두 개선이 서로 다른 문제를 다루기 때문입니다.
 
 ---
 
@@ -179,14 +181,18 @@ Calibration은 환자 단위로 분리된 별도의 held-out calibration set(학
 
 2024Q1 데이터로만 학습한 모델을 이후 분기(Q2~2025Q1)에 그대로 적용했을 때 성능 변화를 추적했습니다.
 
+**평가 누수 버그 발견 및 수정:** 처음 측정했을 때는 학습 분기(2024Q1)의 F1이 0.752로 다른 분기(0.38 전후)보다 훨씬 높게 나와, "분기가 바뀌면 성능이 절반 가까이 추락한다"는 극심한 드리프트로 보였습니다. 그런데 이 수치를 다시 들여다보니, 학습 분기를 평가할 때 **학습에 실제로 쓰인 80% 데이터까지 포함된 전체 Q1**으로 평가하고 있었다는 걸 발견했습니다 — 모델이 이미 외운 데이터로 시험을 본 셈이라 Q1 점수만 부풀려져 있었던 것입니다. 학습 분기도 학습에 전혀 쓰이지 않은 held-out 20%로만 평가하도록 수정한 결과는 다음과 같습니다.
+
 | Quarter | F1 | Recall | Precision |
 |---|---|---|---|
-| 2024Q1 (학습 분기) | 0.752 | 0.805 | 0.705 |
-| 2024Q2 | 0.383 | 0.398 | 0.368 |
-| 2024Q3 | 0.376 | 0.397 | 0.357 |
-| 2025Q1 | 0.377 | 0.397 | 0.359 |
+| 2024Q1 (학습 분기, held-out) | 0.382 | 0.402 | 0.363 |
+| 2024Q2 | 0.392 | 0.418 | 0.370 |
+| 2024Q3 | 0.384 | 0.416 | 0.357 |
+| 2025Q1 | 0.383 | 0.411 | 0.358 |
 
-학습 분기 바로 다음 분기부터 F1이 절반 가까이 급락하는 패턴이 관찰됩니다. 이는 LabelEncoder 기반 약물/부작용 피처가 학습 시점에 없던 신규 코드를 처리하지 못하는 구조적 한계와 실제 데이터 분포 변화(drift)가 결합된 결과로 추정되며, **주기적인 재학습 파이프라인(MLflow + 분기별 자동 재학습)의 필요성을 정량적으로 뒷받침하는 근거**로 활용하고 있습니다.
+수정 후에는 모든 분기가 F1 0.38~0.39 사이에 머물러, **실질적인 드리프트가 거의 관찰되지 않습니다.** 즉 처음 발견했던 "심각한 드리프트"는 대부분 모델의 시간적 불안정성이 아니라 평가 방식 자체의 버그였다는 결론입니다. 다만 절대적인 F1 자체가 0.38 수준으로 낮은 점은 여전한 한계이며, 이는 드리프트 문제가 아니라 피처/모델 구조 자체의 개선이 필요함을 시사합니다 (아래 "향후 개선 계획" 참고).
+
+이 경험은 모델 성능 수치 자체보다, **평가 파이프라인에 숨어 있는 버그를 의심하고 검증하는 과정**이 더 중요하다는 것을 보여줍니다. 처음에 봤던 "급격한 드리프트" 그래프를 그대로 믿고 결론을 냈다면, 실제로는 존재하지 않는 문제를 해결하려고 시간을 쓸 뻔했습니다.
 
 ---
 
@@ -210,7 +216,7 @@ PubMed 기반 RAG 챗봇의 응답 품질을 정량적으로 평가했습니다.
 Backend    : Flask 3.1, SQLAlchemy, Flask-Login, Flask-Limiter, Flask-Caching
 ML/AI      : XGBoost, Optuna, SHAP, LIME, LightGBM, RandomForest (비교 실험)
 MLOps      : MLflow (실험 추적), Prophet (시계열 예측), scikit-learn
-검증       : GroupShuffleSplit(데이터 누수 방지), Calibration(Isotonic), Drift Monitoring, RAG 평가(Faithfulness/Relevancy/Context Precision)
+검증       : GroupShuffleSplit(데이터 누수 방지), Smoothed Target Encoding(과적합 방지), Calibration(Isotonic), Drift Monitoring(평가 누수 버그 수정), RAG 평가(Faithfulness/Relevancy/Context Precision)
 Vision     : YOLOv8 (알약 탐지), EasyOCR (식별문자 인식)
 추천 시스템 : K-Means 클러스터링, Co-medication 연관 분석
 RAG        : LangChain, FAISS, sentence-transformers, llama3.2 (Ollama)
@@ -335,13 +341,13 @@ mlflow ui --backend-store-uri sqlite:///mlflow.db --port 5002
 
 | 지표 | 값 | 설명 |
 |------|-----|------|
-| Accuracy | 52.2% | 환자 단위 split 적용 후 정직한 성능 |
-| F1 (위험) | 0.407 | 위험 클래스 F1 |
-| Recall (위험) | 0.468 | 위험 케이스 탐지율 |
+| Accuracy | 51.9% | 환자 단위 split 적용 후 정직한 성능 |
+| F1 (위험) | 0.412 | 위험 클래스 F1 |
+| Recall (위험) | 0.473 | 위험 케이스 탐지율 |
 | Precision (위험) | 0.365 | 위험 예측 정확도 |
-| Brier Score (Calibrated) | 0.2588 | 확률 보정 후 (12.4% 개선) |
+| Brier Score (Calibrated) | 0.2587 | 확률 보정 후 (12.1% 개선) |
 
-> **데이터 누수 검증으로 인한 정직한 성능 평가**: 초기 단순 split 기준으로는 Accuracy 69.3%였으나, 환자(primaryid) 단위 GroupShuffleSplit과 피처 누수 제거를 적용한 결과 52.2%로 재산정되었습니다. 이는 모델 성능을 부풀리지 않고 정직하게 검증한 결과이며, Drift Monitoring 결과와 함께 이후 피처 보완 및 재학습 전략 수립의 근거로 사용하고 있습니다.
+> **데이터 누수 검증으로 인한 정직한 성능 평가**: 초기 단순 split 기준으로는 Accuracy 69.3%였으나, 환자(primaryid) 단위 GroupShuffleSplit과 피처 누수 제거를 적용한 결과 52% 수준으로 재산정되었습니다. 이후 risk-rate 피처에 Bayesian 스무딩을 적용하고 의미 없는 원시 LabelEncoder ID를 모델 입력에서 제거한 결과(Target Encoding 개선), F1이 0.407 → 0.412, Recall이 0.468 → 0.473으로 소폭 개선되었습니다. 이는 모델 성능을 부풀리지 않고 정직하게 검증한 결과이며, Drift Monitoring 결과(평가 누수 버그 수정 후 분기별 성능이 안정적임을 확인)와 함께 다음 단계 개선 방향을 수립하는 근거로 사용하고 있습니다.
 
 ---
 

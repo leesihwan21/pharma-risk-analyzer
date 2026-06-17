@@ -1,30 +1,30 @@
 [
   {
     "model": "RandomForest",
-    "accuracy": 0.4937,
-    "f1_risk": 0.4495,
-    "recall_risk": 0.5797,
-    "precision_risk": 0.367
-  },
-  {
-    "model": "XGBoost",
-    "accuracy": 0.5199,
-    "f1_risk": 0.4098,
-    "recall_risk": 0.4676,
-    "precision_risk": 0.3648
+    "accuracy": 0.5082,
+    "f1_risk": 0.4202,
+    "recall_risk": 0.4999,
+    "precision_risk": 0.3624
   },
   {
     "model": "LightGBM",
-    "accuracy": 0.5212,
-    "f1_risk": 0.4069,
-    "recall_risk": 0.4607,
-    "precision_risk": 0.3644
+    "accuracy": 0.5185,
+    "f1_risk": 0.4092,
+    "recall_risk": 0.4677,
+    "precision_risk": 0.3637
   },
   {
     "model": "LogisticRegression",
-    "accuracy": 0.5487,
-    "f1_risk": 0.351,
-    "recall_risk": 0.3423,
-    "precision_risk": 0.3601
+    "accuracy": 0.5274,
+    "f1_risk": 0.4058,
+    "recall_risk": 0.4525,
+    "precision_risk": 0.3677
+  },
+  {
+    "model": "XGBoost",
+    "accuracy": 0.5203,
+    "f1_risk": 0.4052,
+    "recall_risk": 0.4583,
+    "precision_risk": 0.3631
   }
 ]

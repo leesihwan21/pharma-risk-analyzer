@@ -1,6 +1,6 @@
 {
-  "brier_score_base": 0.2954,
-  "brier_score_calibrated": 0.2588,
+  "brier_score_base": 0.2945,
+  "brier_score_calibrated": 0.2587,
   "fit_size": 300732,
   "calibration_size": 73549,
   "test_size": 96543,

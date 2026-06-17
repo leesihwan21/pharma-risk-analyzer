@@ -3,6 +3,10 @@ Calibration 검증: XGBoost 모델의 확률 예측이 실제 확률과 얼마�
 의료 AI에서 "고위험 87%"라는 출력이 실제로 87% 확률을 의미하는지 검증하는 과정
 사용법: python ml/calibration_check.py
 결과: ml/calibration_curve.png, ml/calibration_report.json
+
+[수정 사항] train_model_optuna.py와 동일하게:
+1. risk-rate 피처에 Bayesian 스무딩 적용 (표본 적은 카테고리의 극단값 노이즈 완화)
+2. 원시 LabelEncoder ID(drug_encoded, reac_encoded)를 모델 피처에서 제거
 """
 
 import pandas as pd
@@ -23,6 +27,7 @@ BASE_DIR  = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 DATA_PATH = os.path.join(BASE_DIR, 'data', 'processed', 'processed_faers.csv')
 MODEL_DIR = os.path.dirname(os.path.abspath(__file__))
 RANDOM_STATE = 42
+SMOOTHING_K = 20
 
 
 def prepare_features(df):
@@ -41,20 +46,24 @@ def prepare_features(df):
     return df
 
 
-def add_risk_rate_features(df_train, df_test):
+def add_risk_rate_features(df_train, df_test, k=SMOOTHING_K):
+    """Bayesian-smoothed target encoding (train_model_optuna.py와 동일한 방식)."""
     global_rate = df_train['risk'].mean()
 
-    drug_rate = df_train.groupby('drug_encoded')['risk'].mean()
+    drug_grp = df_train.groupby('drug_encoded')['risk']
+    drug_rate = (drug_grp.sum() + k * global_rate) / (drug_grp.count() + k)
     df_train['drug_risk_rate'] = df_train['drug_encoded'].map(drug_rate)
     df_test['drug_risk_rate']  = df_test['drug_encoded'].map(drug_rate).fillna(global_rate)
 
-    reac_rate = df_train.groupby('reac_encoded')['risk'].mean()
+    reac_grp = df_train.groupby('reac_encoded')['risk']
+    reac_rate = (reac_grp.sum() + k * global_rate) / (reac_grp.count() + k)
     df_train['reac_risk_rate'] = df_train['reac_encoded'].map(reac_rate)
     df_test['reac_risk_rate']  = df_test['reac_encoded'].map(reac_rate).fillna(global_rate)
 
     df_train['drug_reac_key'] = df_train['drug_encoded'].astype(str) + '_' + df_train['reac_encoded'].astype(str)
     df_test['drug_reac_key']  = df_test['drug_encoded'].astype(str) + '_' + df_test['reac_encoded'].astype(str)
-    combo_rate = df_train.groupby('drug_reac_key')['risk'].mean()
+    combo_grp = df_train.groupby('drug_reac_key')['risk']
+    combo_rate = (combo_grp.sum() + k * global_rate) / (combo_grp.count() + k)
     df_train['combo_risk_rate'] = df_train['drug_reac_key'].map(combo_rate)
     df_test['combo_risk_rate']  = df_test['drug_reac_key'].map(combo_rate).fillna(global_rate)
 
@@ -62,7 +71,8 @@ def add_risk_rate_features(df_train, df_test):
 
 
 if __name__ == '__main__':
-    FEATURES = ['drug_encoded', 'reac_encoded', 'sex_encoded', 'age',
+    # drug_encoded / reac_encoded 원시 ID는 더 이상 모델 피처로 쓰지 않음
+    FEATURES = ['sex_encoded', 'age',
                 'drug_risk_rate', 'reac_risk_rate', 'combo_risk_rate']
 
     print("Loading data...")
