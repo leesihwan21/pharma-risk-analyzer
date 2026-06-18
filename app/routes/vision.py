@@ -14,6 +14,8 @@ from ultralytics import YOLO
 from flask import Blueprint, render_template, jsonify, request, Response, current_app
 from app import cache
 from app.models import db, PredictionLog
+from app.dur_lookup import check_combo_dur_taboo
+
 
 vision = Blueprint('vision', __name__)
 
@@ -208,6 +210,7 @@ def detect_pill():
 
     risk_result = None
     combo_result = None
+    dur_check = None
     target_drug = drug_hint if drug_hint else (detected_drugs[0] if detected_drugs else None)
 
     if target_drug:
@@ -294,6 +297,12 @@ def detect_pill():
 
             if combo_temp_results:
                 combo_result = combo_temp_results
+
+                api_key = os.environ.get('MFDS_API_KEY', '')
+                if api_key and len(detected_drugs) >= 2:
+                    dur_check = check_combo_dur_taboo(detected_drugs[0], detected_drugs[1], api_key)
+                else:
+                    dur_check = {'checked': False, 'is_taboo': False, 'reason': 'API 키 없음 또는 약물 부족'}
         except Exception as e:
             print(f"Combo analysis error: {str(e)}")
 
@@ -301,7 +310,8 @@ def detect_pill():
         'detections': detections,
         'image': img_b64,
         'risk_result': risk_result,
-        'combo_result': combo_result
+        'combo_result': combo_result,
+        'dur_check': dur_check
     })
 
 

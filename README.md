@@ -80,6 +80,7 @@ FDA FAERS(Adverse Event Reporting System) 2024 Q1 ~ 2025 Q1 분기별 데이터(
 | Drug Comparison | 두 약물 통계 나란히 비교 + AI 안전성 리포트 동시 생성 |
 | Data Filter | 약물명·성별·나이·국가 등 조건 필터링 |
 | Dosage Calculator | CrCl·체표면적(BSA) 기반 mg/kg 권장 용량 계산 |
+| **한국 DUR 병용금기 검증** | FAERS 기반 위험 약물 조합을 한국 식약처 DUR(병용금기) 데이터베이스와 실시간 대조 검증 |
 
 ### 📚 RAG & AI 문헌 분석
 | 기능 | 설명 |
@@ -356,6 +357,7 @@ mlflow ui --backend-store-uri sqlite:///mlflow.db --port 5002
 - **FDA FAERS 2024 Q1 ~ 2025 Q1**: FDA 공식 약물 이상반응 자발적 보고 데이터
 - **식약처 이상반응**: 연도별(2019~2024) 국내 이상반응 보고 통계
 - **식약처 의약품안전나라 OpenAPI**: 공공데이터포털(data.go.kr) — 낱알식별, DUR(e약은요)
+- **식약처 DUR(의약품안전사용서비스) 병용금기 API**: 공공데이터포털(data.go.kr) — 한국 병용금기 기준 실시간 검증
 - **OpenFDA Drug Label API**: FDA 공식 약물 설명서
 - **PubMed E-utilities API**: NCBI 논문 검색 및 초록 수집 (무료)
 
@@ -386,6 +388,7 @@ AI 개발 교육 과정(MBC아카데미)을 통해 쌓은 머신러닝·앱 개�
 Initially the model achieved 69% accuracy. However, after discovering patient-level leakage within FAERS reports — the same patient appearing in both train and test sets — the evaluation pipeline was redesigned using `GroupShuffleSplit` on patient ID (`primaryid`), and risk-rate features were recomputed using only the training set.
 
 The resulting performance decreased to 52%, but became significantly more reliable and realistic. This experience highlighted the importance of **data validation over raw model metrics** — a lower, honest number is more valuable than a higher, leaked one. The same validation mindset was extended further: Calibration testing revealed that raw model probabilities did not match real-world outcome rates (improved via isotonic regression), and Drift Monitoring revealed that a model trained on a single quarter loses roughly half its F1 score by the very next quarter — providing quantitative justification for the quarterly retraining pipeline already built into this project.
+
 
 ---
 
