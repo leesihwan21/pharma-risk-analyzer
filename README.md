@@ -15,6 +15,8 @@
 [![Docker](https://img.shields.io/badge/Container-Docker-2496ED)](https://www.docker.com)
 [![AWS](https://img.shields.io/badge/Deploy-AWS%20EC2-FF9900)](https://aws.amazon.com/ec2)
 
+> 🎯 **FAERS 기반 약물 이상반응 위험 예측 및 설명 가능한 AI를 제공하는 end-to-end pharmacovigilance 플랫폼**
+
 ---
 
 ## 🌐 Live Demo
@@ -37,7 +39,7 @@ FDA FAERS(Adverse Event Reporting System) 2024 Q1 ~ 2025 Q1 분기별 데이터(
 - PubMed 논문 FAISS 벡터DB 임베딩 기반 RAG 약물 안전성 Q&A 챗봇
 - YOLOv8 + OCR 기반 알약 이미지 인식 (식약처 낱알식별 25,322건 로컬 캐싱)
 - PRR(Evans) + EBGM(FDA MGPS 베이지안) + MedDRA SOC 분류 3종 신호 탐지
-- ICH E2B(R3) XML 자동 생성 + 21 CFR Part 11 전자서명
+- ICH E2B(R3) XML 포맷 구현 + 21 CFR Part 11 일부 요구사항(전자서명·Audit Trail) 구현 — 공식 인증 시스템은 아님
 - **Docker 컨테이너 검증 완료** + GitHub Actions CI/CD 파이프라인
 - AWS EC2 gunicorn + systemd 운영, **AWS RDS PostgreSQL 관리형 DB**, IAM 역할 기반 권한 관리, CloudWatch 로그·메트릭 모니터링
 
@@ -96,7 +98,7 @@ FDA FAERS(Adverse Event Reporting System) 2024 Q1 ~ 2025 Q1 분기별 데이터(
 | EBGM 신호 탐지 | FDA MGPS 베이지안 알고리즘 근사 (EB05 ≥ 2 기준) |
 | MedDRA SOC 분류 | System Organ Class 기반 부작용 체계 분류 |
 | AE Manager | CTCAE 자동 등급·SAE 판정·15일 보고 마감 관리·ICH E2B(R3) XML |
-| 21 CFR Part 11 | SHA-256 전자서명·비밀번호 보호·이력 DB 보존 |
+| 21 CFR Part 11 (선택 구현) | SHA-256 전자서명·비밀번호 보호·이력 DB 보존 — 요구사항 중 전자서명/Audit Trail 일부를 구현, 공식 인증된 시스템은 아님 |
 | Audit Trail | 모든 AE 데이터 생성/수정/삭제/열람 이력 자동 기록 |
 
 ---
@@ -226,7 +228,7 @@ External   : 식약처 의약품안전나라 OpenAPI(낱알식별/DUR), OpenFDA,
 Viz        : Plotly, Chart.js, NetworkX
 DB         : PostgreSQL (AWS RDS, 애플리케이션 메인 DB) + SQLite (mlflow.db, pill_identity.db)
 Report     : ReportLab (PDF), ICH E2B(R3) XML
-Compliance : 21 CFR Part 11 전자서명, Audit Trail, ICH E2B(R3)
+Compliance : 21 CFR Part 11 일부 요구사항 구현(전자서명, Audit Trail — 공식 인증 아님), ICH E2B(R3) XML 포맷 구현
 Frontend   : Jinja2 Templates, Vanilla JS, 반응형 CSS, PWA
 Container  : Docker (빌드·실행 검증 완료, torch CPU 전용 빌드로 경량화)
 Infra      : AWS EC2 (t3.micro, Ubuntu 24.04, 서울 리전) + AWS RDS PostgreSQL + Elastic IP + gunicorn + systemd + IAM + CloudWatch
@@ -342,6 +344,8 @@ mlflow ui --backend-store-uri sqlite:///mlflow.db --port 5002
 
 ## 📊 ML 모델 성능 | Model Performance
 
+**최종 모델 성능 (Final)**
+
 | 지표 | 값 | 설명 |
 |------|-----|------|
 | Accuracy | 51.9% | 환자 단위 split 적용 후 정직한 성능 |
@@ -350,7 +354,15 @@ mlflow ui --backend-store-uri sqlite:///mlflow.db --port 5002
 | Precision (위험) | 0.365 | 위험 예측 정확도 |
 | Brier Score (Calibrated) | 0.2587 | 확률 보정 후 (12.1% 개선) |
 
-> **데이터 누수 검증으로 인한 정직한 성능 평가**: 초기 단순 split 기준으로는 Accuracy 69.3%였으나, 환자(primaryid) 단위 GroupShuffleSplit과 피처 누수 제거를 적용한 결과 52% 수준으로 재산정되었습니다. 이후 risk-rate 피처에 Bayesian 스무딩을 적용하고 의미 없는 원시 LabelEncoder ID를 모델 입력에서 제거한 결과(Target Encoding 개선), F1이 0.407 → 0.412, Recall이 0.468 → 0.473으로 소폭 개선되었습니다. 이는 모델 성능을 부풀리지 않고 정직하게 검증한 결과이며, Drift Monitoring 결과(평가 누수 버그 수정 후 분기별 성능이 안정적임을 확인)와 함께 다음 단계 개선 방향을 수립하는 근거로 사용하고 있습니다.
+**실험 히스토리 — Before / After (참고)**
+
+| 단계 | Accuracy | F1 (위험) | Recall (위험) |
+|---|---|---|---|
+| 초기 (단순 split, 데이터 누수 존재) | 69.3% | — | — |
+| 데이터 누수 제거 직후 | ~52% | 0.407 | 0.468 |
+| **+ Target Encoding 개선 (최종, 위 표와 동일)** | **51.9%** | **0.412** | **0.473** |
+
+> 위 단계별 변화는 모델 성능을 부풀리지 않고 정직하게 검증한 결과이며, Drift Monitoring 결과(평가 누수 버그 수정 후 분기별 성능이 안정적임을 확인)와 함께 다음 단계 개선 방향을 수립하는 근거로 사용하고 있습니다.
 
 ---
 
