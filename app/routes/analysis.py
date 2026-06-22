@@ -750,20 +750,53 @@ def api_drug_vision():
             'anthropic-version': '2023-06-01',
             'content-type': 'application/json'
         }
+        # 🔥 고도화 포인트: 대용량 의약품 식별 가이드라인을 고정 컨텍스트로 상단에 배치하고 캐싱 적용
         payload = {
             'model': 'claude-haiku-4-5-20251001',
             'max_tokens': 300,
+            # 1. 고정된 시스템 프롬프트에 Ephemeral 캐싱 제어권 부여
+            'system': [
+                {
+                    'type': 'text',
+                    'text': (
+                        "당신은 전문 의약품 식별 및 알약 인식 AI 어시스턴트입니다. "
+                        "입력된 이미지의 형태, 색상, 각인, 제형(정제, 캡슐 등)을 기반으로 대한민국 식약처 및 OpenFDA 기준에 부합하는 정확한 의약품명을 추론해야 합니다. "
+                        "반드시 부가적인 설명 없이 '정확한 약물명 혹은 성분명'만 단답형으로 출력하세요. "
+                        "만약 약물이 명확히 보이지 않거나 식별이 불가능하다면 오직 '알 수 없음'이라고만 답변하여 할루시네이션(거짓 정보)을 방지하십시오."
+                    ),
+                    'cache_control': {'type': 'ephemeral'} # 💡 Anthropic 프롬프트 캐싱 활성화
+                }
+            ],
+            # 2. 동적으로 변하는 사용자 이미지 입력 데이터
             'messages': [{
                 'role': 'user',
                 'content': [
-                    {'type': 'image', 'source': {'type': 'base64', 'media_type': media_type, 'data': image_data}},
-                    {'type': 'text', 'text': '이 이미지에서 약물/의약품을 식별해주세요.\n약물명만 간단하게 답해주세요.\n만약 약이 아니거나 식별 불가능하면 "알 수 없음" 이라고만 답하세요.'}
+                    {
+                        'type': 'image', 
+                        'source': {'type': 'base64', 'media_type': media_type, 'data': image_data}
+                    },
+                    {
+                        'type': 'text', 
+                        'text': '이 이미지에서 약물/의약품을 식별하여 약물명만 간단하게 답해주세요.'
+                    }
                 ]
             }]
         }
+
         r = http_requests.post('https://api.anthropic.com/v1/messages', headers=headers, json=payload, timeout=15)
         result = r.json()
+        # 캐싱 성공 여부 모니터링을 위해 백엔드 콘솔 로그에 출력 (이력서 작성용 데이터 수집)
+        if 'usage' in result:
+            print(f"==================================================")
+            print(f"ℹ️ [Anthropic Usage Log]")
+            print(f" - Input Tokens: {result['usage'].get('input_tokens')}")
+            print(f" - Output Tokens: {result['usage'].get('output_tokens')}")
+            print(f" - Cached Creation Tokens: {result['usage'].get('cache_creation_input_tokens', 0)}")
+            print(f" - Cached Read Tokens: {result['usage'].get('cache_read_input_tokens', 0)}")
+            print(f"==================================================")
+
         drug_name = result['content'][0]['text'].strip()
+
     except Exception as e:
         return jsonify({'error': 'vision failed: ' + str(e)}), 500
 
