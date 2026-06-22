@@ -1,21 +1,21 @@
-# 💊 Pharma Risk Analyzer
+﻿# 💊 Pharma Risk Analyzer
 
-[!\[Tests](https://github.com/leesihwan21/pharma-risk-analyzer/actions/workflows/tests.yml/badge.svg)](https://github.com/leesihwan21/pharma-risk-analyzer/actions/workflows/tests.yml)
+[![Tests](https://github.com/leesihwan21/pharma-risk-analyzer/actions/workflows/tests.yml/badge.svg)](https://github.com/leesihwan21/pharma-risk-analyzer/actions/workflows/tests.yml)
 
-> \*\*AI-powered Drug Adverse Event Risk Analysis \& Clinical Decision Support System\*\*
-> FDA FAERS 데이터 기반 + XGBoost 위험도 예측 + SHAP/LIME XAI + RAG 약물 Q\&A + PubMed 논문 연동 + ICH E2B(R3) + 21 CFR Part 11 + MLOps 파이프라인
+> **AI-powered Drug Adverse Event Risk Analysis & Clinical Decision Support System**
+> FDA FAERS 데이터 기반 + XGBoost 위험도 예측 + SHAP/LIME XAI + RAG 약물 Q&A + PubMed 논문 연동 + ICH E2B(R3) + 21 CFR Part 11 + MLOps 파이프라인
 
-[!\[Python](https://img.shields.io/badge/Python-3.12-blue)](https://python.org)
-[!\[Flask](https://img.shields.io/badge/Flask-3.1-green)](https://flask.palletsprojects.com)
-[!\[XGBoost](https://img.shields.io/badge/ML-XGBoost%20%2B%20Optuna-orange)](https://xgboost.readthedocs.io)
-[!\[FAERS](https://img.shields.io/badge/Data-FDA%20FAERS%202024Q1--2025Q1-red)](https://www.fda.gov/drugs/surveillance/fdas-adverse-event-reporting-system-faers)
-[!\[XAI](https://img.shields.io/badge/XAI-SHAP%20%2B%20LIME-purple)](https://shap.readthedocs.io)
-[!\[MLflow](https://img.shields.io/badge/MLOps-MLflow%20%2B%20Prophet-blueviolet)](https://mlflow.org)
-[!\[CFR](https://img.shields.io/badge/Compliance-21%20CFR%20Part%2011-green)](https://www.fda.gov)
-[!\[Docker](https://img.shields.io/badge/Container-Docker-2496ED)](https://www.docker.com)
-[!\[AWS](https://img.shields.io/badge/Deploy-AWS%20EC2-FF9900)](https://aws.amazon.com/ec2)
+[![Python](https://img.shields.io/badge/Python-3.12-blue)](https://python.org)
+[![Flask](https://img.shields.io/badge/Flask-3.1-green)](https://flask.palletsprojects.com)
+[![XGBoost](https://img.shields.io/badge/ML-XGBoost%20%2B%20Optuna-orange)](https://xgboost.readthedocs.io)
+[![FAERS](https://img.shields.io/badge/Data-FDA%20FAERS%202024Q1--2025Q1-red)](https://www.fda.gov/drugs/surveillance/fdas-adverse-event-reporting-system-faers)
+[![XAI](https://img.shields.io/badge/XAI-SHAP%20%2B%20LIME-purple)](https://shap.readthedocs.io)
+[![MLflow](https://img.shields.io/badge/MLOps-MLflow%20%2B%20Prophet-blueviolet)](https://mlflow.org)
+[![CFR](https://img.shields.io/badge/Compliance-21%20CFR%20Part%2011-green)](https://www.fda.gov)
+[![Docker](https://img.shields.io/badge/Container-Docker-2496ED)](https://www.docker.com)
+[![AWS](https://img.shields.io/badge/Deploy-AWS%20EC2-FF9900)](https://aws.amazon.com/ec2)
 
-> 🎯 \*\*FAERS 기반 약물 이상반응 위험 예측 및 설명 가능한 AI를 제공하는 end-to-end pharmacovigilance 플랫폼\*\*
+> 🎯 **FAERS 기반 약물 이상반응 위험 예측 및 설명 가능한 AI를 제공하는 end-to-end pharmacovigilance 플랫폼**
 
 \---
 
@@ -37,7 +37,7 @@ FDA FAERS(Adverse Event Reporting System) 2024 Q1 \~ 2025 Q1 분기별 데이터
 * **환자 단위(primaryid) GroupShuffleSplit으로 데이터 누수 방지**, 모델 신뢰성 및 확률 보정(Calibration) 검증
 * MLflow 실험 추적 + Prophet 시계열 예측 + 분기별 자동 성능 모니터링 파이프라인
 * K-Means 약물 클러스터링 + Co-medication 연관 분석 추천 시스템
-* PubMed 논문 FAISS 벡터DB 임베딩 기반 RAG 약물 안전성 Q\&A 챗봇
+* PubMed 논문 FAISS 벡터DB 임베딩 기반 RAG 약물 안전성 Q&A 챗봇
 * YOLOv8 + OCR 기반 알약 이미지 인식 (식약처 낱알식별 25,322건 로컬 캐싱)
 * PRR(Evans) + EBGM(FDA MGPS 베이지안) + MedDRA SOC 분류 3종 신호 탐지
 * ICH E2B(R3) XML 포맷 구현 + 21 CFR Part 11 일부 요구사항(전자서명·Audit Trail) 구현 — 공식 인증 시스템은 아님
@@ -48,7 +48,7 @@ FDA FAERS(Adverse Event Reporting System) 2024 Q1 \~ 2025 Q1 분기별 데이터
 
 ## 🎯 주요 기능 | Key Features
 
-### 📊 분석 \& 예측
+### 📊 분석 & 예측
 
 |기능|설명|
 |-|-|
@@ -77,7 +77,7 @@ FDA FAERS(Adverse Event Reporting System) 2024 Q1 \~ 2025 Q1 분기별 데이터
 |Drug Clustering|K-Means로 유사 부작용 프로필 약물 추천 (8개 클러스터)|
 |Co-medication 분석|함께 복용된 약물 Top 10 + 중증 부작용 비율 분석|
 
-### 💊 약물 검색 \& 정보
+### 💊 약물 검색 & 정보
 
 |기능|설명|
 |-|-|
@@ -89,15 +89,15 @@ FDA FAERS(Adverse Event Reporting System) 2024 Q1 \~ 2025 Q1 분기별 데이터
 |Dosage Calculator|CrCl·체표면적(BSA) 기반 mg/kg 권장 용량 계산|
 |**한국 DUR 병용금기 검증**|FAERS 기반 위험 약물 조합을 한국 식약처 DUR(병용금기) 데이터베이스와 실시간 대조 검증|
 
-### 📚 RAG \& AI 문헌 분석
+### 📚 RAG & AI 문헌 분석
 
 |기능|설명|
 |-|-|
-|RAG 약물 Q\&A|BM25 + FAISS 하이브리드 검색(RRF 융합) → Anthropic Claude 답변 생성 + \[출처: doc\_id] 인라인 citation 표기 + Prompt Caching 적용(반복 질의 시 토큰 90% 절감)|
+|RAG 약물 Q&A|BM25 + FAISS 하이브리드 검색(RRF 융합) → Anthropic Claude 답변 생성 + \[출처: doc\_id] 인라인 citation 표기 + Prompt Caching 적용(반복 질의 시 토큰 90% 절감)|
 |AI 안전성 리포트|FDA FAERS + PubMed 5건 통합 6개 섹션 자동 생성 + PDF 다운로드|
 |논문 검색|PubMed API 논문 검색 + Claude AI 한국어 요약|
 
-### 🚨 신호 탐지 \& 규제 준수
+### 🚨 신호 탐지 & 규제 준수
 
 |기능|설명|
 |-|-|
@@ -305,7 +305,7 @@ pharma-risk-analyzer/
 
 \---
 
-## ⚙️ 설치 및 실행 | Installation \& Run
+## ⚙️ 설치 및 실행 | Installation & Run
 
 ```bash
 # 1. 저장소 복제
