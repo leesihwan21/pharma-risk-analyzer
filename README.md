@@ -29,7 +29,7 @@
 
 ## 📌 프로젝트 개요 | Overview
 
-FDA FAERS(Adverse Event Reporting System) 2024 Q1 \~ 2025 Q1 분기별 데이터(약 480,000건)를 기반으로, 약물별 부작용 발생 패턴을 분석하고 XGBoost 머신러닝으로 위험도를 예측하는 웹 애플리케이션입니다.
+FDA FAERS(Adverse Event Reporting System) 2024 Q1 \~ 2025 Q1 분기별 데이터(약 480,000건)를 기반으로, 약물별 부작용 발생 패턴을 분석하고 XGBoost 머신러닝으로 위험도를 예측하는 웹앱 애플리케이션입니다.
 
 **핵심 특징:**
 
