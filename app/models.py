@@ -14,6 +14,8 @@ class User(db.Model, UserMixin):
     password_hash = db.Column(db.String(256), nullable=False)
     role = db.Column(db.String(20), nullable=False, default='USER')
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    login_failed_count = db.Column(db.Integer, default=0)
+    locked_until = db.Column(db.DateTime, nullable=True)
 
     def to_dict(self):
         return {

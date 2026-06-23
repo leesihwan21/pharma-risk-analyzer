@@ -46,8 +46,30 @@ def login():
         password = data.get('password', '')
 
         user = User.query.filter_by(username=username).first()
+
+        # 계정 잠금 체크
+        if user and user.locked_until and user.locked_until > datetime.utcnow():
+            remaining = int((user.locked_until - datetime.utcnow()).total_seconds() / 60)
+            return jsonify({'error': f'로그인 시도 횟수 초과로 계정이 잠겼습니다. {remaining}분 후 다시 시도해주세요.'}), 403
+
+        # 로그인 실패
         if not user or not check_password_hash(user.password_hash, password):
+            if user:
+                user.login_failed_count += 1
+                if user.login_failed_count >= 5:
+                    user.locked_until = datetime.utcnow() + timedelta(minutes=30)
+                    user.login_failed_count = 0
+                    db.session.commit()
+                    return jsonify({'error': '로그인 5회 실패로 계정이 30분간 잠겼습니다.'}), 403
+                db.session.commit()
+                remaining = 5 - user.login_failed_count
+                return jsonify({'error': f'아이디 또는 비밀번호가 틀렸습니다. (남은 시도: {remaining}회)'}), 401
             return jsonify({'error': '아이디 또는 비밀번호가 틀렸습니다.'}), 401
+
+        # 로그인 성공 시 실패 횟수 초기화
+        user.login_failed_count = 0
+        user.locked_until = None
+        db.session.commit()
 
         login_user(user)
         log = UserActivityLog(user_id=user.id, username=username, action='login', ip_address=request.remote_addr)
