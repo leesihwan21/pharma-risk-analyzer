@@ -32,8 +32,11 @@ if 'langchain_community' not in sys.modules:
 from app import create_app
 from app.models import db as _db
 
-DATA_DIR = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), 'data', 'processed')
+# 프로젝트 루트 기준 절대경로
+BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+DATA_DIR = os.path.join(BASE_DIR, 'data', 'processed')
 DATA_PATH = os.path.join(DATA_DIR, 'processed_faers.csv')
+MODEL_DIR = os.path.join(BASE_DIR, 'ml')
 
 @pytest.fixture(scope='session', autouse=True)
 def ensure_sample_data():
@@ -69,12 +72,14 @@ def app():
         'TESTING': True,
         'SQLALCHEMY_DATABASE_URI': 'sqlite:///:memory:',
         'WTF_CSRF_ENABLED': False,
+        # CI 환경에서 경로가 누락되지 않도록 명시적으로 설정
+        'DATA_PATH': DATA_PATH,
+        'MODEL_DIR': MODEL_DIR,
     })
     with app.app_context():
         _db.create_all()
         yield app
-        # SHAP/XGBoost C 확장 백그라운드 스레드가 Windows에서
-        # SQLite 해제와 충돌하는 access violation 방지용 대기
+        # SHAP/XGBoost C 확장 백그라운드 스레드 정리 대기 (Windows access violation 방지)
         time.sleep(0.5)
         _db.drop_all()
 
