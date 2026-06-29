@@ -1,0 +1,34 @@
+[tool.ruff]
+line-length = 120
+exclude = [
+    "app/routes_backup.py",
+    "app/routes/analysis_old.py",
+    "venv",
+    ".git",
+]
+
+[tool.ruff.lint]
+per-file-ignores = {"app/routes/__init__.py" = ["F401"], "app/routes/analysis/__init__.py" = ["F401"]}
+ignore = [
+    "E402",
+    "E701",
+    "E722",
+    "F811",
+    "E712",
+    "E741",
+    "F821",
+]
+
+[tool.black]
+line-length = 120
+exclude = '''
+/(
+    venv
+  | \.git
+  | app/routes_backup\.py
+  | app/routes/analysis_old\.py
+)/
+'''
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
