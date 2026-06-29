@@ -1,427 +1,245 @@
-﻿# 💊 Pharma Risk Analyzer
+# ⚡ CRACK — Smart Road Safety Platform
 
-[![Tests](https://github.com/leesihwan21/pharma-risk-analyzer/actions/workflows/tests.yml/badge.svg)](https://github.com/leesihwan21/pharma-risk-analyzer/actions/workflows/tests.yml)
+> AI 기반 도로 위험 요소(포트홀·균열·씽크홀) 시민 신고 및 자동 분석 플랫폼
+> YOLOv8 객체 탐지 + Flask/SocketIO 실시간 알림 + 관리자 대시보드 + 카카오맵 연동
 
-> **AI-powered Drug Adverse Event Risk Analysis & Clinical Decision Support System**
-> FDA FAERS 데이터 기반 + XGBoost 위험도 예측 + SHAP/LIME XAI + RAG 약물 Q&A + PubMed 논문 연동 + ICH E2B(R3) + 21 CFR Part 11 + MLOps 파이프라인
+---
 
-[![Python](https://img.shields.io/badge/Python-3.12-blue)](https://python.org)
-[![Flask](https://img.shields.io/badge/Flask-3.1-green)](https://flask.palletsprojects.com)
-[![XGBoost](https://img.shields.io/badge/ML-XGBoost%20%2B%20Optuna-orange)](https://xgboost.readthedocs.io)
-[![FAERS](https://img.shields.io/badge/Data-FDA%20FAERS%202024Q1--2025Q1-red)](https://www.fda.gov/drugs/surveillance/fdas-adverse-event-reporting-system-faers)
-[![XAI](https://img.shields.io/badge/XAI-SHAP%20%2B%20LIME-purple)](https://shap.readthedocs.io)
-[![MLflow](https://img.shields.io/badge/MLOps-MLflow%20%2B%20Prophet-blueviolet)](https://mlflow.org)
-[![CFR](https://img.shields.io/badge/Compliance-21%20CFR%20Part%2011-green)](https://www.fda.gov)
-[![Docker](https://img.shields.io/badge/Container-Docker-2496ED)](https://www.docker.com)
-[![AWS](https://img.shields.io/badge/Deploy-AWS%20EC2-FF9900)](https://aws.amazon.com/ec2)
+## 📌 프로젝트 소개
 
-> 🎯 **FAERS 기반 약물 이상반응 위험 예측 및 설명 가능한 AI를 제공하는 end-to-end pharmacovigilance 플랫폼**
-
-\---
-
-## 🌐 Live Demo
-
-**배포 URL**: [http://3.36.178.61:5001](http://3.36.178.61:5001)
-
-> AWS EC2(Ubuntu 24.04, t3.micro)에서 gunicorn + systemd 기반으로 직접 운영 중입니다. Elastic IP로 고정 주소를 확보했고, IAM 역할 기반 권한 관리와 CloudWatch를 통해 애플리케이션 로그·CPU·메모리·디스크 메트릭을 실시간으로 모니터링하고 있습니다.
-
-\---
-
-## 📌 프로젝트 개요 | Overview
-
-FDA FAERS(Adverse Event Reporting System) 2024 Q1 \~ 2025 Q1 분기별 데이터(약 480,000건)를 기반으로, 약물별 부작용 발생 패턴을 분석하고 XGBoost 머신러닝으로 위험도를 예측하는 웹앱 애플리케이션입니다.
+시민이 도로 위험 요소(포트홀, 균열, 씽크홀, 도로 시설물 파손)를 사진/동영상으로 신고하면, YOLOv8 AI가 자동으로 분석하여 위험도를 판정하고, 관리자에게 실시간으로 전달되는 **도로 안전 신고-관리 플랫폼**입니다. 단순 이미지 탐지 데모가 아니라, 신고 접수부터 AI 검증, 중복신고 그룹화, 관리자 처리, 시민 피드백까지 이어지는 전체 워크플로우를 구현했습니다.
 
 **핵심 특징:**
+- YOLOv8 기반 5종 클래스 탐지: `Pothole_Damage`, `Major_Crack`, `Minor_Crack`, `Road_Asset`, `Sinkhole`
+- AI-Hub 공공 도로손상 데이터(21.5만 장) 기반 학습 + Roboflow 씽크홀 데이터 추가 파인튜닝(전이학습)
+- 이미지뿐 아니라 **동영상 프레임 단위 분석**(자동차 주행 영상에서 프레임별 탐지 후 결과 영상 재생성)
+- AI 신뢰도 기반 **자동 신고 검증/반려 로직** (포트홀 신뢰도 60% 이상 / 단일 프레임 3개 이상 / 씽크홀 1개 이상 시에만 관리자 검토 단계로 승격)
+- 위치(GPS)·시간 기반 **중복 신고 자동 그룹화** 및 우선순위(긴급/주의/일반) 산정
+- Flask-SocketIO 기반 **관리자 실시간 신규 신고 알림**
+- 카카오맵 연동 좌표→주소 역지오코딩
+- 관리자 대시보드(신고관리/회원관리/통계), 포인트(크래커 포인트) 시스템, 커뮤니티 게시판(크랙톡, 비속어 자동 필터링), PWA 설치 지원
 
-* Optuna 하이퍼파라미터 자동 탐색 + SHAP/LIME 설명 가능한 AI(XAI)
-* **환자 단위(primaryid) GroupShuffleSplit으로 데이터 누수 방지**, 모델 신뢰성 및 확률 보정(Calibration) 검증
-* MLflow 실험 추적 + Prophet 시계열 예측 + 분기별 자동 성능 모니터링 파이프라인
-* K-Means 약물 클러스터링 + Co-medication 연관 분석 추천 시스템
-* PubMed 논문 FAISS 벡터DB 임베딩 기반 RAG 약물 안전성 Q&A 챗봇
-* YOLOv8 + OCR 기반 알약 이미지 인식 (식약처 낱알식별 25,322건 로컬 캐싱)
-* PRR(Evans) + EBGM(FDA MGPS 베이지안) + MedDRA SOC 분류 3종 신호 탐지
-* ICH E2B(R3) XML 포맷 구현 + 21 CFR Part 11 일부 요구사항(전자서명·Audit Trail) 구현 — 공식 인증 시스템은 아님
-* **Docker 컨테이너 검증 완료** + GitHub Actions CI/CD 파이프라인
-* AWS EC2 gunicorn + systemd 운영, **AWS RDS PostgreSQL 관리형 DB**, IAM 역할 기반 권한 관리, CloudWatch 로그·메트릭 모니터링
+---
 
-\---
+## 👥 Team
 
-## 🎯 주요 기능 | Key Features
+**5인 팀 프로젝트** (MBC AIX 2026 미니프로젝트)
 
-### 📊 분석 & 예측
+| 이름 | 담당 역할 |
+|---|---|
+| 김수빈 | 프로젝트 제안 배경 및 기대효과 발표 |
+| **이시환 (본인)** | 회원가입·로그인·로그아웃 + 마이페이지(회원정보 조회·수정, 활동 포인트 합계 표시) 백엔드 개발 + YOLOv8 모델 학습(씽크홀 데이터셋 추가 파인튜닝) |
+| 노형래 | 추후 보완 |
+| 이지건 | 관리자/사용자 화면 분리, 위치 기반 사건 조회, 위험도·신고 수 기반 필터링, 주소 검색(지오코딩) 시스템 |
+| 김지영 | EXIF 메타데이터 파싱 및 좌표 저장, 위치 기반 중복 제보 클러스터링, YOLOv8 탐지 결과 연동 및 자동 판정 로직, REST API |
 
-|기능|설명|
-|-|-|
-|Dashboard|FAERS 데이터 기반 부작용 통계 시각화 (6개 차트)|
-|AI 위험도 예측|약물·부작용·나이·성별 입력 시 XGBoost 기반 위험도 자동 판정|
-|SHAP / LIME XAI|SHAP(Global) + LIME(Local) 예측 근거 비교 시각화|
-|분기별 트렌드 + 예측|2024 Q1\~2025 Q1 분기별 추이 + Prophet 이후 2개 분기 예측|
+---
 
-### 🤖 MLOps 파이프라인
+## 🙋 My Contribution
 
-|기능|설명|
-|-|-|
-|Optuna 탐색|9개 하이퍼파라미터 자동 탐색 (CV 3-fold)|
-|MLflow 실험 추적|run별 파라미터/메트릭 자동 기록·비교|
-|ML Dashboard|MLflow 실험 결과 웹 대시보드 (`/ml\_dashboard`)|
-|자동 재학습|신규 FAERS 분기 데이터 자동 다운로드 → 전처리 → 재학습 시 MLflow 기록|
-|**데이터 누수 검증**|환자(primaryid) 단위 GroupShuffleSplit, risk-rate 피처는 train만으로 계산|
-|**모델 비교 실험**|Logistic Regression / RandomForest / LightGBM / XGBoost 동일 split 비교|
-|**Calibration 검증**|Isotonic Regression으로 확률 보정, Brier Score 측정|
-|**Drift Monitoring**|분기별 고정 모델 성능 추적, 재학습 필요성 정량 검증|
+**1. 회원 인증 및 마이페이지 백엔드**
+- 회원가입 / 로그인 / 로그아웃 기능 구현
+- 사용자가 본인의 활동(포트홀 제보 내역)을 시각적으로 확인하고 개인정보를 수정할 수 있는 통합 대시보드(마이페이지) 구현
+- 세션(Session) 기반 사용자 인증 관리
+- Jinja2 템플릿의 조건부 렌더링을 활용해 **조회/수정 모드를 별도 페이지 분리 없이 마이페이지 하나로 통합** — `show_edit` 플래그로 입력창 노출 여부를 제어해 페이지 전환 비용을 줄이고 사용자가 하나의 대시보드 안에서 정보 수정을 끝낼 수 있도록 설계
+- 제보(Report) 테이블과 연동해 회원정보 조회 시 **제보 내역과 누적 포인트 합계를 실시간 DB 연동으로 함께 계산·표시**
+- 비밀번호 미입력 시 기존 비밀번호를 유지하도록 **조건부 UPDATE 쿼리 분기 처리** — 비밀번호 변경을 원치 않는 사용자가 매번 재입력해야 하는 불편을 제거
+- 정보 수정 후 상단 네비게이션 바의 표시 이름이 즉시 갱신되도록 `session['user_name']` 동기화 처리
 
-### 💡 추천 시스템
+**2. YOLOv8 모델 학습**
+- 백엔드(회원 인증/마이페이지) 개발을 먼저 마친 뒤, 이어서 YOLOv8 모델 학습 작업에 집중
+- 초기 학습 결과의 정확도가 만족스럽지 않아, 이후 팀원 전체가 함께 추가 데이터셋을 수집하는 방향으로 전환
+- AI-Hub 공공 도로손상 데이터셋(약 21.5만 장)으로 학습된 v5(YOLOv8s, 100 epoch) 모델을 베이스로, Roboflow에서 수집한 씽크홀(Sinkhole) 데이터셋을 추가(팀원 전원이 분담 수집 후 씽크홀이 아닌 이미지는 육안으로 검수해 필터링)하여 v6 파인튜닝(18 epoch, AdamW, batch 32) 진행
+- 18종 세부 클래스를 5종 핵심 클래스(Pothole, Major/Minor Crack, Asset, Sinkhole)로 재매핑·단순화
+- 팀원들이 각자 학습시킨 여러 모델 버전의 정확도를 비교하여 최종 적용 모델을 선정 (`static/best.pt`, `static/best_merge_v2.pt`는 이 비교 과정에서 나온 서로 다른 실험 결과물)
+- 학습 완료된 모델을 산출하여 전달 (Flask 추론 파이프라인 연동 및 자동 판정 로직은 팀원 담당)
 
-|기능|설명|
-|-|-|
-|Drug Clustering|K-Means로 유사 부작용 프로필 약물 추천 (8개 클러스터)|
-|Co-medication 분석|함께 복용된 약물 Top 10 + 중증 부작용 비율 분석|
+---
 
-### 💊 약물 검색 & 정보
+## 📊 Model Performance
 
-|기능|설명|
-|-|-|
-|Drug Lookup|제품명·모양·색상으로 식약처/OpenFDA 정보 조회 + AI 안전성 리포트 PDF|
-|**알약 이미지 인식**|YOLOv8 알약 탐지 + OCR 식별문자 인식 + 식약처 낱알식별 로컬 DB 캐시(25,322건) + e약은요(DUR) 연동 효능·용법·부작용 조회|
-|Interaction Checker|FDA FAERS 기반 약물 병용 시 부작용 위험 분석|
-|Drug Comparison|두 약물 통계 나란히 비교 + AI 안전성 리포트 동시 생성|
-|Data Filter|약물명·성별·나이·국가 등 조건 필터링|
-|Dosage Calculator|CrCl·체표면적(BSA) 기반 mg/kg 권장 용량 계산|
-|**한국 DUR 병용금기 검증**|FAERS 기반 위험 약물 조합을 한국 식약처 DUR(병용금기) 데이터베이스와 실시간 대조 검증|
+### 버전별 비교 (팀 자체 학습 분석 기록 기준)
 
-### 📚 RAG & AI 문헌 분석
+| Version | 모델 | 데이터셋 | Epochs | mAP50 | mAP50-95 | Recall | Precision |
+|---|---|---|---|---|---|---|---|
+| v5 | YOLOv8s | AI-Hub 도로손상 (full_dataset4) | 100 | 0.8688 | 0.6504 | 0.8075 | 0.8296 |
+| **v6 (씽크홀 통합)** | YOLOv8s | +Roboflow Sinkhole | 18 (파인튜닝) | **0.9017** | 0.6528 | **0.8484** | 0.8355 |
 
-|기능|설명|
-|-|-|
-|RAG 약물 Q&A|BM25 + FAISS 하이브리드 검색(RRF 융합) → Anthropic Claude 답변 생성 + \[출처: doc\_id] 인라인 citation 표기 + Prompt Caching 적용(반복 질의 시 토큰 90% 절감)|
-|AI 안전성 리포트|FDA FAERS + PubMed 5건 통합 6개 섹션 자동 생성 + PDF 다운로드|
-|논문 검색|PubMed API 논문 검색 + Claude AI 한국어 요약|
+> v6은 v5 가중치에서 시작한 파인튜닝으로, 21.5만 장 규모의 데이터를 거의 그대로 유지하면서 씽크홀 클래스만 추가 학습했습니다. mAP50 +3.8%p, Recall +4.1%p 개선되어, 미검출(False Negative) 위험을 줄이는 방향으로 개선되었습니다.
 
-### 🚨 신호 탐지 & 규제 준수
+### 데이터셋 분할
 
-|기능|설명|
-|-|-|
-|PRR 신호 탐지|Evans 기준(PRR ≥ 2, n ≥ 3) 부작용 신호 탐지|
-|EBGM 신호 탐지|FDA MGPS 베이지안 알고리즘 근사 (EB05 ≥ 2 기준)|
-|MedDRA SOC 분류|System Organ Class 기반 부작용 체계 분류|
-|AE Manager|CTCAE 자동 등급·SAE 판정·15일 보고 마감 관리·ICH E2B(R3) XML|
-|21 CFR Part 11 (선택 구현)|SHA-256 전자서명·비밀번호 보호·이력 DB 보존 — 요구사항 중 전자서명/Audit Trail 일부를 구현, 공식 인증된 시스템은 아님|
-|Audit Trail|모든 AE 데이터 생성/수정/삭제/열람 이력 자동 기록|
+- 전체 215,278장 (train 193,848장 / val 21,430장, 약 9:1)
 
-\---
+### 실제 배포 체크포인트(`static/best.pt`) 확인 수치
 
-## 🔬 ML/MLOps 파이프라인 | ML Pipeline
+| Metric | Score |
+|---|---|
+| Precision | 0.824 |
+| Recall | 0.843 |
+| mAP50 | 0.888 |
+| mAP50-95 | 0.667 |
 
-```
-\[FDA FAERS 분기 데이터]
-        ↓ \[환자(primaryid) 단위 GroupShuffleSplit] → 데이터 누수 방지
-        ↓ \[Train 데이터로만 risk-rate 피처 생성] → 피처 누수 방지
-  drug\_risk\_rate / reac\_risk\_rate / combo\_risk\_rate
-        ↓ \[Optuna 하이퍼파라미터 탐색]
-  CV 3-fold → 최적 파라미터 탐색
-        ↓ \[모델 비교: LogReg / RandomForest / LightGBM / XGBoost]
-        ↓ \[XGBoost 학습 + Calibration]
-  Isotonic Regression으로 확률 보정 (Brier Score 개선)
-        ↓ \[MLflow 실험 기록]
-  파라미터 / 메트릭 / 모델 아티팩트 자동 저장
-        ↓ \[SHAP + LIME XAI]
-  Global(SHAP) + Local(LIME) 예측 설명
-        ↓ \[분기별 Drift Monitoring]
-  분기마다 성능 추적 → 재학습 필요성 정량 검증
-```
+> 위 표는 실제 운영 서버가 로드하는 `static/best.pt` 체크포인트에 기록된 최종 학습 메타데이터 기준이며, 팀 분석 자료의 v6 수치와 근소하게 다른 것은 평가에 사용된 체크포인트 시점(epoch) 차이로 보입니다.
 
-\---
+---
 
-## 🔍 데이터 누수 방지 | Data Leakage Prevention
+## 📂 Dataset
 
-FAERS 데이터는 동일 환자(`primaryid`)가 여러 약물·여러 부작용으로 중복 행에 등장할 수 있습니다. 단순 `train\_test\_split`을 사용하면 같은 환자의 다른 레코드가 train과 test에 동시에 들어가 평가 지표가 실제보다 부풀려질 수 있습니다.
+- **베이스 데이터셋**: AI-Hub(한국지능정보사회진흥원) 공개 도로손상 데이터. JSON 라벨을 YOLO TXT 포맷으로 정규화 변환, 640×640 리사이즈 전처리
+- **추가 데이터셋**: Roboflow에서 수집한 씽크홀(Sinkhole) 이미지. 팀원 전원이 분담 수집 후, 씽크홀이 아닌 이미지는 직접 육안으로 검수하여 제외
+- **클래스**: `Pothole_Damage`, `Major_Crack`, `Minor_Crack`, `Road_Asset`, `Sinkhole` (18종 세부 클래스를 5종으로 재매핑)
+- **규모**: 총 215,278장 (train 193,848 / val 21,430)
+- **학습 환경**: Google Colab (GPU)
 
-**적용한 방법:**
+---
 
-```python
-from sklearn.model\_selection import GroupShuffleSplit
-
-splitter = GroupShuffleSplit(test\_size=0.2, random\_state=42)
-train\_idx, test\_idx = next(splitter.split(X, y, groups=df\["primaryid"]))
-```
-
-추가로, `drug\_risk\_rate` / `reac\_risk\_rate` / `combo\_risk\_rate` 같은 위험률 피처를 **train 데이터로만 계산**한 뒤 test에 매핑하여(train에 없는 값은 global rate로 fallback) 피처 자체의 정보 누수도 차단했습니다. 코드 내에는 train/test 환자 ID 중복 여부를 `assert`로 검증하는 안전장치가 있어 누수가 없음을 보장합니다.
-
-**검증 결과:** 데이터 누수 제거 전후 성능을 비교한 결과 정확도가 다소 낮아졌지만(아래 Model Performance 참고), 이는 실제 모델 성능을 정직하게 반영한 결과이며, 이후 피처 보완 작업의 출발점으로 활용하고 있습니다.
-
-\---
-
-## 🏆 모델 비교 실험 | Model Comparison
-
-동일한 환자 단위 split(GroupShuffleSplit, primaryid 기준)으로 4개 모델을 공정하게 비교했습니다. (Bayesian 스무딩 적용 + 원시 LabelEncoder ID 제거 후 수치)
-
-|Model|Accuracy|F1 (risk)|Recall (risk)|Precision (risk)|
-|-|-|-|-|-|
-|LogisticRegression|**0.527**|0.406|0.453|**0.368**|
-|RandomForest|0.508|**0.420**|**0.500**|0.362|
-|LightGBM|0.519|0.409|0.468|0.364|
-|XGBoost|0.520|0.405|0.458|0.363|
-
-**Target Encoding 개선 효과:** 원래 피처셋에는 `drug\_encoded`/`reac\_encoded`(의미 없는 LabelEncoder 정수 ID)가 risk-rate 피처와 함께 그대로 모델 입력으로 들어가 있었습니다. 이 원시 ID를 제거하고 risk-rate 피처에 표본 수 기반 Bayesian 스무딩(`(count·mean + k·global\_rate) / (count + k)`, k=20)을 적용한 결과, **LogisticRegression의 F1이 0.351 → 0.406으로 크게 개선**되었습니다. 선형 모델은 의미 없는 정수 인코딩에 특히 민감하기 때문에, 이 개선이 원시 ID 제거가 실제로 유효한 수정이었음을 보여주는 근거가 됩니다. 트리 모델들은 원래도 무의미한 분기를 일부 무시할 수 있어 변화가 상대적으로 작았습니다.
-
-**모델 선택 근거:** RandomForest가 F1(0.420)과 Recall(0.500)에서 가장 높게 나타납니다. 단순 지표만 보면 RandomForest가 더 좋은 선택처럼 보이지만, XGBoost를 최종 모델로 채택한 이유는 다음과 같습니다.
-
-1. **SHAP 설명 가능성과의 통합**: XGBoost는 SHAP TreeExplainer와 호환성이 가장 안정적이며, 이미 Global/Local 설명 파이프라인이 구축되어 있습니다.
-2. **안정적인 Optuna 최적화 워크플로우**: 9개 하이퍼파라미터에 대한 베이지안 탐색 파이프라인이 XGBoost 기준으로 구축되어 있어, 추가 데이터 확보 시 즉시 재학습이 가능합니다.
-3. **빠른 재학습 파이프라인**: Drift Monitoring 결과(아래 참고)가 보여주듯 분기별 재학습이 필수적인데, XGBoost는 RandomForest보다 학습 속도가 빠르고 증분 학습 확장에 유리합니다.
-4. **프로덕션 배포 확장성**: 모델 직렬화 크기, 추론 속도, gunicorn 환경에서의 메모리 사용량 면에서 XGBoost가 더 가볍습니다.
-
-즉 "어떤 모델이 가장 높은 점수를 받았는가"가 아니라 "어떤 모델이 SHAP·Optuna·재학습 자동화까지 포함한 전체 MLOps 파이프라인에 가장 잘 맞는가"를 기준으로 선택했습니다. 다만 의료 스크리닝처럼 위험 케이스를 놓치지 않는 것이 최우선인 환경에서는 Recall이 높은 RandomForest가 더 적합할 수 있다는 트레이드오프를 인지하고 있으며, 이는 추후 앙상블(XGBoost + RandomForest) 검토 과제로 남겨두고 있습니다.
-
-\---
-
-## 🎚️ Calibration 검증 | Probability Calibration
-
-의료 AI에서 "위험도 87%"라는 출력이 실제로 87% 확률로 발생하는지는 모델 정확도와는 별개의 문제입니다. Isotonic Regression으로 확률을 보정하고 Brier Score로 검증했습니다.
-
-||Brier Score (낮을수록 좋음)|
-|-|-|
-|Base XGBoost|0.2945|
-|Calibrated (Isotonic)|**0.2587** (12.1% 개선)|
-
-Calibration은 환자 단위로 분리된 별도의 held-out calibration set(학습/테스트와 모두 비중복)으로 fit하여, calibration 과정 자체에서도 데이터 누수가 없도록 구성했습니다 (`sklearn.frozen.FrozenEstimator` 사용). Target Encoding 스무딩 적용 전후로 Brier Score는 거의 변화가 없었는데(0.2954→0.2945), 이는 자연스러운 결과입니다 — 스무딩은 피처의 노이즈를 줄이는 것이고 Calibration은 모델이 이미 내놓은 확률 출력을 보정하는 것이라, 두 개선이 서로 다른 문제를 다루기 때문입니다.
-
-\---
-
-## 📉 Drift Monitoring | 분기별 성능 추적
-
-2024Q1 데이터로만 학습한 모델을 이후 분기(Q2\~2025Q1)에 그대로 적용했을 때 성능 변화를 추적했습니다.
-
-**평가 누수 버그 발견 및 수정:** 처음 측정했을 때는 학습 분기(2024Q1)의 F1이 0.752로 다른 분기(0.38 전후)보다 훨씬 높게 나와, "분기가 바뀌면 성능이 절반 가까이 추락한다"는 극심한 드리프트로 보였습니다. 그런데 이 수치를 다시 들여다보니, 학습 분기를 평가할 때 **학습에 실제로 쓰인 80% 데이터까지 포함된 전체 Q1**으로 평가하고 있었다는 걸 발견했습니다 — 모델이 이미 외운 데이터로 시험을 본 셈이라 Q1 점수만 부풀려져 있었던 것입니다. 학습 분기도 학습에 전혀 쓰이지 않은 held-out 20%로만 평가하도록 수정한 결과는 다음과 같습니다.
-
-|Quarter|F1|Recall|Precision|
-|-|-|-|-|
-|2024Q1 (학습 분기, held-out)|0.382|0.402|0.363|
-|2024Q2|0.392|0.418|0.370|
-|2024Q3|0.384|0.416|0.357|
-|2025Q1|0.383|0.411|0.358|
-
-수정 후에는 모든 분기가 F1 0.38\~0.39 사이에 머물러, **실질적인 드리프트가 거의 관찰되지 않습니다.** 즉 처음 발견했던 "심각한 드리프트"는 대부분 모델의 시간적 불안정성이 아니라 평가 방식 자체의 버그였다는 결론입니다. 다만 절대적인 F1 자체가 0.38 수준으로 낮은 점은 여전한 한계이며, 이는 드리프트 문제가 아니라 피처/모델 구조 자체의 개선이 필요함을 시사합니다 (아래 "향후 개선 계획" 참고).
-
-이 경험은 모델 성능 수치 자체보다, **평가 파이프라인에 숨어 있는 버그를 의심하고 검증하는 과정**이 더 중요하다는 것을 보여줍니다. 처음에 봤던 "급격한 드리프트" 그래프를 그대로 믿고 결론을 냈다면, 실제로는 존재하지 않는 문제를 해결하려고 시간을 쓸 뻔했습니다.
-
-\---
-
-## 📚 RAG 평가 | RAG Evaluation
-
-PubMed 기반 RAG 챗봇의 응답 품질을 정량적으로 평가했습니다. RAGAS 라이브러리는 의존성 충돌(`langchain\_community`의 vertexai 모듈 누락)로 직접 실행이 불가능해, 동일한 평가 방법(Faithfulness, Answer Relevancy, Context Precision)을 LLM judge(llama3.1:8b) 호출로 직접 구현했습니다. 자기평가 영향을 줄이기 위해 답변 생성(llama3.2)과 평가(llama3.1:8b) 모델을 분리했습니다.
-
-|Metric|평균 점수|의미|
-|-|-|-|
-|Faithfulness|0.62|답변이 검색된 문헌에 얼마나 근거하는지|
-|Answer Relevancy|0.82|답변이 질문에 얼마나 직접적으로 답하는지|
-|Context Precision|0.34|검색된 청크가 질문에 실제로 유용한지|
-
-**진단:** Faithfulness와 Answer Relevancy는 양호한 수준이지만, Context Precision은 상대적으로 낮게(5개 질문 중 1개는 0.0) 측정되었습니다. 이는 생성(Generation) 단계보다 검색(Retrieval) 단계가 RAG 파이프라인의 병목임을 시사합니다. 5개 평가 질문 중 한 질문에서 Faithfulness가 0.2로 가장 낮게 측정되었는데, 검색된 컨텍스트 밖의 내용(계산식·제제 관련 기술)이 답변에 포함되었기 때문으로 보입니다. 이후 임베딩 모델 교체(`all-MiniLM-L6-v2` 대신 의학 전문 특화 임베딩) 또는 청크 분할 전략 개선이 우선 과제로 식별되었습니다.
-
-\---
-
-## 🛠️ 기술 스택 | Tech Stack
+## 🏗️ Architecture
 
 ```
-Backend    : Flask 3.1, SQLAlchemy, Flask-Login, Flask-Limiter, Flask-Caching
-ML/AI      : XGBoost, Optuna, SHAP, LIME, LightGBM, RandomForest (비교 실험)
-MLOps      : MLflow (실험 추적), Prophet (시계열 예측), scikit-learn
-검증       : GroupShuffleSplit(데이터 누수 방지), Smoothed Target Encoding(과적합 방지), Calibration(Isotonic), Drift Monitoring(평가 누수 버그 수정), RAG 평가(Faithfulness/Relevancy/Context Precision)
-Vision     : YOLOv8 (알약 탐지), EasyOCR (식별문자 인식)
-추천 시스템 : K-Means 클러스터링, Co-medication 연관 분석
-RAG        : LangChain, FAISS + BM25 하이브리드 검색(RRF), sentence-transformers, Anthropic Claude (Prompt Caching)
-Data       : FDA FAERS 2024 Q1\~2025 Q1 (\~480,000건), 식약처 낱알식별 정보 (\~25,322건)
-External   : 식약처 의약품안전나라 OpenAPI(낱알식별/DUR), OpenFDA, PubMed E-utilities API
-Viz        : Plotly, Chart.js, NetworkX
-DB         : PostgreSQL (AWS RDS, 애플리케이션 메인 DB) + SQLite (mlflow.db, pill\_identity.db)
-Report     : ReportLab (PDF), ICH E2B(R3) XML
-Compliance : 21 CFR Part 11 일부 요구사항 구현(전자서명, Audit Trail — 공식 인증 아님), ICH E2B(R3) XML 포맷 구현
-Frontend   : Jinja2 Templates, Vanilla JS, 반응형 CSS, PWA
-Container  : Docker (빌드·실행 검증 완료, torch CPU 전용 빌드로 경량화)
-Infra      : AWS EC2 (t3.micro, Ubuntu 24.04, 서울 리전) + AWS RDS PostgreSQL + Elastic IP + gunicorn + systemd + IAM + CloudWatch
-CI/CD      : GitHub Actions (push/PR 시 pytest 자동 실행)
-Test       : pytest (92개 자동 테스트)
+[시민 사용자]
+  │ 이미지/동영상 업로드 (포트홀·균열·씽크홀 제보)
+  ▼
+Flask 웹 서버 (app.py)
+  │  ├─ EXIF/비디오 GPS 추출 → 카카오맵 역지오코딩(주소 변환)
+  │  └─ 백그라운드 스레드로 YOLOv8 추론 실행
+  ▼
+YOLOv8 추론 (static/best.pt, 5-class)
+  │  ├─ 이미지: 단일 프레임 탐지
+  │  └─ 동영상: 프레임 단위 탐지 + 바운딩박스 오버레이 재인코딩
+  ▼
+AI 자동 검증 로직
+  │  (포트홀 신뢰도 ≥60% OR 단일 프레임 포트홀 ≥3개 OR 씽크홀 ≥1개 → 승인)
+  ▼
+위치·시간 기반 중복 신고 그룹화 + 우선순위(긴급/주의/일반) 산정
+  ▼
+Flask-SocketIO 실시간 알림 → 관리자 대시보드
+  ▼
+관리자 처리 (상태 변경/반려/일괄처리) ──▶ 시민에게 처리 현황 피드백
+
+[회원 인증 모듈]               [DB]
+사용자 ↔ Flask(세션 인증)  ↔  TiDB Cloud (MySQL 호환, PyMySQL)
 ```
 
-\---
+---
 
-## ☁️ Infrastructure (AWS EC2)
+## ✨ 주요 기능 | Key Features
 
-* **Compute**: AWS EC2 t3.micro, Ubuntu 24.04 LTS, 서울 리전(ap-northeast-2)
-* **고정 IP**: Elastic IP 적용 → 인스턴스 재시작에도 URL 불변
-* **배포 방식**: gunicorn(3 workers) + systemd 서비스(`pharma.service`)로 24시간 운영 및 장애 시 자동 재시작. `EnvironmentFile`로 `.env` 환경변수 안전하게 로드
-* **데이터베이스**: AWS RDS PostgreSQL(db.t4g.micro, 프리 티어)로 메인 애플리케이션 DB를 SQLite에서 전환. 퍼블릭 액세스를 비활성화하고 EC2 인스턴스를 보안 그룹에 직접 연결해 같은 VPC 내부에서만 접근 가능하도록 구성. 로컬 관리(pgAdmin)는 EC2를 경유하는 SSH 터널로만 연결해 DB를 인터넷에 직접 노출하지 않음
-* **보안**: Flask 개발 서버(`debug=True`, 퍼블릭 노출) 운영 방식을 gunicorn 프로덕션 구성으로 전환해 Werkzeug 디버거 원격 코드 실행 위험 제거
-* **보안 그룹**: SSH(22), HTTP(80), HTTPS(443), Flask(5001) 포트 커스텀 관리
-* **스토리지**: EBS 30GB(gp3), 스왑 메모리 2GB 추가 구성
-* **IAM 역할 기반 권한 관리**: `CloudWatchAgentServerPolicy` + `AmazonS3FullAccess`를 포함한 전용 IAM 역할(`pharma-risk-analyzer-ec2-role`)을 EC2 인스턴스에 연결
-* **모니터링**: CloudWatch 에이전트로 gunicorn 애플리케이션 로그(`/pharma-risk-analyzer/gunicorn` 로그 그룹) 및 CPU·메모리·디스크 메트릭(CWAgent 네임스페이스)을 실시간 수집
-* **컨테이너**: Dockerfile 작성 및 빌드·실행 검증 완료 (gunicorn 기반 프로덕션 서버)
-* **마이그레이션**: Railway(PaaS) → AWS EC2(IaaS) 전환, SQLite → AWS RDS PostgreSQL 전환을 통해 서버 인프라와 데이터베이스를 직접 구축·운영하는 경험 확보
+### 인증 / 회원
+- 회원가입(이메일·닉네임 검증, 비속어 필터링, 실시간 중복확인) / 로그인 / 로그아웃
+- 아이디 찾기 / 비밀번호 찾기·재설정
+- 마이페이지(프로필 수정, 알림 설정, 회원탈퇴)
+- 크래커 포인트(활동 포인트) 시스템
 
-\---
+### 신고(Report) / AI 분석
+- 이미지(PNG/JPG/HEIC 등) 및 동영상(MP4/MOV/AVI 등) 업로드, HEIC→JPG·MOV→MP4 자동 변환
+- EXIF/비디오 메타데이터 기반 GPS 자동 추출 + 카카오맵 역지오코딩
+- YOLOv8 기반 자동 탐지(이미지/동영상 프레임 단위) 및 신뢰도 기반 자동 승인·반려
+- 신고 상태 조회 API
 
-## 📁 프로젝트 구조 | Project Structure
+### 알림(Alert) / 현황
+- 전체 신고 피드(지도/리스트), 신고 상세보기, 본인 신고 수정
+- 위치·시간 기반 중복 신고 그룹화 표시(반복 신고 건수)
+- 관리자 공지(Notice) 등록, 읽음 처리
+
+### 관리자(Admin)
+- 대시보드: 긴급/오늘 접수/미처리/처리중/반려 현황 요약, 우선순위 기준 긴급 신고 리스트
+- 신고관리: 목록/그룹 상세/상태 변경/일괄 처리/AI 재분석 요청
+- 회원관리: 회원 목록/상세/권한 변경/정지·정지해제
+- 통계: 지역별 집계(시/구 단위 정규화)
+- 실시간 신규 신고 알림(SocketIO)
+
+### 커뮤니티
+- 크랙톡(CrackTalk) 게시판, 부적절 게시물 비속어 필터링(blind 처리)
+
+### 기타
+- PWA 설치 지원(manifest.json, Service Worker)
+- 자체 발표자료(PPT)를 Flask 라우트로 임베드하여 앱 내에서 직접 열람 가능
+
+---
+
+## 🛠 기술 스택 | Tech Stack
 
 ```
-pharma-risk-analyzer/
-├── app/
-│   ├── \_\_init\_\_.py
-│   ├── models.py
-│   └── routes/
-│       ├── analysis.py     # PRR + EBGM + SHAP + LIME + Prophet
-│       ├── recommend.py    # K-Means 클러스터링 + Co-medication 분석
-│       ├── ml\_dashboard.py # MLflow 실험 결과 웹 대시보드
-│       ├── drug.py
-│       ├── ae.py
-│       ├── auth.py
-│       ├── vision.py       # 알약 이미지 인식 (YOLOv8 + OCR + 식약처 API)
-│       ├── literature.py
-│       └── rag.py
-├── ml/
-│   ├── train\_model\_optuna.py    # Optuna + MLflow 학습 (데이터 누수 방지 적용)
-│   ├── compare\_models.py        # 모델 비교 실험
-│   ├── calibration\_check.py     # Calibration 검증
-│   ├── drift\_monitoring.py      # 분기별 Drift 모니터링
-│   ├── rag\_evaluation.py        # RAG 평가 (Faithfulness/Relevancy/Context Precision)
-│   ├── retrain\_pipeline.py      # 분기별 자동 재학습
-│   ├── model.pkl
-│   ├── best\_params.json
-│   ├── model\_comparison.json/.md
-│   ├── calibration\_report.json / calibration\_curve.png
-│   └── drift\_report.json / drift\_trend.png
-├── data/
-│   ├── pill\_identity.db          # 식약처 낱알식별 정보 로컬 캐시 (25,322건)
-│   └── processed/processed\_faers.csv
-├── build\_pill\_db.py               # 낱알식별 로컬 DB 빌드 스크립트
-├── Dockerfile
-├── .github/workflows/tests.yml
-├── mlflow.db
-├── config.py
-├── run.py
-└── README.md
+Backend     : Python, Flask, Flask-SQLAlchemy, Flask-SocketIO + eventlet
+AI/Detection: YOLOv8 (Ultralytics), OpenCV(영상 처리)
+Database    : TiDB Cloud (MySQL 호환) via PyMySQL
+Auth        : Flask Session 기반, werkzeug.security(비밀번호 해싱)
+Media       : Pillow, piexif, exifread, pillow_heif(HEIC), imageio-ffmpeg(영상 변환)
+Map         : Kakao Maps JS SDK, 역지오코딩
+Realtime    : Flask-SocketIO (관리자 실시간 알림)
+Frontend    : Jinja2 Templates, Vanilla JS, PWA(manifest.json, Service Worker)
+Training Env: Google Colab (GPU)
 ```
 
-\---
+---
+
+## 📂 프로젝트 구조 | Project Structure
+
+```
+crack-main/
+├── app.py                  # Flask 메인 앱, AI 분석 스레드, 신고 그룹화/우선순위 로직
+├── models.py                # Member, Report, AiResult, VideoDetection, PointLog, Notice, CrackTalk 등
+├── database.py / extensions.py
+├── utils.py                  # GPS 추출, 역지오코딩, 비속어 필터 등 공통 유틸
+├── services/
+│   ├── auth_service.py      # 회원가입/로그인/아이디·비밀번호 찾기 (본인 담당)
+│   ├── report_service.py    # 신고 업로드, 영상 변환, GPS 추출
+│   ├── alert_service.py     # 신고 피드, 그룹 상세, 공지, 읽음 처리
+│   ├── status_service.py    # 크랙톡 커뮤니티, 신고 수정/삭제
+│   ├── my_service.py        # 마이페이지, 알림 설정, 탈퇴
+│   ├── admin_service.py     # 관리자 대시보드/신고관리/회원관리/통계
+│   └── region_service.py    # 행정구역 주소 정규화/파싱
+├── templates/                # HTML 템플릿 (회원/신고/알림/관리자/PPT 등)
+├── static/
+│   ├── best.pt               # 실제 운영 로드 모델 (5-class, mAP50 0.888)
+│   ├── best_merge_v2.pt      # 추가 실험 모델 (2-class 병합 버전)
+│   └── training_analysis.json # 팀 자체 학습 비교 분석 기록
+├── secrets.example/          # .env, 카카오 키, 비속어 사전 예시 파일
+└── requirements.txt
+```
+
+---
 
 ## ⚙️ 설치 및 실행 | Installation & Run
 
 ```bash
-# 1. 저장소 복제
-git clone https://github.com/leesihwan21/pharma-risk-analyzer.git
-cd pharma-risk-analyzer
-
-# 2. 가상환경 생성 및 활성화
-python -m venv venv
-venv\\Scripts\\activate  # Windows
-# source venv/bin/activate  # Mac/Linux
-
-# 3. 패키지 설치
 pip install -r requirements.txt
 
-# 4. 환경변수 설정 (.env)
-SECRET\_KEY=your-secret-key
-DATABASE\_URL=postgresql://user:password@host:5432/dbname  # 미설정 시 SQLite로 자동 폴백
-MFDS\_API\_KEY=your-mfds-api-key
-ANTHROPIC\_API\_KEY=your-api-key
+# secrets.example 참고하여 secrets/ 폴더에 .env, kakao_js_key.txt, profanity.json 구성
 
-# 5. ML 모델 학습 (데이터 누수 방지 적용 버전)
-python ml/train\_model\_optuna.py
-
-# 6. (선택) 모델 비교 / Calibration / Drift / RAG 평가
-python ml/compare\_models.py
-python ml/calibration\_check.py
-python ml/drift\_monitoring.py
-python ml/rag\_evaluation.py
-
-# 7. 서버 실행
-python run.py
-# → http://127.0.0.1:5001
-
-# 8. (선택) Docker로 실행
-docker build -t pharma-risk-analyzer .
-docker run -d -p 5001:5001 --env-file .env pharma-risk-analyzer
-
-# 9. MLflow UI (별도 터미널)
-mlflow ui --backend-store-uri sqlite:///mlflow.db --port 5002
-# → http://127.0.0.1:5002
+python app.py
+# → http://127.0.0.1:9100
 ```
 
-\---
+---
 
-## 📊 ML 모델 성능 | Model Performance
+## 🖼️ Demo
 
-**최종 모델 성능 (Final)**
+### 신고 피드 (Alert)
+![alert](screenshots/screenshot_alert_framed.png)
 
-|지표|값|설명|
-|-|-|-|
-|Accuracy|51.9%|환자 단위 split 적용 후 정직한 성능|
-|F1 (위험)|0.412|위험 클래스 F1|
-|Recall (위험)|0.473|위험 케이스 탐지율|
-|Precision (위험)|0.365|위험 예측 정확도|
-|Brier Score (Calibrated)|0.2587|확률 보정 후 (12.1% 개선)|
+### 관리자 대시보드 (Admin)
+![admin](screenshots/screenshot_admin_framed.png)
 
-**실험 히스토리 — Before / After (참고)**
+### 신고하기 (Report)
+![report](screenshots/screenshot_report_framed.png)
 
-|단계|Accuracy|F1 (위험)|Recall (위험)|
-|-|-|-|-|
-|초기 (단순 split, 데이터 누수 존재)|69.3%|—|—|
-|데이터 누수 제거 직후|\~52%|0.407|0.468|
-|**+ Target Encoding 개선 (최종, 위 표와 동일)**|**51.9%**|**0.412**|**0.473**|
+### 마이페이지 (My)
+![mypage](screenshots/screenshot_mypage_framed.png)
 
-> 위 단계별 변화는 모델 성능을 부풀리지 않고 정직하게 검증한 결과이며, Drift Monitoring 결과(평가 누수 버그 수정 후 분기별 성능이 안정적임을 확인)와 함께 다음 단계 개선 방향을 수립하는 근거로 사용하고 있습니다.
+### 처리 현황 (Status)
+![status](screenshots/screenshot_status_framed.png)
 
-\---
-
-## 📂 데이터 출처 | Data Sources
-
-* **FDA FAERS 2024 Q1 \~ 2025 Q1**: FDA 공식 약물 이상반응 자발적 보고 데이터
-* **식약처 이상반응**: 연도별(2019\~2024) 국내 이상반응 보고 통계
-* **식약처 의약품안전나라 OpenAPI**: 공공데이터포털(data.go.kr) — 낱알식별, DUR(e약은요)
-* **식약처 DUR(의약품안전사용서비스) 병용금기 API**: 공공데이터포털(data.go.kr) — 한국 병용금기 기준 실시간 검증
-* **OpenFDA Drug Label API**: FDA 공식 약물 설명서
-* **PubMed E-utilities API**: NCBI 논문 검색 및 초록 수집 (무료)
-
-\---
-
-## 📝 개발 배경 | Background
-
-### 왜 이 프로젝트인가
-
-임상약학 석사 과정(아주대학교)에서 약물 안전성 데이터를 다루며, 발생한 이상반응 보고 데이터가 실제로는 충분히 활용되지 못하고 있다는 점에 주목했습니다. FDA FAERS처럼 접근 가능한 실제 약물감시(pharmacovigilance) 데이터조차, 이를 머신러닝으로 분석하고 규제 기준(PRR/EBGM, ICH E2B, 21 CFR Part 11)까지 반영하는 도구는 흔하지 않습니다.
-
-AI 개발 교육 과정(MBC아카데미)을 통해 쌓은 머신러닝·앱 개발 역량과 임상약학 백그라운드의 도메인 지식을 결합해, "약물 안전성 신호를 조기에 발견하고 그 판단 근거를 설명할 수 있는" 시스템을 만드는 것을 목표로 설정했습니다.
-
-### 기획 의도
-
-1. **단순 통계 시각화를 넘어선 예측**: FAERS 데이터를 보여주는 것에 머물지 않고, XGBoost로 위험도를 예측하고 SHAP/LIME으로 그 이유를 설명하는 것까지 구현
-2. **규제 기준 반영**: 포트폴리오용 토이 프로젝트가 아니라, PRR/EBGM 같은 FDA/EMA 실제 신호 탐지 지표와 ICH E2B(R3), 21 CFR Part 11 같은 실제 제약업계 규제 기준을 적용
-3. **모델을 신뢰할 수 있는가까지 직접 검증**: 모델을 만들고 끝내는 것이 아니라, 데이터 누수 검증·Calibration·Drift Monitoring을 통해 "이 모델을 실제로 믿을 수 있는가"를 직접 검증하는 과정도 프로젝트에 포함
-
-### 개발 과정에서의 전환점
-
-초기에는 Accuracy 69%라는 결과에 만족할 수도 있었지만, FAERS 데이터의 구조(동일 환자가 여러 레코드에 등장)를 고려하면 이 수치를 그대로 신뢰할 수 없다는 점을 인식하고 데이터 누수 검증을 진행했습니다. 그 결과 실제 성능은 52%로 재산정되었고, 이는 이후 "왜 분기별 재학습이 필요한가"를 보여주는 Drift Monitoring 실험으로 이어지는 계기가 되었습니다. 이 과정 자체가 모델 성능 수치보다 더 중요한 배움이라고 생각하여 README에도 정직하게 기록했습니다.
-
-\---
-
-## 🎓 Key Lessons
-
-Initially the model achieved 69% accuracy. However, after discovering patient-level leakage within FAERS reports — the same patient appearing in both train and test sets — the evaluation pipeline was redesigned using `GroupShuffleSplit` on patient ID (`primaryid`), and risk-rate features were recomputed using only the training set.
-
-The resulting performance decreased to 52%, but became significantly more reliable and realistic. This experience highlighted the importance of **data validation over raw model metrics** — a lower, honest number is more valuable than a higher, leaked one. The same validation mindset was extended further: Calibration testing revealed that raw model probabilities did not match real-world outcome rates (improved via isotonic regression), and Drift Monitoring revealed that a model trained on a single quarter loses roughly half its F1 score by the very next quarter — providing quantitative justification for the quarterly retraining pipeline already built into this project.
-
-\---
+---
 
 ## ⚠️ 면책조항 | Disclaimer
 
-본 도구는 연구·교육·포트폴리오 목적으로 제작되었으며, 실제 임상 처방 결정에 사용해서는 안 됩니다.
+본 프로젝트는 **교육·포트폴리오 목적**으로 제작되었으며, 실제 지자체 도로 관리 시스템으로 사용된 사례는 아닙니다.
 
-\---
+---
 
 ## 👤 개발자 | Developer
 
 **이시환 (Sihwan Lee)**
-임상약학 석사 (아주대학교) | AI 개발자 과정 수료 (국비, MBC아카데미 수원)
 GitHub: [@leesihwan21](https://github.com/leesihwan21)
-
