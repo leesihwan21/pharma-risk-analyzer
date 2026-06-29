@@ -1,4 +1,4 @@
-"""
+﻿"""
 app/routes/analysis/drug_lookup.py
 Drug Lookup (MFDS/OpenFDA), Drug Shape, Drug Vision (YOLOv8+Claude),
 MedDRA SOC 분석, Autocomplete
@@ -351,31 +351,3 @@ def soc_analysis(drugname: str):
             "note": "MedDRA SOC 매핑 (빈출 PT 기준 수동 매핑, 포트폴리오용)",
         }
     )
-
-
-@analysis.route("/api/autocomplete")
-def api_autocomplete():
-    q = request.args.get("q", "").upper().strip()
-    if len(q) < 2:
-        return jsonify([])
-    try:
-        df = load_df()
-        drugs = df["drugname"].str.upper().dropna().unique()
-        matched = sorted([d for d in drugs if d.startswith(q)])[:10]
-        return jsonify(matched)
-    except Exception:
-        return jsonify([])
-
-
-@analysis.route("/api/autocomplete/reaction")
-def api_autocomplete_reaction():
-    q = request.args.get("q", "").upper().strip()
-    if len(q) < 2:
-        return jsonify([])
-    try:
-        df = load_df()
-        reactions = df["pt"].str.upper().dropna().unique()
-        matched = sorted([r for r in reactions if r.startswith(q)])[:10]
-        return jsonify(matched)
-    except Exception:
-        return jsonify([])

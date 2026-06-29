@@ -1,4 +1,4 @@
-"""
+﻿"""
 app/routes/analysis/prr.py
 PRR 신호 탐지, EBGM, Emerging Signals, Favorites Alerts
 """
@@ -8,6 +8,7 @@ import math
 from flask import jsonify, render_template
 from app import cache
 from app.models import FavoriteDrug
+from .signals import compute_emerging_signals
 
 from . import analysis
 from ._common import load_df
@@ -171,25 +172,10 @@ def calculate_prr(drugname: str):
     return jsonify(summary)
 
 
-@analysis.route("/api/signals/emerging/<drugname>")
-@cache.cached(timeout=600)
-def api_emerging_signals(drugname: str):
-    result = compute_emerging_signals(drugname)
-    if result is None:
-        return (
-            jsonify(
-                {
-                    "error": f"분석할 수 없습니다: {drugname.upper()} (데이터 또는 분기 정보 부족)"
-                }
-            ),
-            404,
-        )
-    return jsonify(result)
-
-
 @analysis.route("/api/favorites/alerts")
 def favorites_alerts():
     """즐겨찾기 약물의 PRR + 신규 신호 알림."""
+    from app.models import FavoriteDrug
     favorites = FavoriteDrug.query.all()
     if not favorites:
         return jsonify({"alerts": []})
@@ -221,102 +207,21 @@ def favorites_alerts():
         if emerging:
             level = "new"
 
-        alerts.append(
-            {
-                "drugname": summary["drugname"],
-                "signal_count": summary["signal_count"],
-                "strong_signal_count": summary["strong_signal_count"],
-                "level": level,
-                "top_signals": [
-                    {
-                        "reaction": r["reaction"],
-                        "prr": r["prr"],
-                        "signal_level": r["signal_level"],
-                    }
-                    for r in top_signals
-                ],
-                "emerging_signals": [
-                    {
-                        "reaction": e["reaction"],
-                        "prr_latest": e["prr_latest"],
-                        "quarter": e["quarter"],
-                    }
-                    for e in emerging[:3]
-                ],
-            }
-        )
+        alerts.append({
+            "drugname": summary["drugname"],
+            "signal_count": summary["signal_count"],
+            "strong_signal_count": summary["strong_signal_count"],
+            "level": level,
+            "top_signals": [
+                {"reaction": r["reaction"], "prr": r["prr"], "signal_level": r["signal_level"]}
+                for r in top_signals
+            ],
+            "emerging_signals": [
+                {"reaction": e["reaction"], "prr_latest": e["prr_latest"], "quarter": e["quarter"]}
+                for e in emerging[:3]
+            ]
+        })
 
     level_order = {"new": 0, "strong": 1, "signal": 2, "none": 3}
     alerts.sort(key=lambda a: level_order[a["level"]])
     return jsonify({"alerts": alerts})
-
-
-@analysis.route("/api/ebgm/<drugname>")
-@cache.cached(timeout=600)
-def calculate_ebgm(drugname: str):
-    df = load_df()
-    drugname = drugname.upper()
-    drug_reports = df[df["drugname"].str.upper() == drugname]
-    if len(drug_reports) == 0:
-        return jsonify({"error": f"약물을 찾을 수 없어요: {drugname}"}), 404
-
-    total_reports = len(df)
-    total_drug = len(drug_reports)
-    top_reactions = drug_reports["pt"].value_counts().head(20).index.tolist()
-
-    results = []
-    for reac in top_reactions:
-        a = len(drug_reports[drug_reports["pt"] == reac])
-        b = total_drug - a
-        c = len(df[(df["drugname"].str.upper() != drugname) & (df["pt"] == reac)])
-        d = total_reports - a - b - c
-
-        if a == 0 or (a + b) == 0 or (a + c) == 0:
-            continue
-        E = (a + b) * (a + c) / total_reports
-        if E == 0 or b == 0 or c == 0:
-            continue
-
-        ror = (a * d) / (b * c) if (b * c) > 0 else 0
-        alpha1, beta1 = 0.5, 0.5
-        alpha2, beta2 = 2.0, 10.0
-        w = 0.1
-        ebgm = (alpha1 + a) / (beta1 + E) * w + (alpha2 + a) / (beta2 + E) * (1 - w)
-
-        try:
-            se_log = math.sqrt(1 / a + 1 / E)
-            ebgm_lower = math.exp(math.log(max(ebgm, 0.001)) - 1.96 * se_log)
-            ebgm_upper = math.exp(math.log(max(ebgm, 0.001)) + 1.96 * se_log)
-        except (ValueError, ZeroDivisionError):
-            ebgm_lower = ebgm_upper = ebgm
-
-        eb05 = ebgm_lower
-        is_signal = eb05 >= 2 and a >= 3
-        results.append(
-            {
-                "reaction": reac,
-                "drug_count": int(a),
-                "expected": round(E, 2),
-                "ror": round(ror, 2),
-                "ebgm": round(ebgm, 3),
-                "eb05": round(ebgm_lower, 3),
-                "eb95": round(ebgm_upper, 3),
-                "is_signal": is_signal,
-                "signal_level": (
-                    "강한 신호"
-                    if eb05 >= 5 and a >= 3
-                    else "신호" if eb05 >= 2 and a >= 3 else "비신호"
-                ),
-            }
-        )
-
-    results.sort(key=lambda x: x["ebgm"], reverse=True)
-    return jsonify(
-        {
-            "drugname": drugname,
-            "total_reports": int(total_drug),
-            "signal_count": sum(1 for r in results if r["is_signal"]),
-            "results": results,
-            "method": "EBGM (Empirical Bayes Geometric Mean) - FDA MGPS 근사",
-        }
-    )
