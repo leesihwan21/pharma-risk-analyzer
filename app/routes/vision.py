@@ -19,11 +19,7 @@ from app.dur_lookup import check_combo_dur_taboo
 
 vision = Blueprint('vision', __name__)
 
-MODEL_DIR = os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))), 'ml')
-DATA_PATH = os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))),
-                         'data', 'processed', 'processed_faers.csv')
-PILL_DB_PATH = os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))),
-                            'data', 'pill_identity.db')
+
 
 camera = None
 camera_lock = threading.Lock()
@@ -63,7 +59,7 @@ def crop_and_preprocess(img_pil, box, idx=0, padding=0.15):
     scale = max(2, 300 // max(short_side, 1))
     enhanced = cv2.resize(enhanced, (w * scale, h * scale), interpolation=cv2.INTER_CUBIC)
 
-    debug_dir = os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))), 'debug_crops')
+    debug_dir = os.path.join(current_app.config['DATA_DIR'], '..', 'debug_crops')
     os.makedirs(debug_dir, exist_ok=True)
     cv2.imwrite(os.path.join(debug_dir, f'crop_{idx}.png'), enhanced)
     print(f"[CROP DEBUG] crop_{idx} 크기: {enhanced.shape}")
@@ -216,7 +212,7 @@ def detect_pill():
     if target_drug:
         try:
             model, le_drug, le_reac = load_model()
-            risk_rates = pickle.load(open(os.path.join(MODEL_DIR, 'risk_rates.pkl'), 'rb'))
+            risk_rates = pickle.load(open(os.path.join(current_app.config['MODEL_DIR'], 'risk_rates.pkl'), 'rb'))
 
             if target_drug in le_drug.classes_:
                 df = load_df()
