@@ -589,3 +589,4 @@ def get_signatures(ae_id):
     sigs = ElectronicSignature.query.filter_by(ae_report_id=ae_id).all()
     return jsonify({'signatures': [s.to_dict() for s in sigs]})
 
+

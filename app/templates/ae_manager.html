@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="ko">
 <head>
     <meta charset="UTF-8">
@@ -12,7 +12,7 @@
         .header a { color: #94a3b8; text-decoration: none; font-size: 0.9rem; }
         .lang-btn { background: #1e293b; border: 1px solid #334155; color: #e2e8f0; padding: 6px 12px; border-radius: 8px; cursor: pointer; font-size: 0.82rem; font-weight: bold; }
         .lang-btn:hover { border-color: #38bdf8; color: #38bdf8; }
-        .summary-grid { display: grid; grid-template-columns: repeat(5, 1fr); gap: 12px; padding: 20px 24px; }
+        .summary-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 12px; padding: 20px 24px; }
         .summary-card { background: #1e293b; border-radius: 10px; padding: 16px; border: 1px solid #334155; text-align: center; }
         .summary-card .val { font-size: 2rem; font-weight: bold; }
         .summary-card .lbl { color: #94a3b8; font-size: 0.8rem; margin-top: 4px; }
@@ -80,6 +80,8 @@
     <div class="summary-card"><div class="val val-red" id="s-sae">-</div><div class="lbl">SAE</div></div>
     <div class="summary-card"><div class="val val-orange" id="s-overdue">-</div><div class="lbl" data-ko="⚠️ 기한 초과" data-en="⚠️ Overdue">⚠️ 기한 초과</div></div>
     <div class="summary-card"><div class="val val-orange" id="s-urgent">-</div><div class="lbl" data-ko="🔴 3일 이내" data-en="🔴 Within 3 Days">🔴 3일 이내</div></div>
+    <div class="summary-card"><div class="val val-blue" id="s-today">-</div><div class="lbl">오늘 신고</div></div>
+    <div class="summary-card"><div class="val val-orange" id="s-sae-rate">-</div><div class="lbl">SAE 비율(%)</div></div>
     <div class="summary-card"><div class="val val-green" id="s-submitted">-</div><div class="lbl" data-ko="✅ 제출 완료" data-en="✅ Submitted">✅ 제출 완료</div></div>
 </div>
 
@@ -283,6 +285,8 @@
             document.getElementById('s-overdue').textContent = s.overdue;
             document.getElementById('s-urgent').textContent = s.urgent;
             document.getElementById('s-submitted').textContent = s.submitted;
+            document.getElementById('s-today').textContent = s.today ?? 0;
+            document.getElementById('s-sae-rate').textContent = (s.sae_rate ?? 0) + '%';
             allReports = data.reports;
             renderTable(allReports);
         });
@@ -503,3 +507,5 @@
 </script>
 </body>
 </html>
+
+
