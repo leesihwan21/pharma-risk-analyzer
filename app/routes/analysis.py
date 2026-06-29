@@ -19,6 +19,10 @@ analysis = Blueprint('analysis', __name__)
 def load_df():
     return pd.read_csv(current_app.config['DATA_PATH'])
 
+def load_explainer():
+    model_dir = current_app.config['MODEL_DIR']
+    return pickle.load(open(os.path.join(model_dir, 'explainer.pkl'), 'rb'))
+
 def load_model():
     model_dir = current_app.config['MODEL_DIR']
     model   = pickle.load(open(os.path.join(model_dir, 'model.pkl'), 'rb'))
@@ -286,7 +290,7 @@ def compute_shap(drugname, reaction, age, sex):
     feature_names = ['drug', 'reaction', 'sex', 'age', 'drug_risk_rate', 'reac_risk_rate', 'combo_risk_rate']
     X = np.array([[drug_enc, reac_enc, sex_enc, age, drug_risk_rate, reac_risk_rate, combo_risk_rate]])
 
-    explainer = shap.TreeExplainer(model)
+    explainer = load_explainer()
     shap_values = explainer.shap_values(X)
     sv = shap_values[1][0] if isinstance(shap_values, list) else shap_values[0]
 
@@ -520,7 +524,7 @@ def api_interaction():
     if drug_a == drug_b:
         return jsonify({'error': 'same drug'}), 400
 
-    df = pd.read_csv(current_app.config['DATA_PATH'])
+    df = load_df()
     ids_a = set(df[df['drugname'] == drug_a]['primaryid'])
     ids_b = set(df[df['drugname'] == drug_b]['primaryid'])
     ids_both = ids_a & ids_b
@@ -582,7 +586,7 @@ def api_polypharmacy():
     if len(drugs) > 5:
         return jsonify({'error': '최대 5개 약물까지 분석할 수 있습니다'}), 400
 
-    df = pd.read_csv(current_app.config['DATA_PATH'])
+    df = load_df()
     serious_outcomes = {'DE', 'HO', 'LT'}
 
     id_sets = {}
@@ -1007,7 +1011,7 @@ def api_lime():
         from lime.lime_tabular import LimeTabularExplainer
 
         model, le_drug, le_reac = load_model()
-        risk_rates = pickle.load(open(os.path.join(MODEL_DIR, 'risk_rates.pkl'), 'rb'))
+        risk_rates = pickle.load(open(os.path.join(current_app.config['MODEL_DIR'], 'risk_rates.pkl'),'rb'))
 
         if drugname not in le_drug.classes_:
             return jsonify({'error': 'unknown drug: ' + drugname}), 400
@@ -1322,3 +1326,4 @@ def api_autocomplete_reaction():
         return jsonify(matched)
     except Exception as e:
         return jsonify([])
+
