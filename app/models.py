@@ -1,6 +1,6 @@
-from flask_sqlalchemy import SQLAlchemy
+﻿from flask_sqlalchemy import SQLAlchemy
 from flask_login import UserMixin
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, UTC
 
 db = SQLAlchemy()
 
@@ -147,7 +147,8 @@ class AEReport(db.Model):
     def days_until_deadline(self):
         """보고 마감까지 남은 일수"""
         if self.report_deadline and not self.is_submitted:
-            delta = self.report_deadline - datetime.utcnow()
+            deadline = self.report_deadline.replace(tzinfo=UTC) if self.report_deadline.tzinfo is None else self.report_deadline
+            delta = deadline - datetime.now(UTC)
             return delta.days
         return None
 
@@ -295,3 +296,5 @@ class PasswordResetToken(db.Model):
     expires_at = db.Column(db.DateTime, nullable=False)
     used = db.Column(db.Boolean, default=False)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
+
+

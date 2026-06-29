@@ -1,10 +1,10 @@
-import io
+﻿import io
 import os
 import math
 import hashlib
 
 from werkzeug.security import check_password_hash
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, UTC
 from flask import Blueprint, render_template, jsonify, request, send_file
 from flask_login import login_required, current_user
 from reportlab.lib.pagesizes import A4
@@ -130,8 +130,8 @@ def ae_create():
     is_sae_input = data.get('is_sae')
     is_sae = bool(is_sae_input) if is_sae_input is not None else auto_is_sae(ae_term, ctcae_grade)
 
-    # datetime.UTC는 Python 3.11+ 전용 → datetime.utcnow()로 통일
-    report_deadline = datetime.utcnow() + timedelta(days=15) if is_sae else None
+    # datetime.UTC는 Python 3.11+ 전용 → datetime.now(UTC)로 통일
+    report_deadline = datetime.now(UTC) + timedelta(days=15) if is_sae else None
 
     ae_start = None
     ae_end = None
@@ -193,7 +193,7 @@ def ae_update(ae_id):
 
     if 'is_sae' in data:
         if data['is_sae'] and not report.report_deadline:
-            report.report_deadline = datetime.utcnow() + timedelta(days=15)
+            report.report_deadline = datetime.now(UTC) + timedelta(days=15)
         elif not data['is_sae']:
             report.report_deadline = None
 
@@ -272,7 +272,7 @@ def ae_pdf(ae_id):
 
     story = []
     story.append(Paragraph("Adverse Event Report", title_style))
-    story.append(Paragraph(f"Generated: {datetime.utcnow().strftime('%Y-%m-%d %H:%M')}", sub_style))
+    story.append(Paragraph(f"Generated: {datetime.now(UTC).strftime('%Y-%m-%d %H:%M')}", sub_style))
     story.append(Spacer(1, 0.5*cm))
 
     if report.is_sae:
@@ -404,8 +404,8 @@ def ae_e2b(ae_id):
         if days > 0:
             drug_duration = f'<drugtreatmentduration>{days}</drugtreatmentduration>\n        <drugtreatmentdurationunit>804</drugtreatmentdurationunit>'
 
-    now_str = datetime.utcnow().strftime('%Y-%m-%d %H:%M:%S')
-    now_dt = datetime.utcnow()
+    now_str = datetime.now(UTC).strftime('%Y-%m-%d %H:%M:%S')
+    now_dt = datetime.now(UTC)
 
     xml = f'''<?xml version="1.0" encoding="UTF-8"?>
 <!-- ICH E2B(R3) Individual Case Safety Report (ICSR) -->
@@ -557,7 +557,7 @@ def sign_ae(ae_id):
         return jsonify({'error': '비밀번호가 일치하지 않습니다'}), 401
 
     # SHA-256 서명 해시 생성
-    sign_data = f"{current_user.username}:{ae_id}:{meaning}:{datetime.utcnow().isoformat()}"
+    sign_data = f"{current_user.username}:{ae_id}:{meaning}:{datetime.now(UTC).isoformat()}"
     signature_hash = hashlib.sha256(sign_data.encode()).hexdigest()
 
     # 전자서명 저장
@@ -583,10 +583,11 @@ def sign_ae(ae_id):
         'message': f'전자서명 완료: {meaning}',
         'signature_hash': signature_hash[:16] + '...',
         'signed_by': current_user.username,
-        'signed_at': datetime.utcnow().strftime('%Y-%m-%d %H:%M:%S')
+        'signed_at': datetime.now(UTC).strftime('%Y-%m-%d %H:%M:%S')
     })
 
 @ae.route('/api/ae/<int:ae_id>/signatures')
 def get_signatures(ae_id):
     sigs = ElectronicSignature.query.filter_by(ae_report_id=ae_id).all()
     return jsonify({'signatures': [s.to_dict() for s in sigs]})
+
