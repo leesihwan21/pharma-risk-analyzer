@@ -1,0 +1,5 @@
+[run]
+omit =
+    app/routes/rag_backup.py
+    app/routes_backup.py
+    venv/*

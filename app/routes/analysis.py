@@ -14,17 +14,16 @@ from app.models import FavoriteDrug
 
 analysis = Blueprint('analysis', __name__)
 
-DATA_PATH = os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))),
-                         'data', 'processed', 'processed_faers.csv')
-MODEL_DIR = os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))), 'ml')
+# ===== 하드코딩 경로 제거 -> current_app.config 사용 =====
 
 def load_df():
-    return pd.read_csv(DATA_PATH)
+    return pd.read_csv(current_app.config['DATA_PATH'])
 
 def load_model():
-    model = pickle.load(open(os.path.join(MODEL_DIR, 'model.pkl'), 'rb'))
-    le_drug = pickle.load(open(os.path.join(MODEL_DIR, 'le_drug.pkl'), 'rb'))
-    le_reac = pickle.load(open(os.path.join(MODEL_DIR, 'le_reac.pkl'), 'rb'))
+    model_dir = current_app.config['MODEL_DIR']
+    model   = pickle.load(open(os.path.join(model_dir, 'model.pkl'), 'rb'))
+    le_drug = pickle.load(open(os.path.join(model_dir, 'le_drug.pkl'), 'rb'))
+    le_reac = pickle.load(open(os.path.join(model_dir, 'le_reac.pkl'), 'rb'))
     return model, le_drug, le_reac
 
 # ── PRR ──────────────────────────────────────
@@ -270,7 +269,7 @@ def compute_shap(drugname, reaction, age, sex):
     reaction = reaction.upper()
 
     model, le_drug, le_reac = load_model()
-    risk_rates = pickle.load(open(os.path.join(MODEL_DIR, 'risk_rates.pkl'), 'rb'))
+    risk_rates = pickle.load(open(os.path.join(current_app.config['MODEL_DIR'], 'risk_rates.pkl'), 'rb'))
 
     if drugname not in le_drug.classes_:
         raise ValueError('unknown drug: ' + drugname)
@@ -521,7 +520,7 @@ def api_interaction():
     if drug_a == drug_b:
         return jsonify({'error': 'same drug'}), 400
 
-    df = pd.read_csv(DATA_PATH)
+    df = pd.read_csv(current_app.config['DATA_PATH'])
     ids_a = set(df[df['drugname'] == drug_a]['primaryid'])
     ids_b = set(df[df['drugname'] == drug_b]['primaryid'])
     ids_both = ids_a & ids_b
@@ -583,7 +582,7 @@ def api_polypharmacy():
     if len(drugs) > 5:
         return jsonify({'error': '최대 5개 약물까지 분석할 수 있습니다'}), 400
 
-    df = pd.read_csv(DATA_PATH)
+    df = pd.read_csv(current_app.config['DATA_PATH'])
     serious_outcomes = {'DE', 'HO', 'LT'}
 
     id_sets = {}
