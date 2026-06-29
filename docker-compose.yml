@@ -5,6 +5,8 @@ services:
     build: .
     ports:
       - "5001:5001"
+    env_file:
+      - .env
     environment:
       - PORT=5001
       - SECRET_KEY=${SECRET_KEY:-pharma-risk-dev-key}
@@ -14,5 +16,8 @@ services:
       - MFDS_API_KEY=${MFDS_API_KEY:-}
       - ANTHROPIC_API_KEY=${ANTHROPIC_API_KEY:-}
     volumes:
-      # SQLite DB를 컨테이너 밖에 보존 (재시작/재빌드해도 데이터 유지)
-      - ./instance:/app/instance
+      - ./instance:/app/instance   # SQLite DB 유지
+      - ./ml:/app/ml               # 모델 파일 유지
+      - ./data:/app/data           # FAERS 데이터 유지
+      - ./rag_db:/app/rag_db       # RAG 벡터 DB 유지
+    restart: unless-stopped

@@ -1,4 +1,4 @@
-# Python
+﻿# Python
 __pycache__/
 *.py[cod]
 *.egg-info/
@@ -27,3 +27,12 @@ instance/
 notebooks/
 screenshots/
 *.pdf
+
+# 대용량 파일 (볼륨으로 마운트)
+ml/
+rag_db/
+data/
+mlruns/
+*.pt
+*.pkl
+
