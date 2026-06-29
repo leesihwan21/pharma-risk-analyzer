@@ -2,17 +2,18 @@
 app/routes/analysis/prr.py
 PRR 신호 탐지, EBGM, Emerging Signals, Favorites Alerts
 """
+
 import math
 
-from flask import jsonify, render_template, request
+from flask import jsonify, render_template
 from app import cache
 from app.models import FavoriteDrug
 
 from . import analysis
 from ._common import load_df
 
-
 # ── 공용 함수 ─────────────────────────────────
+
 
 def compute_prr_summary(drugname: str, df=None):
     """PRR 신호 탐지 결과 반환 (없으면 None)."""
@@ -20,24 +21,24 @@ def compute_prr_summary(drugname: str, df=None):
         df = load_df()
     drugname = drugname.upper()
 
-    drug_reports = df[df['drugname'].str.upper() == drugname]
+    drug_reports = df[df["drugname"].str.upper() == drugname]
     if len(drug_reports) == 0:
         return None
 
-    other_reports = df[df['drugname'].str.upper() != drugname]
+    other_reports = df[df["drugname"].str.upper() != drugname]
     total_drug = len(drug_reports)
     total_other = len(other_reports)
 
     if total_other == 0:
         return None
 
-    top_reactions = drug_reports['pt'].value_counts().head(20).index.tolist()
+    top_reactions = drug_reports["pt"].value_counts().head(20).index.tolist()
     results = []
 
     for reac in top_reactions:
-        a = len(drug_reports[drug_reports['pt'] == reac])
+        a = len(drug_reports[drug_reports["pt"] == reac])
         b = total_drug
-        c = len(other_reports[other_reports['pt'] == reac])
+        c = len(other_reports[other_reports["pt"] == reac])
         d = total_other
 
         if c == 0 or b == 0:
@@ -45,72 +46,78 @@ def compute_prr_summary(drugname: str, df=None):
 
         prr = (a / b) / (c / d)
         try:
-            se = math.sqrt((1/a) - (1/b) + (1/c) - (1/d))
+            se = math.sqrt((1 / a) - (1 / b) + (1 / c) - (1 / d))
             prr_lower = math.exp(math.log(prr) - 1.96 * se)
             prr_upper = math.exp(math.log(prr) + 1.96 * se)
         except (ValueError, ZeroDivisionError):
             prr_lower = prr_upper = prr
 
         is_signal = prr >= 2 and a >= 3
-        results.append({
-            'reaction': reac,
-            'drug_count': int(a),
-            'drug_total': int(b),
-            'other_count': int(c),
-            'other_total': int(d),
-            'drug_pct': round(a/b*100, 2),
-            'other_pct': round(c/d*100, 2),
-            'prr': round(prr, 2),
-            'prr_lower': round(prr_lower, 2),
-            'prr_upper': round(prr_upper, 2),
-            'is_signal': is_signal,
-            'signal_level': (
-                '🔴 강한 신호' if prr >= 5 and a >= 3 else
-                '🟡 신호' if prr >= 2 and a >= 3 else
-                '⚪ 비신호'
-            )
-        })
+        results.append(
+            {
+                "reaction": reac,
+                "drug_count": int(a),
+                "drug_total": int(b),
+                "other_count": int(c),
+                "other_total": int(d),
+                "drug_pct": round(a / b * 100, 2),
+                "other_pct": round(c / d * 100, 2),
+                "prr": round(prr, 2),
+                "prr_lower": round(prr_lower, 2),
+                "prr_upper": round(prr_upper, 2),
+                "is_signal": is_signal,
+                "signal_level": (
+                    "🔴 강한 신호"
+                    if prr >= 5 and a >= 3
+                    else "🟡 신호" if prr >= 2 and a >= 3 else "⚪ 비신호"
+                ),
+            }
+        )
 
-    results.sort(key=lambda x: x['prr'], reverse=True)
-    signal_count = sum(1 for r in results if r['is_signal'])
-    strong_signal_count = sum(1 for r in results if r['prr'] >= 5 and r['drug_count'] >= 3)
+    results.sort(key=lambda x: x["prr"], reverse=True)
+    signal_count = sum(1 for r in results if r["is_signal"])
+    strong_signal_count = sum(
+        1 for r in results if r["prr"] >= 5 and r["drug_count"] >= 3
+    )
 
     return {
-        'drugname': drugname,
-        'total_reports': total_drug,
-        'signal_count': signal_count,
-        'strong_signal_count': strong_signal_count,
-        'results': results
+        "drugname": drugname,
+        "total_reports": total_drug,
+        "signal_count": signal_count,
+        "strong_signal_count": strong_signal_count,
+        "results": results,
     }
 
 
-def compute_emerging_signals(drugname: str, df=None, min_count: int = 3, prr_threshold: float = 2.0):
+def compute_emerging_signals(
+    drugname: str, df=None, min_count: int = 3, prr_threshold: float = 2.0
+):
     """최신 분기 vs 이전 분기 신규 신호 탐지."""
     if df is None:
         df = load_df()
     drugname = drugname.upper()
 
-    if 'quarter' not in df.columns:
+    if "quarter" not in df.columns:
         return None
 
-    quarters = sorted(df['quarter'].dropna().unique())
+    quarters = sorted(df["quarter"].dropna().unique())
     if len(quarters) < 2:
         return None
     latest_q = quarters[-1]
 
-    df_latest  = df[df['quarter'] == latest_q]
-    df_history = df[df['quarter'] != latest_q]
+    df_latest = df[df["quarter"] == latest_q]
+    df_history = df[df["quarter"] != latest_q]
 
-    drug_latest  = df_latest[df_latest['drugname'].str.upper() == drugname]
+    drug_latest = df_latest[df_latest["drugname"].str.upper() == drugname]
     if len(drug_latest) == 0:
         return None
 
-    other_latest  = df_latest[df_latest['drugname'].str.upper() != drugname]
-    drug_history  = df_history[df_history['drugname'].str.upper() == drugname]
-    other_history = df_history[df_history['drugname'].str.upper() != drugname]
+    other_latest = df_latest[df_latest["drugname"].str.upper() != drugname]
+    drug_history = df_history[df_history["drugname"].str.upper() == drugname]
+    other_history = df_history[df_history["drugname"].str.upper() != drugname]
 
-    b  = len(drug_latest)
-    d  = len(other_latest)
+    b = len(drug_latest)
+    d = len(other_latest)
     b2 = len(drug_history)
     d2 = len(other_history)
     if b == 0 or d == 0:
@@ -122,64 +129,70 @@ def compute_emerging_signals(drugname: str, df=None, min_count: int = 3, prr_thr
         return (a / b) / (c / d)
 
     emerging = []
-    for reac in drug_latest['pt'].value_counts().index.tolist():
-        a = len(drug_latest[drug_latest['pt'] == reac])
-        c = len(other_latest[other_latest['pt'] == reac])
+    for reac in drug_latest["pt"].value_counts().index.tolist():
+        a = len(drug_latest[drug_latest["pt"] == reac])
+        c = len(other_latest[other_latest["pt"] == reac])
         prr_latest = _prr(a, b, c, d)
         if not (prr_latest >= prr_threshold and a >= min_count):
             continue
 
-        a2 = len(drug_history[drug_history['pt'] == reac]) if b2 > 0 else 0
-        c2 = len(other_history[other_history['pt'] == reac]) if d2 > 0 else 0
+        a2 = len(drug_history[drug_history["pt"] == reac]) if b2 > 0 else 0
+        c2 = len(other_history[other_history["pt"] == reac]) if d2 > 0 else 0
         prr_history = _prr(a2, b2, c2, d2)
 
         if not (prr_history >= prr_threshold and a2 >= min_count):
-            emerging.append({
-                'reaction': reac,
-                'prr_latest': round(prr_latest, 2),
-                'prr_history': round(prr_history, 2),
-                'latest_count': int(a),
-                'quarter': str(latest_q)
-            })
+            emerging.append(
+                {
+                    "reaction": reac,
+                    "prr_latest": round(prr_latest, 2),
+                    "prr_history": round(prr_history, 2),
+                    "latest_count": int(a),
+                    "quarter": str(latest_q),
+                }
+            )
 
-    return {
-        'drugname': drugname,
-        'latest_quarter': str(latest_q),
-        'emerging': emerging
-    }
+    return {"drugname": drugname, "latest_quarter": str(latest_q), "emerging": emerging}
 
 
 # ── Routes ────────────────────────────────────
 
-@analysis.route('/prr')
+
+@analysis.route("/prr")
 def prr_page():
-    return render_template('prr.html')
+    return render_template("prr.html")
 
 
-@analysis.route('/api/prr/<drugname>')
+@analysis.route("/api/prr/<drugname>")
 @cache.cached(timeout=600)
 def calculate_prr(drugname: str):
     summary = compute_prr_summary(drugname)
     if summary is None:
-        return jsonify({'error': f'약물을 찾을 수 없어요: {drugname.upper()}'}), 404
+        return jsonify({"error": f"약물을 찾을 수 없어요: {drugname.upper()}"}), 404
     return jsonify(summary)
 
 
-@analysis.route('/api/signals/emerging/<drugname>')
+@analysis.route("/api/signals/emerging/<drugname>")
 @cache.cached(timeout=600)
 def api_emerging_signals(drugname: str):
     result = compute_emerging_signals(drugname)
     if result is None:
-        return jsonify({'error': f'분석할 수 없습니다: {drugname.upper()} (데이터 또는 분기 정보 부족)'}), 404
+        return (
+            jsonify(
+                {
+                    "error": f"분석할 수 없습니다: {drugname.upper()} (데이터 또는 분기 정보 부족)"
+                }
+            ),
+            404,
+        )
     return jsonify(result)
 
 
-@analysis.route('/api/favorites/alerts')
+@analysis.route("/api/favorites/alerts")
 def favorites_alerts():
     """즐겨찾기 약물의 PRR + 신규 신호 알림."""
     favorites = FavoriteDrug.query.all()
     if not favorites:
-        return jsonify({'alerts': []})
+        return jsonify({"alerts": []})
 
     df = load_df()
     alerts = []
@@ -195,57 +208,67 @@ def favorites_alerts():
         if summary is None:
             continue
 
-        top_signals = [r for r in summary['results'] if r['is_signal']][:3]
-        if summary['strong_signal_count'] > 0:
-            level = 'strong'
-        elif summary['signal_count'] > 0:
-            level = 'signal'
+        top_signals = [r for r in summary["results"] if r["is_signal"]][:3]
+        if summary["strong_signal_count"] > 0:
+            level = "strong"
+        elif summary["signal_count"] > 0:
+            level = "signal"
         else:
-            level = 'none'
+            level = "none"
 
         emerging_result = compute_emerging_signals(drugname, df=df)
-        emerging = emerging_result['emerging'] if emerging_result else []
+        emerging = emerging_result["emerging"] if emerging_result else []
         if emerging:
-            level = 'new'
+            level = "new"
 
-        alerts.append({
-            'drugname': summary['drugname'],
-            'signal_count': summary['signal_count'],
-            'strong_signal_count': summary['strong_signal_count'],
-            'level': level,
-            'top_signals': [
-                {'reaction': r['reaction'], 'prr': r['prr'], 'signal_level': r['signal_level']}
-                for r in top_signals
-            ],
-            'emerging_signals': [
-                {'reaction': e['reaction'], 'prr_latest': e['prr_latest'], 'quarter': e['quarter']}
-                for e in emerging[:3]
-            ]
-        })
+        alerts.append(
+            {
+                "drugname": summary["drugname"],
+                "signal_count": summary["signal_count"],
+                "strong_signal_count": summary["strong_signal_count"],
+                "level": level,
+                "top_signals": [
+                    {
+                        "reaction": r["reaction"],
+                        "prr": r["prr"],
+                        "signal_level": r["signal_level"],
+                    }
+                    for r in top_signals
+                ],
+                "emerging_signals": [
+                    {
+                        "reaction": e["reaction"],
+                        "prr_latest": e["prr_latest"],
+                        "quarter": e["quarter"],
+                    }
+                    for e in emerging[:3]
+                ],
+            }
+        )
 
-    level_order = {'new': 0, 'strong': 1, 'signal': 2, 'none': 3}
-    alerts.sort(key=lambda a: level_order[a['level']])
-    return jsonify({'alerts': alerts})
+    level_order = {"new": 0, "strong": 1, "signal": 2, "none": 3}
+    alerts.sort(key=lambda a: level_order[a["level"]])
+    return jsonify({"alerts": alerts})
 
 
-@analysis.route('/api/ebgm/<drugname>')
+@analysis.route("/api/ebgm/<drugname>")
 @cache.cached(timeout=600)
 def calculate_ebgm(drugname: str):
     df = load_df()
     drugname = drugname.upper()
-    drug_reports = df[df['drugname'].str.upper() == drugname]
+    drug_reports = df[df["drugname"].str.upper() == drugname]
     if len(drug_reports) == 0:
-        return jsonify({'error': f'약물을 찾을 수 없어요: {drugname}'}), 404
+        return jsonify({"error": f"약물을 찾을 수 없어요: {drugname}"}), 404
 
     total_reports = len(df)
-    total_drug    = len(drug_reports)
-    top_reactions = drug_reports['pt'].value_counts().head(20).index.tolist()
+    total_drug = len(drug_reports)
+    top_reactions = drug_reports["pt"].value_counts().head(20).index.tolist()
 
     results = []
     for reac in top_reactions:
-        a = len(drug_reports[drug_reports['pt'] == reac])
+        a = len(drug_reports[drug_reports["pt"] == reac])
         b = total_drug - a
-        c = len(df[(df['drugname'].str.upper() != drugname) & (df['pt'] == reac)])
+        c = len(df[(df["drugname"].str.upper() != drugname) & (df["pt"] == reac)])
         d = total_reports - a - b - c
 
         if a == 0 or (a + b) == 0 or (a + c) == 0:
@@ -254,42 +277,46 @@ def calculate_ebgm(drugname: str):
         if E == 0 or b == 0 or c == 0:
             continue
 
-        ror  = (a * d) / (b * c) if (b * c) > 0 else 0
+        ror = (a * d) / (b * c) if (b * c) > 0 else 0
         alpha1, beta1 = 0.5, 0.5
         alpha2, beta2 = 2.0, 10.0
-        w    = 0.1
+        w = 0.1
         ebgm = (alpha1 + a) / (beta1 + E) * w + (alpha2 + a) / (beta2 + E) * (1 - w)
 
         try:
-            se_log     = math.sqrt(1/a + 1/E)
+            se_log = math.sqrt(1 / a + 1 / E)
             ebgm_lower = math.exp(math.log(max(ebgm, 0.001)) - 1.96 * se_log)
             ebgm_upper = math.exp(math.log(max(ebgm, 0.001)) + 1.96 * se_log)
         except (ValueError, ZeroDivisionError):
             ebgm_lower = ebgm_upper = ebgm
 
-        eb05      = ebgm_lower
+        eb05 = ebgm_lower
         is_signal = eb05 >= 2 and a >= 3
-        results.append({
-            'reaction': reac,
-            'drug_count': int(a),
-            'expected': round(E, 2),
-            'ror': round(ror, 2),
-            'ebgm': round(ebgm, 3),
-            'eb05': round(ebgm_lower, 3),
-            'eb95': round(ebgm_upper, 3),
-            'is_signal': is_signal,
-            'signal_level': (
-                '강한 신호' if eb05 >= 5 and a >= 3 else
-                '신호'     if eb05 >= 2 and a >= 3 else
-                '비신호'
-            )
-        })
+        results.append(
+            {
+                "reaction": reac,
+                "drug_count": int(a),
+                "expected": round(E, 2),
+                "ror": round(ror, 2),
+                "ebgm": round(ebgm, 3),
+                "eb05": round(ebgm_lower, 3),
+                "eb95": round(ebgm_upper, 3),
+                "is_signal": is_signal,
+                "signal_level": (
+                    "강한 신호"
+                    if eb05 >= 5 and a >= 3
+                    else "신호" if eb05 >= 2 and a >= 3 else "비신호"
+                ),
+            }
+        )
 
-    results.sort(key=lambda x: x['ebgm'], reverse=True)
-    return jsonify({
-        'drugname': drugname,
-        'total_reports': int(total_drug),
-        'signal_count': sum(1 for r in results if r['is_signal']),
-        'results': results,
-        'method': 'EBGM (Empirical Bayes Geometric Mean) - FDA MGPS 근사'
-    })
+    results.sort(key=lambda x: x["ebgm"], reverse=True)
+    return jsonify(
+        {
+            "drugname": drugname,
+            "total_reports": int(total_drug),
+            "signal_count": sum(1 for r in results if r["is_signal"]),
+            "results": results,
+            "method": "EBGM (Empirical Bayes Geometric Mean) - FDA MGPS 근사",
+        }
+    )

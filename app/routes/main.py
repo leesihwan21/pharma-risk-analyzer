@@ -1,6 +1,11 @@
-import json, os, pandas as pd, plotly, plotly.express as px, pycountry
+import json
+import os
+import pandas as pd
+import plotly
+import plotly.express as px
+import pycountry
 import plotly.graph_objects as go
-from flask import Blueprint, render_template, jsonify, current_app
+from flask import Blueprint, render_template, current_app
 from app import cache
 
 main = Blueprint('main', __name__)

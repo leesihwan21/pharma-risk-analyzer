@@ -3,9 +3,7 @@ AE Manager 모듈 테스트
 CTCAE 자동 분류, SAE 판정, 보고 타임라인 검증
 """
 import json
-from datetime import datetime, timedelta
 
-from tests.conftest import client
 
 
 class TestAEAutoClassify:

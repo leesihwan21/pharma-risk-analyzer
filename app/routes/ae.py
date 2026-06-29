@@ -1,6 +1,4 @@
 ﻿import io
-import os
-import math
 import hashlib
 
 from werkzeug.security import check_password_hash
@@ -10,7 +8,7 @@ from flask_login import login_required, current_user
 from reportlab.lib.pagesizes import A4
 from reportlab.lib import colors
 from reportlab.platypus import SimpleDocTemplate, Table, TableStyle, Paragraph, Spacer
-from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
+from reportlab.lib.styles import ParagraphStyle
 from reportlab.lib.units import cm
 from app.models import db, AEReport, AuditTrail, ElectronicSignature
 

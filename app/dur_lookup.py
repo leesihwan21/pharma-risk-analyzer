@@ -13,43 +13,116 @@ FAERS 데이터셋(류마티스 관절염/자가면역질환 치료제 중심)�
 명확히 표시합니다 (이 역시 유의미한 분석 결과입니다).
 """
 
-import os
 import requests
 
-DUR_BASE_URL = "https://apis.data.go.kr/1471000/DURPrdlstInfoService03/getUsjntTabooInfoList03"
+DUR_BASE_URL = (
+    "https://apis.data.go.kr/1471000/DURPrdlstInfoService03/getUsjntTabooInfoList03"
+)
 
 # FAERS 영문 약물명 -> (한글 검색명, 영문 성분명, 비고)
 # 비고가 'biologic'인 약물은 DUR 병용금기 DB 대상이 아닐 가능성이 높음(소분자 경구약 위주 DB)
 FAERS_TO_KOREAN_DUR = {
-    "METHOTREXATE":                {"kr_name": "메토트렉세이트", "ingr_eng": "METHOTREXATE", "note": "small_molecule"},
-    "SULFASALAZINE":                {"kr_name": "설파살라진",     "ingr_eng": "SULFASALAZINE", "note": "small_molecule"},
-    "PREDNISONE":                   {"kr_name": "프레드니손",     "ingr_eng": "PREDNISONE", "note": "small_molecule"},
-    "FOLIC ACID":                   {"kr_name": "폴산",           "ingr_eng": "FOLIC ACID", "note": "small_molecule"},
-    "HYDROXYCHLOROQUINE":           {"kr_name": "히드록시클로로퀸", "ingr_eng": "HYDROXYCHLOROQUINE", "note": "small_molecule"},
-    "HYDROXYCHLOROQUINE SULFATE":   {"kr_name": "히드록시클로로퀸", "ingr_eng": "HYDROXYCHLOROQUINE", "note": "small_molecule"},
-    "LEFLUNOMIDE":                  {"kr_name": "레플루노미드",     "ingr_eng": "LEFLUNOMIDE", "note": "small_molecule"},
-    "ARAVA":                        {"kr_name": "레플루노미드",     "ingr_eng": "LEFLUNOMIDE", "note": "small_molecule"},
-    "ACETAMINOPHEN":                {"kr_name": "아세트아미노펜",   "ingr_eng": "ACETAMINOPHEN", "note": "small_molecule"},
-    "DICLOFENAC SODIUM":            {"kr_name": "디클로페낙나트륨", "ingr_eng": "DICLOFENAC", "note": "small_molecule"},
-    "FOSAMAX":                      {"kr_name": "알렌드론산",       "ingr_eng": "ALENDRONATE", "note": "small_molecule"},
-    "CETIRIZINE":                   {"kr_name": "세티리진",         "ingr_eng": "CETIRIZINE", "note": "small_molecule"},
-    "CETIRIZINE HYDROCHLORIDE":     {"kr_name": "세티리진",         "ingr_eng": "CETIRIZINE", "note": "small_molecule"},
-    "CORTISONE ACETATE":            {"kr_name": "코르티손아세테이트", "ingr_eng": "CORTISONE", "note": "small_molecule"},
-    "ASPIRIN":                      {"kr_name": "아스피린",         "ingr_eng": "ASPIRIN", "note": "small_molecule"},
+    "METHOTREXATE": {
+        "kr_name": "메토트렉세이트",
+        "ingr_eng": "METHOTREXATE",
+        "note": "small_molecule",
+    },
+    "SULFASALAZINE": {
+        "kr_name": "설파살라진",
+        "ingr_eng": "SULFASALAZINE",
+        "note": "small_molecule",
+    },
+    "PREDNISONE": {
+        "kr_name": "프레드니손",
+        "ingr_eng": "PREDNISONE",
+        "note": "small_molecule",
+    },
+    "FOLIC ACID": {
+        "kr_name": "폴산",
+        "ingr_eng": "FOLIC ACID",
+        "note": "small_molecule",
+    },
+    "HYDROXYCHLOROQUINE": {
+        "kr_name": "히드록시클로로퀸",
+        "ingr_eng": "HYDROXYCHLOROQUINE",
+        "note": "small_molecule",
+    },
+    "HYDROXYCHLOROQUINE SULFATE": {
+        "kr_name": "히드록시클로로퀸",
+        "ingr_eng": "HYDROXYCHLOROQUINE",
+        "note": "small_molecule",
+    },
+    "LEFLUNOMIDE": {
+        "kr_name": "레플루노미드",
+        "ingr_eng": "LEFLUNOMIDE",
+        "note": "small_molecule",
+    },
+    "ARAVA": {
+        "kr_name": "레플루노미드",
+        "ingr_eng": "LEFLUNOMIDE",
+        "note": "small_molecule",
+    },
+    "ACETAMINOPHEN": {
+        "kr_name": "아세트아미노펜",
+        "ingr_eng": "ACETAMINOPHEN",
+        "note": "small_molecule",
+    },
+    "DICLOFENAC SODIUM": {
+        "kr_name": "디클로페낙나트륨",
+        "ingr_eng": "DICLOFENAC",
+        "note": "small_molecule",
+    },
+    "FOSAMAX": {
+        "kr_name": "알렌드론산",
+        "ingr_eng": "ALENDRONATE",
+        "note": "small_molecule",
+    },
+    "CETIRIZINE": {
+        "kr_name": "세티리진",
+        "ingr_eng": "CETIRIZINE",
+        "note": "small_molecule",
+    },
+    "CETIRIZINE HYDROCHLORIDE": {
+        "kr_name": "세티리진",
+        "ingr_eng": "CETIRIZINE",
+        "note": "small_molecule",
+    },
+    "CORTISONE ACETATE": {
+        "kr_name": "코르티손아세테이트",
+        "ingr_eng": "CORTISONE",
+        "note": "small_molecule",
+    },
+    "ASPIRIN": {"kr_name": "아스피린", "ingr_eng": "ASPIRIN", "note": "small_molecule"},
     # 생물학적제제 (DUR 병용금기 DB 비대상 가능성 높음 - 참고용으로만 매핑)
-    "ACTEMRA":     {"kr_name": "토실리주맙", "ingr_eng": "TOCILIZUMAB", "note": "biologic"},
-    "ORENCIA":     {"kr_name": "아바타셉트", "ingr_eng": "ABATACEPT", "note": "biologic"},
-    "ENBREL":      {"kr_name": "에타너셉트", "ingr_eng": "ETANERCEPT", "note": "biologic"},
-    "XELJANZ":     {"kr_name": "토파시티닙", "ingr_eng": "TOFACITINIB", "note": "biologic"},
-    "HUMIRA":      {"kr_name": "아달리무맙", "ingr_eng": "ADALIMUMAB", "note": "biologic"},
-    "ADALIMUMAB":  {"kr_name": "아달리무맙", "ingr_eng": "ADALIMUMAB", "note": "biologic"},
-    "CIMZIA":      {"kr_name": "서톨리주맙", "ingr_eng": "CERTOLIZUMAB", "note": "biologic"},
-    "REMICADE":    {"kr_name": "인플릭시맙", "ingr_eng": "INFLIXIMAB", "note": "biologic"},
-    "INFLECTRA":   {"kr_name": "인플릭시맙", "ingr_eng": "INFLIXIMAB", "note": "biologic"},
-    "INFLIXIMAB":  {"kr_name": "인플릭시맙", "ingr_eng": "INFLIXIMAB", "note": "biologic"},
-    "SIMPONI":     {"kr_name": "골리무맙",   "ingr_eng": "GOLIMUMAB", "note": "biologic"},
-    "COSENTYX":    {"kr_name": "세쿠키누맙", "ingr_eng": "SECUKINUMAB", "note": "biologic"},
-    "RITUXIMAB":   {"kr_name": "리툭시맙",   "ingr_eng": "RITUXIMAB", "note": "biologic"},
+    "ACTEMRA": {"kr_name": "토실리주맙", "ingr_eng": "TOCILIZUMAB", "note": "biologic"},
+    "ORENCIA": {"kr_name": "아바타셉트", "ingr_eng": "ABATACEPT", "note": "biologic"},
+    "ENBREL": {"kr_name": "에타너셉트", "ingr_eng": "ETANERCEPT", "note": "biologic"},
+    "XELJANZ": {"kr_name": "토파시티닙", "ingr_eng": "TOFACITINIB", "note": "biologic"},
+    "HUMIRA": {"kr_name": "아달리무맙", "ingr_eng": "ADALIMUMAB", "note": "biologic"},
+    "ADALIMUMAB": {
+        "kr_name": "아달리무맙",
+        "ingr_eng": "ADALIMUMAB",
+        "note": "biologic",
+    },
+    "CIMZIA": {"kr_name": "서톨리주맙", "ingr_eng": "CERTOLIZUMAB", "note": "biologic"},
+    "REMICADE": {"kr_name": "인플릭시맙", "ingr_eng": "INFLIXIMAB", "note": "biologic"},
+    "INFLECTRA": {
+        "kr_name": "인플릭시맙",
+        "ingr_eng": "INFLIXIMAB",
+        "note": "biologic",
+    },
+    "INFLIXIMAB": {
+        "kr_name": "인플릭시맙",
+        "ingr_eng": "INFLIXIMAB",
+        "note": "biologic",
+    },
+    "SIMPONI": {"kr_name": "골리무맙", "ingr_eng": "GOLIMUMAB", "note": "biologic"},
+    "COSENTYX": {
+        "kr_name": "세쿠키누맙",
+        "ingr_eng": "SECUKINUMAB",
+        "note": "biologic",
+    },
+    "RITUXIMAB": {"kr_name": "리툭시맙", "ingr_eng": "RITUXIMAB", "note": "biologic"},
 }
 
 
@@ -76,7 +149,9 @@ def query_dur_taboo(kr_name: str, api_key: str, timeout: int = 10):
         data = res.json()
         header = data.get("header", {})
         if header.get("resultCode") not in (None, "00", "0"):
-            print(f"[DUR API] {kr_name} resultCode={header.get('resultCode')} msg={header.get('resultMsg')}")
+            print(
+                f"[DUR API] {kr_name} resultCode={header.get('resultCode')} msg={header.get('resultMsg')}"
+            )
         body = data.get("body", {})
         items = body.get("items", [])
 
@@ -119,7 +194,7 @@ def check_combo_dur_taboo(drug_a: str, drug_b: str, api_key: str):
         return {
             "checked": False,
             "is_taboo": False,
-            "reason": "DUR 매핑 테이블에 등록되지 않은 약물입니다 (수동 매핑 미작성)."
+            "reason": "DUR 매핑 테이블에 등록되지 않은 약물입니다 (수동 매핑 미작성).",
         }
 
     if map_a.get("note") == "biologic" or map_b.get("note") == "biologic":
@@ -128,7 +203,7 @@ def check_combo_dur_taboo(drug_a: str, drug_b: str, api_key: str):
             "is_taboo": False,
             "drug_a_mapped": map_a,
             "drug_b_mapped": map_b,
-            "reason": "생물학적제제(바이오의약품)는 DUR 병용금기 데이터베이스(경구약 중심) 대상이 아닙니다."
+            "reason": "생물학적제제(바이오의약품)는 DUR 병용금기 데이터베이스(경구약 중심) 대상이 아닙니다.",
         }
 
     items = query_dur_taboo(map_a["kr_name"], api_key)
@@ -139,11 +214,13 @@ def check_combo_dur_taboo(drug_a: str, drug_b: str, api_key: str):
     target_ingr = map_b["ingr_eng"].upper()
     matched_item = None
     for it in items:
-        haystack = " ".join([
-            str(it.get("MIXTURE_INGR_ENG_NAME", "")),
-            str(it.get("MIXTURE_INGR_KOR_NAME", "")),
-            str(it.get("MIXTURE_ITEM_NAME", "")),
-        ]).upper()
+        haystack = " ".join(
+            [
+                str(it.get("MIXTURE_INGR_ENG_NAME", "")),
+                str(it.get("MIXTURE_INGR_KOR_NAME", "")),
+                str(it.get("MIXTURE_ITEM_NAME", "")),
+            ]
+        ).upper()
         if target_ingr in haystack:
             matched_item = it
             break
@@ -156,7 +233,7 @@ def check_combo_dur_taboo(drug_a: str, drug_b: str, api_key: str):
         "raw_match": matched_item,
         "reason": (
             f"한국 식약처 DUR 병용금기 기준에서 확인됨 — 금기사유: {matched_item.get('PROHBT_CONTENT', '-')}"
-            if matched_item else
-            "조회 결과, 한국 DUR 병용금기 목록에서 해당 조합은 확인되지 않았습니다."
-        )
+            if matched_item
+            else "조회 결과, 한국 DUR 병용금기 목록에서 해당 조합은 확인되지 않았습니다."
+        ),
     }

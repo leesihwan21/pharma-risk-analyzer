@@ -8,11 +8,11 @@ import json
 import requests as http_requests
 
 from flask import Blueprint, render_template, jsonify, request, send_file, current_app
-from flask_login import login_required, current_user
+from flask_login import login_required
 from reportlab.lib.pagesizes import A4
 from reportlab.lib import colors
 from reportlab.platypus import SimpleDocTemplate, Table, TableStyle, Paragraph, Spacer
-from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
+from reportlab.lib.styles import ParagraphStyle
 from reportlab.lib.units import cm
 from reportlab.pdfbase import pdfmetrics
 from reportlab.pdfbase.ttfonts import TTFont
