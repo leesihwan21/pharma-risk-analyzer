@@ -44,3 +44,4 @@ lightgbm==4.6.0
 
 
 easyocr
+rank_bm25
