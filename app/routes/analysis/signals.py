@@ -2,9 +2,8 @@
 app/routes/analysis/signals.py
 신호 탐지: Emerging Signals, 분기별 PRR 급변 탐지
 """
-import math
 
-from flask import jsonify, request
+from flask import jsonify
 from app import cache
 
 from . import analysis

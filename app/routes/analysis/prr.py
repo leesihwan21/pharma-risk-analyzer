@@ -7,7 +7,6 @@ import math
 
 from flask import jsonify, render_template
 from app import cache
-from app.models import FavoriteDrug
 from .signals import compute_emerging_signals
 
 from . import analysis
