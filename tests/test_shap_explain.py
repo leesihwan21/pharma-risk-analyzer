@@ -1,4 +1,4 @@
-"""
+﻿"""
 SHAP 기반 AI 예측 설명 엔드포인트 (/api/shap/explain) 테스트
 Windows에서 XGBoost+SHAP C 확장이 힙 손상을 일으키는 알려진 버그로 인해
 compute_shap을 mock으로 대체하여 API 레이어만 테스트합니다.
@@ -41,7 +41,7 @@ class TestShapExplain:
         Windows XGBoost+SHAP C 확장 힙 손상 버그 우회:
         compute_shap을 mock으로 대체하고 API 응답 구조만 검증.
         """
-        with patch('app.routes.analysis.compute_shap', return_value=MOCK_SHAP_RESULT):
+        with patch('app.routes.analysis.shap_xai.compute_shap', return_value=MOCK_SHAP_RESULT):
             res = post(client, {'drug': 'METHOTREXATE', 'reaction': 'FATIGUE', 'age': 50, 'sex': 'F'})
         assert res.status_code == 200
         data = json.loads(res.data)
@@ -57,7 +57,7 @@ class TestShapExplain:
 
     def test_top_features_are_korean_labels(self, client):
         """feature 이름이 한국어로 변환됐는지 확인 (raw 키가 아닌지 검증)"""
-        with patch('app.routes.analysis.compute_shap', return_value=MOCK_SHAP_RESULT):
+        with patch('app.routes.analysis.shap_xai.compute_shap', return_value=MOCK_SHAP_RESULT):
             res = post(client, {'drug': 'METHOTREXATE', 'reaction': 'FATIGUE', 'age': 50, 'sex': 'F'})
         data = json.loads(res.data)
         raw_keys = {'drug', 'reaction', 'sex', 'age', 'drug_risk_rate', 'reac_risk_rate', 'combo_risk_rate'}
@@ -67,7 +67,8 @@ class TestShapExplain:
     def test_explanation_has_no_chinese_or_devanagari(self, client):
         """Ollama 응답에 중국어/데바나가리 등 외국어 문자가 없는지 확인"""
         import re
-        with patch('app.routes.analysis.compute_shap', return_value=MOCK_SHAP_RESULT):
+        with patch('app.routes.analysis.shap_xai.compute_shap', return_value=MOCK_SHAP_RESULT):
             res = post(client, {'drug': 'METHOTREXATE', 'reaction': 'FATIGUE', 'age': 50, 'sex': 'F'})
         data = json.loads(res.data)
         assert not re.search(r'[\u4E00-\u9FFF\u3400-\u4DBF\u0900-\u097F]', data['explanation'])
+
