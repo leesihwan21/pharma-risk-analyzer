@@ -1,15 +1,13 @@
 import os
 import numpy as np
 import pandas as pd
-from flask import Blueprint, jsonify, render_template, request
+from flask import Blueprint, jsonify, render_template, request, current_app
 
 recommend = Blueprint('recommend', __name__)
 
-DATA_PATH = os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))),
-                         'data', 'processed', 'processed_faers.csv')
 
 def load_df():
-    return pd.read_csv(DATA_PATH)
+    return pd.read_csv(current_app.config['DATA_PATH'])
 
 
 @recommend.route('/recommend')
@@ -102,7 +100,7 @@ def api_cluster(drugname):
 # -- Co-medication Analysis ------------------------------------
 @recommend.route('/api/recommend/comedication/<drugname>')
 def api_comedication(drugname):
-    """입력 약물과 함께 복용된 약물 Top 10 + 각 조합의 주요 부작용"""
+    """동일 환자에서 함께 사용된 약물 Top 10 + 병용 시 주요 부작용"""
     try:
         df = load_df()
         drugname = drugname.upper()
@@ -111,7 +109,6 @@ def api_comedication(drugname):
         if len(drug_ids) == 0:
             return jsonify({'error': f'Drug not found: {drugname}'}), 404
 
-        # 같은 케이스에서 함께 보고된 약물
         df_cases = df[df['primaryid'].isin(drug_ids)]
         co_drugs = (
             df_cases[df_cases['drugname'].str.upper() != drugname]
