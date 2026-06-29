@@ -1,5 +1,5 @@
-# 💊 Pharma Risk Analyzer
-![Tests](https://github.com/leesihwan21/pharma-risk-analyzer/actions/workflows/tests.yml/badge.svg)
+﻿# 💊 Pharma Risk Analyzer
+![Tests](https://github.com/leesihwan21/pharma-risk-analyzer/actions/workflows/ci.yml/badge.svg)
 
 **AI-powered Drug Adverse Event Risk Analysis & Clinical Decision Support System**
 FDA FAERS 데이터 기반 + XGBoost 위험도 예측 + SHAP/LIME XAI + RAG 약물 Q&A + PubMed 논문 연동 + ICH E2B(R3) + 21 CFR Part 11 + MLOps 파이프라인
@@ -444,3 +444,4 @@ The resulting performance decreased to 52%, but became significantly more reliab
 ## ⚠️ 면책조항 | Disclaimer
 
 본 도구는 연구·교육·포트폴리오 목적으로 제작되었으며, 실제 임상 처방 결정에 사용해서는 안 됩니다.
+
