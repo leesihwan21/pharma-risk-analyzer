@@ -147,7 +147,7 @@ class AEReport(db.Model):
     def days_until_deadline(self):
         """보고 마감까지 남은 일수"""
         if self.report_deadline and not self.is_submitted:
-            delta = self.report_deadline - datetime.utcnow()
+            delta = self.report_deadline - datetime.now(datetime.UTC)
             return delta.days
         return None
 

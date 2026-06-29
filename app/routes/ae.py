@@ -130,7 +130,7 @@ def ae_create():
     is_sae_input = data.get('is_sae')
     is_sae = bool(is_sae_input) if is_sae_input is not None else auto_is_sae(ae_term, ctcae_grade)
 
-    report_deadline = datetime.utcnow() + timedelta(days=15) if is_sae else None
+    report_deadline = datetime.now(datetime.UTC) + timedelta(days=15) if is_sae else None
 
     ae_start = None
     ae_end = None
