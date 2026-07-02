@@ -4,19 +4,13 @@ AE 모듈 공통 함수 및 상수
 - 감사로그 기록, CTCAE 자동 분류, PDF 테이블 생성
 """
 
-import io
-import hashlib
 
-from werkzeug.security import check_password_hash
-from datetime import datetime, timedelta, UTC
 from flask import request
 from flask_login import current_user
-from reportlab.lib.pagesizes import A4
 from reportlab.lib import colors
-from reportlab.platypus import SimpleDocTemplate, Table, TableStyle, Paragraph, Spacer
-from reportlab.lib.styles import ParagraphStyle
+from reportlab.platypus import Table, TableStyle
 from reportlab.lib.units import cm
-from app.models import db, AEReport, AuditTrail, ElectronicSignature
+from app.models import db, AuditTrail
 
 # CTCAE 자동 분류 키워드
 CTCAE_KEYWORDS = {

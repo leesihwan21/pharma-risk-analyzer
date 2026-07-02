@@ -9,6 +9,8 @@ AE(이상사례) 관리 기능을 모듈별로 분리하고 Blueprint를 통합 
     signature.py    - 전자서명, 감사로그 조회
 """
 
+# ruff : noqa: F401
+
 from flask import Blueprint
 
 ae = Blueprint("ae", __name__)
