@@ -3,6 +3,7 @@ AE Manager 모듈 테스트
 CTCAE 자동 분류, SAE 판정, 보고 타임라인 검증
 """
 import json
+from tests.test_auth import register
 
 
 
@@ -192,3 +193,62 @@ class TestAEStats:
         assert data['total'] == 2
         assert data['sae_count'] == 1
         assert 'grade_distribution' in data
+
+class TestAESignature:
+    """전자서명 동의 절차 테스트"""
+
+    def _create_and_submit_ae(self, client):
+        """서명 테스트용 AE 생성"""
+        res = client.post('/api/ae/create',
+                          data=json.dumps({
+                              'patient_code': 'PT-SIGN',
+                              'drugname': 'ASPIRIN',
+                              'ae_term': 'NAUSEA',
+                          }),
+                          content_type='application/json')
+        return json.loads(res.data)['id']
+
+    def test_sign_without_consent_rejected(self, client):
+        """환자 동의 안하면 서명 거부"""
+        register(client)
+        ae_id = self._create_and_submit_ae(client)
+        res = client.post(f'/api/ae/{ae_id}/sign',
+                          data=json.dumps({
+                              'password': 'pass1234',
+                              'meaning': '승인',
+                              'reason': '검토 완료',
+                              'consent_agreed': False
+                          }),
+                          content_type='application/json')
+        assert res.status_code == 400
+
+    def test_sign_invalid_meaning_rejected(self, client):
+        """VALID_MEANINGS에 없는 값이면 거부"""
+        register(client)
+        ae_id = self._create_and_submit_ae(client)
+        res = client.post(f'/api/ae/{ae_id}/sign',
+                          data=json.dumps({
+                              'password': 'pass1234',
+                              'meaning': 'INVALID',
+                              'reason': '검토 완료',
+                              'consent_agreed': True
+                          }),
+                          content_type='application/json')
+        assert res.status_code == 400
+
+    def test_sign_success(self, client):
+        """정상 조건이면 서명 성공"""
+        register(client)
+        ae_id = self._create_and_submit_ae(client)
+        res = client.post(f'/api/ae/{ae_id}/sign',
+                          data=json.dumps({
+                              'password': 'pass1234',
+                              'meaning': '승인',
+                              'reason': '검토 완료',
+                              'consent_agreed': True
+                          }),
+                          content_type='application/json')
+        assert res.status_code == 200
+        data = json.loads(res.data)
+        assert 'signature_hash' in data
+        assert data['signer_role'] is not None
