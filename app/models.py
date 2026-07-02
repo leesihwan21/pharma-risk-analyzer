@@ -291,16 +291,17 @@ class AuditTrail(db.Model):
 
 class ElectronicSignature(db.Model):
     """21 CFR Part 11 전자서명"""
-
     __tablename__ = "electronic_signatures"
-
     id = db.Column(db.Integer, primary_key=True)
     ae_report_id = db.Column(db.Integer, db.ForeignKey("ae_reports.id"), nullable=False)
     user_id = db.Column(db.Integer, db.ForeignKey("users.id"), nullable=False)
     username = db.Column(db.String(80), nullable=False)
-    signature_hash = db.Column(db.String(256), nullable=False)  # SHA-256
-    meaning = db.Column(db.String(200), nullable=False)  # 서명 의미 (승인/제출/검토)
-    reason = db.Column(db.String(200), nullable=True)  # 서명 사유
+    signer_role = db.Column(db.String(20), nullable=True)
+    signature_hash = db.Column(db.String(256), nullable=False)
+    meaning = db.Column(db.String(200), nullable=False)
+    reason = db.Column(db.String(200), nullable=True)
+    consent_agreed = db.Column(db.Boolean, nullable=False, default=False)
+    consent_version = db.Column(db.String(20), nullable=True, default="v1.0")
     ip_address = db.Column(db.String(50), nullable=True)
     signed_at = db.Column(db.DateTime, default=datetime.utcnow)
 
@@ -309,9 +310,12 @@ class ElectronicSignature(db.Model):
             "id": self.id,
             "ae_report_id": self.ae_report_id,
             "username": self.username,
+            "signer_role": self.signer_role,
             "meaning": self.meaning,
             "reason": self.reason,
-            "signature_hash": self.signature_hash[:16] + "...",  # 보안상 일부만
+            "consent_agreed": self.consent_agreed,
+            "consent_version": self.consent_version,
+            "signature_hash": self.signature_hash[:16] + "...",
             "ip_address": self.ip_address,
             "signed_at": self.signed_at.strftime("%Y-%m-%d %H:%M:%S"),
         }

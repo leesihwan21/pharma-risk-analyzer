@@ -40,6 +40,7 @@ def create_app():
         ml_dashboard,
     )
     from app.routes.rag import rag
+    from app.routes.korea_adr import korea_adr
 
     app.register_blueprint(main)
     app.register_blueprint(auth)
@@ -51,6 +52,7 @@ def create_app():
     app.register_blueprint(recommend)
     app.register_blueprint(ml_dashboard)
     app.register_blueprint(rag)
+    app.register_blueprint(korea_adr)
 
     # Swagger API 문서
     api = Api(

@@ -76,6 +76,19 @@ def _make_table(data):
     ]))
     return t
 
+CONSENT_VERSION = "v1.0"
+
+VALID_MEANINGS = {"승인", "검토", "책임자 확인"}
+
+CONSENT_TEXT = (
+    "본 전자서명은 익명화된 FDA FAERS 공개 데이터를 기반으로 분석된 "
+    "이상사례(AE) 평가 결과에 대한 검토/승인 행위를 기록하기 위한 것입니다. "
+    "본 시스템은 실제 환자 식별정보를 수집·저장하지 않으며, "
+    "공식 규제기관(식약처, FDA 등) 제출용 법적 문서가 아닌 "
+    "포트폴리오/연구 목적의 약물감시(Pharmacovigilance) 분석 도구입니다. "
+    "서명자는 본인의 검토 행위가 위 사실에 기반함을 이해하고 동의합니다."
+)
+
 @ae.route('/ae_manager')
 def ae_manager():
     return render_template('ae_manager.html')
@@ -541,52 +554,65 @@ def sign_ae(ae_id):
     report = AEReport.query.get_or_404(ae_id)
     data = request.get_json()
     password = data.get('password', '')
-    meaning = data.get('meaning', '제출 승인')
+    meaning = data.get('meaning', '')
     reason = data.get('reason', '')
+    consent_agreed = data.get('consent_agreed', False)
 
     if not password:
         return jsonify({'error': '비밀번호를 입력하세요'}), 400
     if not reason:
         return jsonify({'error': '서명 사유를 입력하세요'}), 400
+    if meaning not in VALID_MEANINGS:
+        return jsonify({'error': f'서명 의미는 {", ".join(VALID_MEANINGS)} 중 하나여야 합니다'}), 400
+    if not consent_agreed:
+        log_audit('SIGN_FAILED', 'ae_reports', record_id=ae_id, reason='약관 미동의')
+        return jsonify({'error': '약관에 동의해야 서명할 수 있습니다'}), 400
 
-    # 비밀번호 재확인
     if not check_password_hash(current_user.password_hash, password):
         log_audit('SIGN_FAILED', 'ae_reports', record_id=ae_id, reason='비밀번호 불일치')
         return jsonify({'error': '비밀번호가 일치하지 않습니다'}), 401
 
-    # SHA-256 서명 해시 생성
     sign_data = f"{current_user.username}:{ae_id}:{meaning}:{datetime.now(UTC).isoformat()}"
     signature_hash = hashlib.sha256(sign_data.encode()).hexdigest()
 
-    # 전자서명 저장
     sig = ElectronicSignature(
         ae_report_id=ae_id,
         user_id=current_user.id,
         username=current_user.username,
+        signer_role=current_user.role,
         signature_hash=signature_hash,
         meaning=meaning,
         reason=reason,
+        consent_agreed=consent_agreed,
+        consent_version=CONSENT_VERSION,
         ip_address=request.remote_addr
     )
     db.session.add(sig)
 
-    # AE 제출 상태 업데이트
     report.is_submitted = True
     db.session.commit()
 
     log_audit('SIGN', 'ae_reports', record_id=ae_id,
-              new_value=f'signed by {current_user.username}', reason=reason)
+              new_value=f'signed by {current_user.username} ({current_user.role})', reason=reason)
 
     return jsonify({
         'message': f'전자서명 완료: {meaning}',
         'signature_hash': signature_hash[:16] + '...',
         'signed_by': current_user.username,
+        'signer_role': current_user.role,
         'signed_at': datetime.now(UTC).strftime('%Y-%m-%d %H:%M:%S')
+    })
+
+
+@ae.route('/api/consent-text')
+def get_consent_text():
+    """서명 전 표시할 약관 동의 문구"""
+    return jsonify({
+        'version': CONSENT_VERSION,
+        'text': CONSENT_TEXT
     })
 
 @ae.route('/api/ae/<int:ae_id>/signatures')
 def get_signatures(ae_id):
     sigs = ElectronicSignature.query.filter_by(ae_report_id=ae_id).all()
     return jsonify({'signatures': [s.to_dict() for s in sigs]})
-
-
