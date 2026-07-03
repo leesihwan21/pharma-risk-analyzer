@@ -100,8 +100,8 @@ async function sendQuestion() {
     botEl.innerHTML = `
       <div>${data.answer.replace(/\n/g, '<br>')}</div>
       <div class="sources">
-        📄 참조 논문 청크 ${data.sources.length}개 검색됨<br>
-        ${data.sources[0] ? data.sources[0].substring(0, 150) + '...' : ''}
+        📄 참조 논문 청크 ${data.citations.length}개 검색됨<br>
+        ${data.citations[0] ? data.citations[0].snippet.substring(0, 150) + '...' : ''}
       </div>
     `;
     document.getElementById('chatBox').appendChild(botEl);
