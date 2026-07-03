@@ -148,8 +148,9 @@ def get_camera():
     return camera
 
 
-def generate_frames():
-    yolo = load_yolo()
+def generate_frames(model_dir):
+    yolo_path = os.path.join(model_dir, "best.pt")
+    yolo = YOLO(yolo_path)
     while True:
         with camera_lock:
             cam = get_camera()
@@ -172,8 +173,9 @@ def webcam():
 
 @vision.route("/video_feed")
 def video_feed():
+    model_dir = current_app.config["MODEL_DIR"]
     return Response(
-        generate_frames(), mimetype="multipart/x-mixed-replace; boundary=frame"
+        generate_frames(model_dir), mimetype="multipart/x-mixed-replace; boundary=frame"
     )
 
 
