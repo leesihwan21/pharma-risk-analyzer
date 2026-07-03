@@ -68,7 +68,7 @@ def predict_risk(drugname, reaction, age, sex):
     reac_risk_rate  = risk_rates['reac_risk'].get(reac_enc, 0.5)
     combo_risk_rate = risk_rates['combo_risk'].get(f"{drug_enc}_{reac_enc}", 0.5)
 
-    X    = [[drug_enc, reac_enc, sex_enc, age, drug_risk_rate, reac_risk_rate, combo_risk_rate]]
+    X    = [[sex_enc, age, drug_risk_rate, reac_risk_rate, combo_risk_rate]]  # 5개 피처만 사용
     pred = model.predict(X)[0]
     prob = model.predict_proba(X)[0]
 
@@ -173,7 +173,7 @@ def combo_risk():
             reac_enc        = le_reac.transform([reac])[0]
             reac_risk_rate  = risk_rates['reac_risk'].get(reac_enc, 0.5)
             combo_risk_rate = risk_rates['combo_risk'].get(f"{drug_enc}_{reac_enc}", 0.5)
-            X    = [[drug_enc, reac_enc, sex_enc, age, drug_risk_rate, reac_risk_rate, combo_risk_rate]]
+            X    = [[sex_enc, age, drug_risk_rate, reac_risk_rate, combo_risk_rate]]  # 5개 피처만 사용
             pred = model.predict(X)[0]
             prob = model.predict_proba(X)[0]
             drug_results.append({

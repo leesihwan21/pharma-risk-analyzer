@@ -51,9 +51,9 @@ def compute_shap(drugname: str, reaction: str, age: float, sex: str) -> dict:
     reac_risk_rate = risk_rates["reac_risk"].get(reac_enc, 0.5)
     combo_risk_rate = risk_rates["combo_risk"].get(f"{drug_enc}_{reac_enc}", 0.5)
 
+    # 모델은 sex_encoded, age, drug_risk_rate, reac_risk_rate, combo_risk_rate
+    # 5개 피처로만 학습됨 (drug_enc/reac_enc 원시 ID는 과적합 방지를 위해 제외)
     feature_names = [
-        "drug",
-        "reaction",
         "sex",
         "age",
         "drug_risk_rate",
@@ -63,8 +63,6 @@ def compute_shap(drugname: str, reaction: str, age: float, sex: str) -> dict:
     X = np.array(
         [
             [
-                drug_enc,
-                reac_enc,
                 sex_enc,
                 age,
                 drug_risk_rate,
@@ -242,9 +240,8 @@ def api_lime():
         reac_risk_rate = risk_rates["reac_risk"].get(reac_enc, 0.5)
         combo_risk_rate = risk_rates["combo_risk"].get(f"{drug_enc}_{reac_enc}", 0.5)
 
+        # 모델은 5개 피처(sex/age/risk-rate 3종)만 사용, drug_enc/reac_enc는 조회 키로만 사용
         feature_names = [
-            "drug",
-            "reaction",
             "sex",
             "age",
             "drug_risk_rate",
@@ -254,8 +251,6 @@ def api_lime():
         x = np.array(
             [
                 [
-                    drug_enc,
-                    reac_enc,
                     sex_enc,
                     age,
                     drug_risk_rate,
@@ -264,13 +259,10 @@ def api_lime():
                 ]
             ]
         )
-
         np.random.seed(42)
         n_bg = 500
         bg = np.column_stack(
             [
-                np.random.randint(0, max(len(le_drug.classes_), 1), n_bg),
-                np.random.randint(0, max(len(le_reac.classes_), 1), n_bg),
                 np.random.randint(0, 3, n_bg),
                 np.random.uniform(0, 100, n_bg),
                 np.random.uniform(0, 1, n_bg),
@@ -287,7 +279,7 @@ def api_lime():
             random_state=42,
         )
         exp = explainer.explain_instance(
-            x[0], model.predict_proba, num_features=7, num_samples=300, labels=(1,)
+            x[0], model.predict_proba, num_features=5, num_samples=300, labels=(1,)
         )
         pred = int(model.predict(x)[0])
         prob = model.predict_proba(x)[0]

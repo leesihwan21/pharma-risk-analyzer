@@ -257,10 +257,9 @@ def detect_pill():
                             f"{drug_enc}_{reac_enc}", 0.5
                         )
 
+                        # 모델은 5개 피처(sex/age/risk-rate 3종)만 사용, drug_enc/reac_enc는 조회 키로만 사용
                         X = [
                             [
-                                drug_enc,
-                                reac_enc,
                                 sex_enc,
                                 age,
                                 drug_risk_rate,
@@ -325,10 +324,9 @@ def detect_pill():
                     combo_risk_rate = risk_rates["combo_risk"].get(
                         f"{drug_enc}_{reac_enc}", 0.5
                     )
+                    # 모델은 5개 피처(sex/age/risk-rate 3종)만 사용, drug_enc/reac_enc는 조회 키로만 사용
                     X = [
                         [
-                            drug_enc,
-                            reac_enc,
                             sex_enc,
                             age,
                             drug_risk_rate,
