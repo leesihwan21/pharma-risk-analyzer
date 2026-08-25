@@ -52,12 +52,6 @@ graph TD
     end
 ```
 
----
-
-## 🌐 Live Demo
-배포 URL: http://3.36.178.61:5001
-
-AWS EC2(Ubuntu 24.04, t3.micro)에서 gunicorn + systemd 기반으로 직접 운영 중입니다. Elastic IP로 고정 주소를 확보했고, IAM 역할 기반 권한 관리와 CloudWatch를 통해 애플리케이션 로그·CPU·메모리·디스크 메트릭을 실시간으로 모니터링하고 있습니다.
 
 ---
 
